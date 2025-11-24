@@ -1,0 +1,140 @@
+import { useEffect, useState } from 'react';
+import { Modal, Form, Input, Switch, Select, Tag, Button, Table, Space, InputNumber, Divider } from 'antd';
+import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import type { Analisis, CreateAnalisisInput, UpdateAnalisisInput } from '../types';
+import { parseSinonimia, formatSinonimia } from '../types';
+import { useAreasActivas } from '../../areas/hooks';
+import { useMetodosActivos } from '../../metodos/hooks';
+
+interface ComponenteTemp {
+  key: string;
+  nombre: string;
+  valor_referencial?: string;
+  unidad_medida?: string;
+  area_id?: number;
+  metodo_id?: number;
+  orden: number;
+}
+
+interface AnalisisFormModalProps {
+  open: boolean;
+  analisis: Analisis | null;
+  onCancel: () => void;
+  onSubmit: (data: CreateAnalisisInput | UpdateAnalisisInput) => void;
+  loading?: boolean;
+}
+
+export const AnalisisFormModal: React.FC<AnalisisFormModalProps> = ({
+  open,
+  analisis,
+  onCancel,
+  onSubmit,
+  loading = false,
+}) => {
+  const [form] = Form.useForm();
+  const [componenteForm] = Form.useForm();
+  const [componentes, setComponentes] = useState<ComponenteTemp[]>([]);
+  const [componenteEditando, setComponenteEditando] = useState<ComponenteTemp | null>(null);
+  const [mostrarFormComponente, setMostrarFormComponente] = useState(false);
+  
+  const { data: areas } = useAreasActivas();
+  const { data: metodos } = useMetodosActivos();
+
+  useEffect(() => {
+    if (open && analisis) {
+      form.setFieldsValue({
+        nombre: analisis.nombre,
+        descripcion: analisis.descripcion,
+        sinonimia: analisis.sinonimia || [],
+        activo: analisis.activo,
+      });
+    } else if (open) {
+      form.resetFields();
+    }
+  }, [open, analisis, form]);
+
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      onSubmit(values);
+    } catch (error) {
+      console.error('Error de validación:', error);
+    }
+  };
+
+  return (
+    <Modal
+      title={analisis ? 'Editar Análisis' : 'Nuevo Análisis'}
+      open={open}
+      onCancel={onCancel}
+      onOk={handleOk}
+      confirmLoading={loading}
+      width={700}
+      okText={analisis ? 'Actualizar' : 'Crear'}
+      cancelText="Cancelar"
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ activo: true, sinonimia: [] }}
+      >
+        <Form.Item
+          label="Nombre del Análisis"
+          name="nombre"
+          rules={[
+            { required: true, message: 'Por favor ingrese el nombre' },
+            { max: 200, message: 'El nombre no puede exceder 200 caracteres' },
+          ]}
+        >
+          <Input placeholder="Ej: Hemograma Completo, Glucosa en Sangre" />
+        </Form.Item>
+
+        <Form.Item
+          label="Descripción"
+          name="descripcion"
+          rules={[
+            { max: 500, message: 'La descripción no puede exceder 500 caracteres' },
+          ]}
+        >
+          <Input.TextArea
+            rows={3}
+            placeholder="Descripción del análisis (opcional)"
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Sinonimia / Palabras Clave"
+          name="sinonimia"
+          tooltip="Ingrese palabras clave o sinónimos para facilitar la búsqueda. Ej: CBC, Hemograma, Blood Count"
+        >
+          <Select
+            mode="tags"
+            placeholder="Ingrese sinónimos y presione Enter"
+            tokenSeparators={[',']}
+            style={{ width: '100%' }}
+            tagRender={(props) => (
+              <Tag
+                color="blue"
+                closable={props.closable}
+                onClose={props.onClose}
+                style={{ marginRight: 3 }}
+              >
+                {props.label}
+              </Tag>
+            )}
+          />
+        </Form.Item>
+
+        {analisis && (
+          <Form.Item
+            label="Estado"
+            name="activo"
+            valuePropName="checked"
+          >
+            <Switch checkedChildren="Activo" unCheckedChildren="Inactivo" />
+          </Form.Item>
+        )}
+      </Form>
+    </Modal>
+  );
+};
