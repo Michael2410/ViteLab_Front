@@ -20,39 +20,33 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useMetodos, useCrearMetodo, useActualizarMetodo, useEliminarMetodo } from '../hooks';
+import { useAuthStore } from '../../auth/hooks';
 import { MetodoFormModal } from '../components/MetodoFormModal';
-import type { Metodo, MetodoFilters, CreateMetodoInput, UpdateMetodoInput } from '../types';
+import type { Metodo, CreateMetodoInput, UpdateMetodoInput } from '../types';
+import PageContainer from '../../../shared/components/PageContainer';
 
 const { Title, Text } = Typography;
 
 export const MetodosPage: React.FC = () => {
-  const [filtros, setFiltros] = useState<MetodoFilters>({
-    page: 1,
-    limit: 20,
-  });
+  const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [metodoSeleccionado, setMetodoSeleccionado] = useState<Metodo | null>(null);
 
-  const { data: metodos, isLoading } = useMetodos(filtros);
+  const { hasPermission } = useAuthStore();
+  const { data: metodos, isLoading } = useMetodos({});
   const crearMetodoMutation = useCrearMetodo();
   const actualizarMetodoMutation = useActualizarMetodo();
   const eliminarMetodoMutation = useEliminarMetodo();
 
-  const handleFiltroChange = (key: keyof MetodoFilters, value: any) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1,
-    }));
-  };
-
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    setFiltros((prev) => ({
-      ...prev,
-      page,
-      limit: pageSize || prev.limit,
-    }));
-  };
+  // Filtrado local
+  const metodosFiltrados = metodos?.filter((metodo) => {
+    if (!searchText) return true;
+    const search = searchText.toLowerCase();
+    return (
+      metodo.nombre.toLowerCase().includes(search) ||
+      (metodo.descripcion && metodo.descripcion.toLowerCase().includes(search))
+    );
+  });
 
   const handleNuevo = () => {
     setMetodoSeleccionado(null);
@@ -78,6 +72,7 @@ export const MetodosPage: React.FC = () => {
   };
 
   const handleToggleActivo = async (metodo: Metodo) => {
+    if (!hasPermission('catalogs.methods.update')) return;
     await actualizarMetodoMutation.mutateAsync({
       id: metodo.id,
       data: { activo: !metodo.activo },
@@ -98,13 +93,6 @@ export const MetodosPage: React.FC = () => {
   };
 
   const columns: ColumnsType<Metodo> = [
-    {
-      title: 'Código',
-      dataIndex: 'codigo',
-      key: 'codigo',
-      width: 120,
-      render: (codigo: string) => <Text strong>{codigo}</Text>,
-    },
     {
       title: 'Nombre',
       dataIndex: 'nombre',
@@ -130,6 +118,7 @@ export const MetodosPage: React.FC = () => {
           onChange={() => handleToggleActivo(record)}
           checkedChildren="Activo"
           unCheckedChildren="Inactivo"
+          disabled={!hasPermission('catalogs.methods.update')}
         />
       ),
     },
@@ -147,69 +136,82 @@ export const MetodosPage: React.FC = () => {
       align: 'center',
       render: (_, record: Metodo) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditar(record)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleEliminar(record)}
-          />
+          {hasPermission('catalogs.methods.update') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditar(record)}
+            />
+          )}
+          {hasPermission('catalogs.methods.delete') && (
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleEliminar(record)}
+            />
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ marginBottom: 8 }}>Métodos de Análisis</Title>
+    <PageContainer>
+
+      {/* 🔵 Header con título + buscador + botón (igual a la UI de Áreas) */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <Title level={2} style={{ marginBottom: 4 }}>Métodos de Análisis</Title>
           <Text type="secondary">Gestión de métodos para clasificación de análisis</Text>
-        </Col>
-        <Col>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleNuevo}>
-            Nuevo Método
-          </Button>
-        </Col>
-      </Row>
+        </div>
 
-      {/* Filtros */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col xs={24} md={12} lg={8}>
-            <Input
-              placeholder="Buscar por código o nombre..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-            />
-          </Col>
-        </Row>
-      </Card>
+        {/* Buscador + botón juntos */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="Buscar por nombre..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280 }}
+          />
 
-      {/* Tabla */}
-      <Card>
+          {hasPermission('catalogs.methods.create') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleNuevo}
+            >
+              Nuevo Método
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* 🔵 Tabla */}
         <Table
           columns={columns}
-          dataSource={metodos || []}
-          scroll={{ x: 900 }}
+          dataSource={metodosFiltrados || []}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 900 }}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
             showTotal: (total) => `Total ${total} métodos`,
           }}
         />
-      </Card>
 
-      {/* Modal de formulario */}
+      {/* Modal */}
       <MetodoFormModal
         open={modalOpen}
         metodo={metodoSeleccionado}
@@ -220,6 +222,7 @@ export const MetodosPage: React.FC = () => {
         onSubmit={handleSubmitForm}
         loading={crearMetodoMutation.isPending || actualizarMetodoMutation.isPending}
       />
-    </div>
+    </PageContainer>
   );
+
 };

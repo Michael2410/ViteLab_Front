@@ -4,8 +4,16 @@ import type { LoginRequest, LoginResponse, RefreshTokenResponse } from './types'
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
-    const { data } = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
-    return data;
+    console.log('📤 API login called with:', credentials);
+    try {
+      const { data } = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
+      console.log('📥 API login response:', data);
+      return data;
+    } catch (error: any) {
+      console.log('📥 API login error caught:', error);
+      console.log('📥 API login error response:', error.response);
+      throw error;
+    }
   },
 
   refresh: async (refreshToken: string): Promise<ApiResponse<RefreshTokenResponse>> => {

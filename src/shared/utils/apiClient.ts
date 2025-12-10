@@ -71,3 +71,22 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+// Función para subir archivos
+export const uploadFile = async (file: File, type: string = 'general'): Promise<{ url: string; filename: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await apiClient.post(`/uploads/${type}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data.data;
+};
+
+// Función para eliminar archivos
+export const deleteFile = async (type: string, filename: string): Promise<void> => {
+  await apiClient.delete(`/uploads/${type}/${filename}`);
+};

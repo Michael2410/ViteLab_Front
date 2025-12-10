@@ -7,6 +7,7 @@ export interface Convenio {
   telefono: string | null;
   email: string | null;
   tarifario_id: number | null;
+  logo_url: string | null;
   activo: boolean;
   created_at: string;
   updated_at: string;
@@ -25,6 +26,7 @@ export interface CreateConvenioInput {
   telefono?: string;
   email?: string;
   tarifario_id?: number;
+  logo_url?: string;
 }
 
 // Input para actualizar un convenio
@@ -35,6 +37,7 @@ export interface UpdateConvenioInput {
   telefono?: string;
   email?: string;
   tarifario_id?: number;
+  logo_url?: string | null;
   activo?: boolean;
 }
 

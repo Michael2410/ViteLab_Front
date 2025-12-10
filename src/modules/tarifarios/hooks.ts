@@ -7,8 +7,17 @@ import {
   crearTarifario,
   actualizarTarifario,
   eliminarTarifario,
+  crearTarifarioPrecio,
+  actualizarTarifarioPrecio,
+  eliminarTarifarioPrecio,
 } from './api';
-import type { TarifarioFilters, CreateTarifarioInput, UpdateTarifarioInput } from './types';
+import type { 
+  TarifarioFilters, 
+  CreateTarifarioInput, 
+  UpdateTarifarioInput,
+  CreateTarifarioPrecioInput,
+  UpdateTarifarioPrecioInput,
+} from './types';
 
 // Query keys
 export const tarifariosKeys = {
@@ -35,7 +44,7 @@ export const useTarifariosActivos = () => {
   });
 };
 
-// Hook para obtener un tarifario por ID
+// Hook para obtener un tarifario por ID (con precios)
 export const useTarifario = (id: number) => {
   return useQuery({
     queryKey: tarifariosKeys.detail(id),
@@ -93,6 +102,58 @@ export const useEliminarTarifario = () => {
     },
     onError: () => {
       message.error('Error al eliminar el tarifario');
+    },
+  });
+};
+
+// ============ PRECIOS ============
+
+// Hook para crear precio
+export const useCrearTarifarioPrecio = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: crearTarifarioPrecio,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: tarifariosKeys.detail(variables.tarifario_id) });
+      message.success('Análisis agregado al tarifario');
+    },
+    onError: () => {
+      message.error('Error al agregar el análisis');
+    },
+  });
+};
+
+// Hook para actualizar precio
+export const useActualizarTarifarioPrecio = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, tarifarioId, data }: { id: number; tarifarioId: number; data: UpdateTarifarioPrecioInput }) =>
+      actualizarTarifarioPrecio(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: tarifariosKeys.detail(variables.tarifarioId) });
+      message.success('Precio actualizado');
+    },
+    onError: () => {
+      message.error('Error al actualizar el precio');
+    },
+  });
+};
+
+// Hook para eliminar precio
+export const useEliminarTarifarioPrecio = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, tarifarioId }: { id: number; tarifarioId: number }) =>
+      eliminarTarifarioPrecio(id),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: tarifariosKeys.detail(variables.tarifarioId) });
+      message.success('Análisis eliminado del tarifario');
+    },
+    onError: () => {
+      message.error('Error al eliminar el análisis');
     },
   });
 };

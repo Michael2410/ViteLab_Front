@@ -10,6 +10,7 @@ import {
   Col,
   Modal,
   Switch,
+  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
@@ -17,35 +18,39 @@ import {
   DeleteOutlined,
   SearchOutlined,
   DollarOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useTarifarios, useCrearTarifario, useActualizarTarifario, useEliminarTarifario } from '../hooks';
-import { TarifarioFormModal } from '../components/TarifarioFormModal';
-import type { Tarifario, TarifarioFilters, CreateTarifarioInput, UpdateTarifarioInput } from '../types';
+import { useAuthStore } from '../../auth/hooks';
+import { TarifarioFormModal, TarifarioPreciosModal } from '../components';
+import type { Tarifario, CreateTarifarioInput, UpdateTarifarioInput } from '../types';
+import PageContainer from '../../../shared/components/PageContainer';
 
 const { Title, Text } = Typography;
 
 export const TarifariosPage: React.FC = () => {
-  const [filtros, setFiltros] = useState<TarifarioFilters>({
-    page: 1,
-    limit: 20,
-  });
+  const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [preciosModalOpen, setPreciosModalOpen] = useState(false);
   const [tarifarioSeleccionado, setTarifarioSeleccionado] = useState<Tarifario | null>(null);
 
-  const { data: tarifarios, isLoading } = useTarifarios(filtros);
+  const { hasPermission } = useAuthStore();
+  const { data: tarifarios, isLoading } = useTarifarios({});
   const crearTarifarioMutation = useCrearTarifario();
   const actualizarTarifarioMutation = useActualizarTarifario();
   const eliminarTarifarioMutation = useEliminarTarifario();
 
-  const handleFiltroChange = (key: keyof TarifarioFilters, value: any) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1,
-    }));
-  };
+  // Filtrado local
+  const tarifariosFiltrados = tarifarios?.filter((tarifario) => {
+    if (!searchText) return true;
+    const search = searchText.toLowerCase();
+    return (
+      tarifario.nombre.toLowerCase().includes(search) ||
+      (tarifario.descripcion && tarifario.descripcion.toLowerCase().includes(search))
+    );
+  });
 
   const handleNuevo = () => {
     setTarifarioSeleccionado(null);
@@ -55,6 +60,11 @@ export const TarifariosPage: React.FC = () => {
   const handleEditar = (tarifario: Tarifario) => {
     setTarifarioSeleccionado(tarifario);
     setModalOpen(true);
+  };
+
+  const handleGestionarPrecios = (tarifario: Tarifario) => {
+    setTarifarioSeleccionado(tarifario);
+    setPreciosModalOpen(true);
   };
 
   const handleEliminar = (tarifario: Tarifario) => {
@@ -71,6 +81,7 @@ export const TarifariosPage: React.FC = () => {
   };
 
   const handleToggleActivo = async (tarifario: Tarifario) => {
+    if (!hasPermission('tariffs.update')) return;
     await actualizarTarifarioMutation.mutateAsync({
       id: tarifario.id,
       data: { activo: !tarifario.activo },
@@ -98,7 +109,7 @@ export const TarifariosPage: React.FC = () => {
       width: 300,
       render: (nombre: string) => (
         <Space>
-          <DollarOutlined style={{ color: '#1890ff' }} />
+          <DollarOutlined style={{ color: '#52c41a' }} />
           <Text strong>{nombre}</Text>
         </Space>
       ),
@@ -121,6 +132,7 @@ export const TarifariosPage: React.FC = () => {
           onChange={() => handleToggleActivo(record)}
           checkedChildren="Activo"
           unCheckedChildren="Inactivo"
+          disabled={!hasPermission('tariffs.update')}
         />
       ),
     },
@@ -134,70 +146,97 @@ export const TarifariosPage: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
-      width: 120,
+      width: 150,
       align: 'center',
       render: (_, record: Tarifario) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditar(record)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleEliminar(record)}
-          />
+          {hasPermission('tariffs.update') && (
+            <Tooltip title="Gestionar Precios">
+              <Button
+                type="primary"
+                ghost
+                icon={<UnorderedListOutlined />}
+                onClick={() => handleGestionarPrecios(record)}
+              />
+            </Tooltip>
+          )}
+          {hasPermission('tariffs.update') && (
+            <Tooltip title="Editar">
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => handleEditar(record)}
+              />
+            </Tooltip>
+          )}
+          {hasPermission('tariffs.delete') && (
+            <Tooltip title="Eliminar">
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleEliminar(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ marginBottom: 8 }}>Tarifarios</Title>
-          <Text type="secondary">Gestión de tarifarios y precios</Text>
-        </Col>
-        <Col>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleNuevo}>
-            Nuevo Tarifario
-          </Button>
-        </Col>
-      </Row>
+    <PageContainer>
 
-      {/* Filtros */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Input
-              placeholder="Buscar tarifario..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-            />
-          </Col>
-        </Row>
-      </Card>
+      {/* 🔵 Header con título + buscador + botón */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <Title level={2} style={{ marginBottom: 4 }}>Tarifarios</Title>
+          <Text type="secondary">Gestión de tarifarios y precios por análisis</Text>
+        </div>
 
-      {/* Tabla */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={tarifarios || []}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} tarifarios`,
-          }}
-        />
-      </Card>
+        {/* Buscador + botón */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="Buscar tarifario..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 300 }}
+          />
+
+          {hasPermission('tariffs.create') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleNuevo}
+            >
+              Nuevo Tarifario
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* 🔵 Tabla */}
+      <Table
+        columns={columns}
+        dataSource={tarifariosFiltrados || []}
+        rowKey="id"
+        loading={isLoading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} tarifarios`,
+        }}
+      />
 
       {/* Modal de formulario */}
       <TarifarioFormModal
@@ -208,8 +247,26 @@ export const TarifariosPage: React.FC = () => {
           setTarifarioSeleccionado(null);
         }}
         onSubmit={handleSubmitForm}
-        loading={crearTarifarioMutation.isPending || actualizarTarifarioMutation.isPending}
+        loading={
+          crearTarifarioMutation.isPending ||
+          actualizarTarifarioMutation.isPending
+        }
       />
-    </div>
+
+      {/* Modal de Precios */}
+      {hasPermission('tariffs.update') && (
+        <TarifarioPreciosModal
+          open={preciosModalOpen}
+          tarifarioId={tarifarioSeleccionado?.id || null}
+          tarifarioNombre={tarifarioSeleccionado?.nombre || ''}
+          onClose={() => {
+            setPreciosModalOpen(false);
+            setTarifarioSeleccionado(null);
+          }}
+        />
+      )}
+
+    </PageContainer>
   );
+
 };

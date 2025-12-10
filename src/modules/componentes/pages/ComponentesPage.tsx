@@ -12,64 +12,59 @@ import {
   Switch,
   Tag,
   Select,
-  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  ExperimentOutlined,
   SortAscendingOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
-import { 
-  useComponentes, 
-  useCrearComponente, 
-  useActualizarComponente, 
-  useEliminarComponente 
+import {
+  useComponentes,
+  useCrearComponente,
+  useActualizarComponente,
+  useEliminarComponente
 } from '../hooks';
-import { useAnalisisActivos } from '../../analisis/hooks';
+import { useAuthStore } from '../../auth/hooks';
 import { useAreasActivas } from '../../areas/hooks';
 import { useMetodosActivos } from '../../metodos/hooks';
 import { ComponenteFormModal } from '../components/ComponenteFormModal';
-import type { Componente, ComponenteFilters, CreateComponenteInput, UpdateComponenteInput } from '../types';
+import type { Componente, CreateComponenteInput, UpdateComponenteInput } from '../types';
+import PageContainer from '../../../shared/components/PageContainer';
 
 const { Title, Text } = Typography;
 
 export const ComponentesPage: React.FC = () => {
-  const [filtros, setFiltros] = useState<ComponenteFilters>({
-    page: 1,
-    limit: 20,
-  });
+  const [searchText, setSearchText] = useState('');
+  const [areaIdFilter, setAreaIdFilter] = useState<number | undefined>(undefined);
+  const [metodoIdFilter, setMetodoIdFilter] = useState<number | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [componenteSeleccionado, setComponenteSeleccionado] = useState<Componente | null>(null);
 
-  const { data: componentes, isLoading } = useComponentes(filtros);
-  const { data: analisisList } = useAnalisisActivos();
+  const { hasPermission } = useAuthStore();
+  const { data: componentes, isLoading } = useComponentes({});
   const { data: areasList } = useAreasActivas();
   const { data: metodosList } = useMetodosActivos();
-  
+
   const crearComponenteMutation = useCrearComponente();
   const actualizarComponenteMutation = useActualizarComponente();
   const eliminarComponenteMutation = useEliminarComponente();
 
-  const handleFiltroChange = (key: keyof ComponenteFilters, value: any) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1,
-    }));
-  };
-
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    setFiltros((prev) => ({
-      ...prev,
-      page,
-      limit: pageSize || prev.limit,
-    }));
-  };
+  // Filtrado local
+  const componentesFiltrados = componentes?.filter((comp) => {
+    // Filtro de texto
+    if (searchText) {
+      const search = searchText.toLowerCase();
+      if (!comp.nombre.toLowerCase().includes(search)) return false;
+    }
+    // Filtro por área
+    if (areaIdFilter && comp.area_id !== areaIdFilter) return false;
+    // Filtro por método
+    if (metodoIdFilter && comp.metodo_id !== metodoIdFilter) return false;
+    return true;
+  });
 
   const handleNuevo = () => {
     setComponenteSeleccionado(null);
@@ -95,6 +90,7 @@ export const ComponentesPage: React.FC = () => {
   };
 
   const handleToggleActivo = async (componente: Componente) => {
+    if (!hasPermission('catalogs.components.update')) return;
     await actualizarComponenteMutation.mutateAsync({
       id: componente.id,
       data: { activo: !componente.activo },
@@ -116,39 +112,33 @@ export const ComponentesPage: React.FC = () => {
 
   const columns: ColumnsType<Componente> = [
     {
-      title: 'Análisis',
-      dataIndex: 'analisis',
-      key: 'analisis',
-      width: 250,
-      render: (analisis: Componente['analisis']) => (
-        <Space>
-          <ExperimentOutlined />
-          <Text>{analisis?.nombre || '-'}</Text>
-        </Space>
-      ),
-    },
-    {
       title: 'Componente',
       dataIndex: 'nombre',
       key: 'nombre',
-      width: 250,
+      width: 150,
       render: (nombre: string, record: Componente) => (
         <Space direction="vertical" size="small">
           <Text strong>{nombre}</Text>
-          {record.orden > 0 && (
-            <Tag icon={<SortAscendingOutlined />} color="default">
-              Orden: {record.orden}
-            </Tag>
-          )}
         </Space>
       ),
     },
     {
-      title: 'Valor Referencial',
-      dataIndex: 'valor_referencial',
-      key: 'valor_referencial',
-      width: 150,
-      render: (valor: string) => valor || <Text type="secondary">-</Text>,
+      title: 'Valores Referenciales',
+      dataIndex: 'valores_referenciales',
+      key: 'valores_referenciales',
+      width: 200,
+      render: (valores: string[]) => {
+        if (!valores || valores.length === 0) {
+          return <Text type="secondary">-</Text>;
+        }
+        return (
+          <Space size={[0, 4]} wrap>
+            {valores.map((v, idx) => (
+              <Tag key={idx} color="blue">{v}</Tag>
+            ))}
+          </Space>
+        );
+      },
     },
     {
       title: 'Unidad',
@@ -161,16 +151,16 @@ export const ComponentesPage: React.FC = () => {
       title: 'Área',
       dataIndex: 'area',
       key: 'area',
-      width: 150,
-      render: (area: Componente['area']) => 
-        area ? <Tag color="blue">{area.nombre}</Tag> : <Text type="secondary">-</Text>,
+      width: 100,
+      render: (area: Componente['area']) =>
+        area ? <Tag color="cyan">{area.nombre}</Tag> : <Text type="secondary">-</Text>,
     },
     {
       title: 'Método',
       dataIndex: 'metodo',
       key: 'metodo',
       width: 150,
-      render: (metodo: Componente['metodo']) => 
+      render: (metodo: Componente['metodo']) =>
         metodo ? <Tag color="green">{metodo.nombre}</Tag> : <Text type="secondary">-</Text>,
     },
     {
@@ -185,6 +175,7 @@ export const ComponentesPage: React.FC = () => {
           onChange={() => handleToggleActivo(record)}
           checkedChildren="Activo"
           unCheckedChildren="Inactivo"
+          disabled={!hasPermission('catalogs.components.update')}
         />
       ),
     },
@@ -195,86 +186,91 @@ export const ComponentesPage: React.FC = () => {
       align: 'center',
       render: (_, record: Componente) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditar(record)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleEliminar(record)}
-          />
+          {hasPermission('catalogs.components.update') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditar(record)}
+            />
+          )}
+          {hasPermission('catalogs.components.delete') && (
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleEliminar(record)}
+            />
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <Title level={2}>Componentes de Análisis</Title>
-            <Text type="secondary">Gestión de componentes (subtítulos) para cada análisis</Text>
-          </div>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleNuevo}>
-            Nuevo Componente
-          </Button>
+    <PageContainer>
+
+      {/* 🔵 Header con título + buscador + botón */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <Title level={2} style={{ marginBottom: 4 }}>Componentes de Análisis</Title>
+          <Text type="secondary">Gestión de componentes (subtítulos) para cada análisis</Text>
+        </div>
+
+        {/* Buscador + botón */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="Buscar por nombre..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280 }}
+          />
+
+          {hasPermission('catalogs.components.create') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleNuevo}
+            >
+              Nuevo Componente
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Filtros */}
-      <Card style={{ marginBottom: 16 }}>
+      {/* 🔵 Filtros adicionales (Área + Método) */}
+      <div style={{ marginBottom: 16 }}>
         <Row gutter={16}>
           <Col xs={24} md={8}>
-            <Input
-              placeholder="Buscar por nombre..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-            />
-          </Col>
-          <Col xs={24} md={6}>
-            <Select
-              placeholder="Filtrar por análisis"
-              allowClear
-              showSearch
-              style={{ width: '100%' }}
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              value={filtros.analisis_id}
-              onChange={(value) => handleFiltroChange('analisis_id', value)}
-              options={analisisList?.map((a) => ({
-                label: a.nombre,
-                value: a.id,
-              }))}
-            />
-          </Col>
-          <Col xs={24} md={5}>
             <Select
               placeholder="Filtrar por área"
               allowClear
               style={{ width: '100%' }}
-              value={filtros.area_id}
-              onChange={(value) => handleFiltroChange('area_id', value)}
+              value={areaIdFilter}
+              onChange={(value) => setAreaIdFilter(value)}
               options={areasList?.map((a) => ({
                 label: a.nombre,
                 value: a.id,
               }))}
             />
           </Col>
-          <Col xs={24} md={5}>
+
+          <Col xs={24} md={8}>
             <Select
               placeholder="Filtrar por método"
               allowClear
               style={{ width: '100%' }}
-              value={filtros.metodo_id}
-              onChange={(value) => handleFiltroChange('metodo_id', value)}
+              value={metodoIdFilter}
+              onChange={(value) => setMetodoIdFilter(value)}
               options={metodosList?.map((m) => ({
                 label: m.nombre,
                 value: m.id,
@@ -282,25 +278,22 @@ export const ComponentesPage: React.FC = () => {
             />
           </Col>
         </Row>
-      </Card>
+      </div>
 
-      {/* Tabla */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={componentes || []}
-          rowKey="id"
-          loading={isLoading}
-          scroll={{ x: 1600 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} componentes`,
-          }}
-        />
-      </Card>
-
-      {/* Modal de formulario */}
+      {/* 🔵 Tabla */}
+      <Table
+        columns={columns}
+        dataSource={componentesFiltrados || []}
+        rowKey="id"
+        loading={isLoading}
+        scroll={{ x: 1600 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} componentes`,
+        }}
+      />
+      {/* Modal */}
       <ComponenteFormModal
         open={modalOpen}
         componente={componenteSeleccionado}
@@ -309,8 +302,12 @@ export const ComponentesPage: React.FC = () => {
           setComponenteSeleccionado(null);
         }}
         onSubmit={handleSubmitForm}
-        loading={crearComponenteMutation.isPending || actualizarComponenteMutation.isPending}
+        loading={
+          crearComponenteMutation.isPending ||
+          actualizarComponenteMutation.isPending
+        }
       />
-    </div>
+    </PageContainer>
   );
+
 };

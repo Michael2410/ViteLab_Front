@@ -74,8 +74,12 @@ export const useActualizarConvenio = () => {
       queryClient.invalidateQueries({ queryKey: conveniosKeys.detail(variables.id) });
       message.success('Convenio actualizado exitosamente');
     },
-    onError: () => {
-      message.error('Error al actualizar el convenio');
+    onError: (error: any) => {
+      const errorMsg = error.response?.data?.message || 
+                       error.response?.data?.errors?.map((e: any) => e.message).join(', ') ||
+                       'Error al actualizar el convenio';
+      message.error(errorMsg);
+      console.error('Error detallado:', error.response?.data);
     },
   });
 };

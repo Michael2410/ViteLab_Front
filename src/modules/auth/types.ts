@@ -3,6 +3,12 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface SedeAsignada {
+  id: number;
+  nombre: string;
+  codigo: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
@@ -20,6 +26,7 @@ export interface User {
   rol_descripcion: string;
   permisos?: string[];
   firma_url?: string;
+  sedes?: SedeAsignada[];
   activo: boolean;
   created_at: string;
   updated_at: string;

@@ -2,14 +2,26 @@
 // INTERFACES
 // ============================================
 
+export interface OrdenParaResultados {
+  id: number;
+  numero_atencion: number;
+  estado: string;
+  fecha_registro: string;
+  paciente_dni: string;
+  paciente_nombres: string;
+  paciente_apellidos: string;
+  sede_nombre: string;
+  total_analisis: number;
+}
+
 export interface ComponenteConResultado {
   componente_id: number;
-  componente_codigo: string;
   componente_nombre: string;
   unidad_medida?: string | null;
-  valor_referencia_min?: number | null;
-  valor_referencia_max?: number | null;
-  valor_referencia_texto?: string | null;
+  valores_referenciales?: string[];
+  valor_alerta_min?: number | null;
+  valor_alerta_max?: number | null;
+  metodo_nombre?: string | null;
   resultado_id?: number | null;
   resultado_valor?: string | null;
   resultado_observaciones?: string | null;
@@ -20,17 +32,30 @@ export interface AnalisisConComponentes {
   orden_analisis_id: number;
   analisis_id: number;
   analisis_nombre: string;
-  analisis_codigo: string;
   componentes: ComponenteConResultado[];
 }
 
 export interface OrdenConResultados {
   id: number;
-  numero_orden: string;
+  numero_atencion: number;
+  estado: string;
   paciente_nombres: string;
   paciente_apellidos: string;
   paciente_dni: string;
+  paciente_genero?: string;
+  paciente_fecha_nacimiento?: string;
   fecha_registro: string;
+  fecha_aprobacion?: string;
+  sede_nombre?: string;
+  tipo_cliente_nombre?: string;
+  convenio_nombre?: string;
+  convenio_direccion?: string;
+  convenio_logo_url?: string;
+  medico?: string;
+  aprobado_por_nombres?: string;
+  aprobado_por_apellidos?: string;
+  aprobado_por_firma_url?: string;
+  interpretacion_ia?: string | null;
   analisis: AnalisisConComponentes[];
 }
 
@@ -49,9 +74,8 @@ export interface Resultado {
 
 export interface ResultadoDetalle extends Resultado {
   componente_nombre: string;
-  componente_codigo: string;
   orden_id: number;
-  numero_orden: string;
+  numero_atencion: number;
   analisis_nombre: string;
   usuario_registro_nombre?: string;
 }

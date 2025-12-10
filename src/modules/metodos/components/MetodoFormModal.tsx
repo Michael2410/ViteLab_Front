@@ -60,18 +60,6 @@ export const MetodoFormModal: React.FC<MetodoFormModalProps> = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="Código"
-              name="codigo"
-              rules={[
-                { required: true, message: 'Por favor ingrese el código' },
-                { max: 10, message: 'El código no puede exceder 10 caracteres' },
-              ]}
-            >
-              <Input placeholder="Ej: PCR, ELISA" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
               label="Nombre"
               name="nombre"
               rules={[

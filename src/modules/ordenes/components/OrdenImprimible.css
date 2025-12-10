@@ -1,0 +1,98 @@
+/* =======================================================
+   🔥 Vista previa en pantalla — 1/4 de hoja A4
+   ======================================================= */
+.print-container-orden {
+  position: relative !important;
+  background: white;
+  padding: 12px;
+  margin: 0 auto;
+
+  /* 📏 Tamaño 1/4 A4 */
+  width: 105mm;          
+  min-height: 148.5mm;
+
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+/* 👇 LOGO REDUCIDO TAMBIÉN EN VISTA PREVIA */
+.print-logo {
+  max-height: 40px;
+  max-width: 100px;
+  margin-bottom: 6px;
+}
+
+/* =======================================================
+   🖨️ Impresión — Tamaño exacto voucher 1/4 A4
+   ======================================================= */
+@page {
+  size: 105mm 148.5mm;  /* 👈 EXACTO 1/4 de A4 */
+  margin: 6mm;
+}
+
+@media print {
+
+  /* Ocultar todo excepto el voucher */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-container-orden,
+  .print-container-orden * {
+    visibility: visible !important;
+  }
+
+  /* Ajustes para impresión */
+  .print-container-orden {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+
+    width: 105mm !important;
+    min-height: 148.5mm !important;
+
+    margin: 0 !important;
+    padding: 6mm !important;
+    border: none !important;
+    background: white !important;
+  }
+
+  /* 🔥 LOGO MÁS PEQUEÑO AL IMPRIMIR */
+  .print-logo {
+    max-height: 30px !important;
+    max-width: 80px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Espaciados más compactos */
+  .print-header {
+    padding-bottom: 8px !important;
+  }
+
+  .print-section {
+    margin-bottom: 12px !important;
+  }
+
+  .print-summary {
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #ddd !important;
+  }
+
+  .print-footer {
+    margin-top: 18px !important;
+    text-align: center;
+    font-size: 9px !important;
+    padding-top: 10px !important;
+  }
+
+  /* Fix para Ant Design */
+  .ant-table-thead > tr > th::before {
+    display: none !important;
+  }
+
+  .ant-table-filter-trigger,
+  .ant-table-row-expand-icon {
+    display: none !important;
+  }
+}

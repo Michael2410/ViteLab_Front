@@ -1,7 +1,10 @@
-import { useEffect } from 'react';
-import { Modal, Form, Input, Switch, Select } from 'antd';
-import { useTarifarios } from '../../tarifarios/hooks';
+import { useEffect, useState } from 'react';
+import { Modal, Form, Input, Switch, Select, Upload, message, Image } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTarifariosActivos } from '../../tarifarios/hooks';
+import { uploadFile } from '../../../shared/utils/apiClient';
 import type { Convenio, CreateConvenioInput, UpdateConvenioInput } from '../types';
+import type { UploadFile } from 'antd/es/upload/interface';
 
 interface ConvenioFormModalProps {
   open: boolean;
@@ -19,7 +22,10 @@ export const ConvenioFormModal: React.FC<ConvenioFormModalProps> = ({
   loading = false,
 }) => {
   const [form] = Form.useForm();
-  const { data: tarifarios, isLoading: loadingTarifarios } = useTarifarios({ activo: true });
+  const { data: tarifarios, isLoading: loadingTarifarios } = useTarifariosActivos();
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   useEffect(() => {
     if (open && convenio) {
@@ -32,18 +38,57 @@ export const ConvenioFormModal: React.FC<ConvenioFormModalProps> = ({
         tarifario_id: convenio.tarifario_id,
         activo: convenio.activo,
       });
+      setLogoUrl(convenio.logo_url);
+      if (convenio.logo_url) {
+        setFileList([{
+          uid: '-1',
+          name: 'logo',
+          status: 'done',
+          url: convenio.logo_url,
+        }]);
+      } else {
+        setFileList([]);
+      }
     } else if (open) {
       form.resetFields();
+      setLogoUrl(null);
+      setFileList([]);
     }
   }, [open, convenio, form]);
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values);
+      onSubmit({ ...values, logo_url: logoUrl });
     } catch (error) {
       console.error('Error de validación:', error);
     }
+  };
+
+  const handleUpload = async (file: File) => {
+    try {
+      setUploading(true);
+      const result = await uploadFile(file, 'logos');
+      setLogoUrl(result.url);
+      setFileList([{
+        uid: '-1',
+        name: file.name,
+        status: 'done',
+        url: result.url,
+      }]);
+      message.success('Logo subido correctamente');
+    } catch (error) {
+      message.error('Error al subir el logo');
+      console.error(error);
+    } finally {
+      setUploading(false);
+    }
+    return false; // Prevent default upload behavior
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoUrl(null);
+    setFileList([]);
   };
 
   return (
@@ -52,7 +97,7 @@ export const ConvenioFormModal: React.FC<ConvenioFormModalProps> = ({
       open={open}
       onCancel={onCancel}
       onOk={handleOk}
-      confirmLoading={loading}
+      confirmLoading={loading || uploading}
       width={700}
       okText={convenio ? 'Actualizar' : 'Crear'}
       cancelText="Cancelar"
@@ -62,6 +107,53 @@ export const ConvenioFormModal: React.FC<ConvenioFormModalProps> = ({
         layout="vertical"
         initialValues={{ activo: true }}
       >
+        <Form.Item
+          label="Logo del Convenio"
+        >
+          {logoUrl ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <Image
+                src={logoUrl}
+                alt="Logo"
+                width={100}
+                height={100}
+                style={{ objectFit: 'contain', border: '1px solid #d9d9d9', borderRadius: 4 }}
+              />
+              <button
+                type="button"
+                onClick={handleRemoveLogo}
+                style={{ 
+                  background: 'none', 
+                  border: '1px solid #ff4d4f', 
+                  color: '#ff4d4f',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  borderRadius: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}
+              >
+                <DeleteOutlined /> Eliminar
+              </button>
+            </div>
+          ) : (
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              beforeUpload={handleUpload}
+              maxCount={1}
+              accept="image/*"
+              showUploadList={false}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Subir Logo</div>
+              </div>
+            </Upload>
+          )}
+        </Form.Item>
+
         <Form.Item
           label="Nombre de la Empresa"
           name="nombre_empresa"
@@ -133,7 +225,7 @@ export const ConvenioFormModal: React.FC<ConvenioFormModalProps> = ({
           <Select
             placeholder="Seleccione un tarifario"
             loading={loadingTarifarios}
-            options={tarifarios?.items?.map((t) => ({
+            options={tarifarios?.map((t) => ({
               label: t.nombre,
               value: t.id,
             }))}

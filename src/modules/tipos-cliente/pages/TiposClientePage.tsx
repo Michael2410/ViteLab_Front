@@ -19,45 +19,36 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { 
-  useTiposCliente, 
-  useCrearTipoCliente, 
-  useActualizarTipoCliente, 
-  useEliminarTipoCliente 
+import {
+  useTiposCliente,
+  useCrearTipoCliente,
+  useActualizarTipoCliente,
+  useEliminarTipoCliente
 } from '../hooks';
+import { useAuthStore } from '../../auth/hooks';
 import { TipoClienteFormModal } from '../components/TipoClienteFormModal';
-import type { TipoCliente, TipoClienteFilters, CreateTipoClienteInput, UpdateTipoClienteInput } from '../types';
+import type { TipoCliente, CreateTipoClienteInput, UpdateTipoClienteInput } from '../types';
+import PageContainer from '../../../shared/components/PageContainer';
 
 const { Title, Text } = Typography;
 
 export const TiposClientePage: React.FC = () => {
-  const [filtros, setFiltros] = useState<TipoClienteFilters>({
-    page: 1,
-    limit: 20,
-  });
+  const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [tipoClienteSeleccionado, setTipoClienteSeleccionado] = useState<TipoCliente | null>(null);
 
-  const { data: tiposCliente, isLoading } = useTiposCliente(filtros);
+  const { hasPermission } = useAuthStore();
+  const { data: tiposCliente, isLoading } = useTiposCliente({});
   const crearTipoClienteMutation = useCrearTipoCliente();
   const actualizarTipoClienteMutation = useActualizarTipoCliente();
   const eliminarTipoClienteMutation = useEliminarTipoCliente();
 
-  const handleFiltroChange = (key: keyof TipoClienteFilters, value: any) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1,
-    }));
-  };
-
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    setFiltros((prev) => ({
-      ...prev,
-      page,
-      limit: pageSize || prev.limit,
-    }));
-  };
+  // Filtrado local
+  const tiposClienteFiltrados = tiposCliente?.filter((tc) => {
+    if (!searchText) return true;
+    const search = searchText.toLowerCase();
+    return tc.nombre.toLowerCase().includes(search);
+  });
 
   const handleNuevo = () => {
     setTipoClienteSeleccionado(null);
@@ -83,6 +74,7 @@ export const TiposClientePage: React.FC = () => {
   };
 
   const handleToggleActivo = async (tipoCliente: TipoCliente) => {
+    if (!hasPermission('catalogs.tipos-cliente.update')) return;
     await actualizarTipoClienteMutation.mutateAsync({
       id: tipoCliente.id,
       data: { activo: !tipoCliente.activo },
@@ -122,6 +114,7 @@ export const TiposClientePage: React.FC = () => {
           onChange={() => handleToggleActivo(record)}
           checkedChildren="Activo"
           unCheckedChildren="Inactivo"
+          disabled={!hasPermission('catalogs.tipos-cliente.update')}
         />
       ),
     },
@@ -139,69 +132,82 @@ export const TiposClientePage: React.FC = () => {
       align: 'center',
       render: (_, record: TipoCliente) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditar(record)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleEliminar(record)}
-          />
+          {hasPermission('catalogs.tipos-cliente.update') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditar(record)}
+            />
+          )}
+          {hasPermission('catalogs.tipos-cliente.delete') && (
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleEliminar(record)}
+            />
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ marginBottom: 8 }}>Tipos de Cliente</Title>
+    <PageContainer>
+
+      {/* 🔵 Header con título + buscador + botón */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <Title level={2} style={{ marginBottom: 4 }}>Tipos de Cliente</Title>
           <Text type="secondary">Clasificación de clientes (Particular, Convenio, etc.)</Text>
-        </Col>
-        <Col>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleNuevo}>
-            Nuevo Tipo
-          </Button>
-        </Col>
-      </Row>
+        </div>
 
-      {/* Filtros */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col xs={24} md={12} lg={8}>
-            <Input
-              placeholder="Buscar por nombre..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-            />
-          </Col>
-        </Row>
-      </Card>
+        {/* Buscador + botón a la derecha */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="Buscar por nombre..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280 }}
+          />
 
-      {/* Tabla */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={tiposCliente || []}
-          rowKey="id"
-          loading={isLoading}
-          scroll={{ x: 800 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} tipos de cliente`,
-          }}
-        />
-      </Card>
+          {hasPermission('catalogs.tipos-cliente.create') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleNuevo}
+            >
+              Nuevo Tipo
+            </Button>
+          )}
+        </div>
+      </div>
 
-      {/* Modal de formulario */}
+      {/* 🔵 Tabla */}
+      <Table
+        columns={columns}
+        dataSource={tiposClienteFiltrados || []}
+        rowKey="id"
+        loading={isLoading}
+        scroll={{ x: 800 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} tipos de cliente`,
+        }}
+      />
+
+      {/* Modal */}
       <TipoClienteFormModal
         open={modalOpen}
         tipoCliente={tipoClienteSeleccionado}
@@ -212,6 +218,6 @@ export const TiposClientePage: React.FC = () => {
         onSubmit={handleSubmitForm}
         loading={crearTipoClienteMutation.isPending || actualizarTipoClienteMutation.isPending}
       />
-    </div>
+    </PageContainer>
   );
 };

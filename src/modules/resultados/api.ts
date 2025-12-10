@@ -2,6 +2,7 @@ import apiClient from '../../shared/utils/apiClient';
 import type { ApiResponse } from '../../shared/types/api.types';
 import type {
   OrdenConResultados,
+  OrdenParaResultados,
   ResultadoDetalle,
   CreateResultadoInput,
   BulkResultadosInput,
@@ -9,8 +10,28 @@ import type {
 } from './types';
 
 // ============================================
-// OBTENER ORDEN CON RESULTADOS
+// ÓRDENES PARA RESULTADOS
 // ============================================
+
+/**
+ * Obtener órdenes pendientes para ingreso de resultados (REGISTRADA + muestra recepcionada)
+ */
+export const obtenerOrdenesParaResultados = async (): Promise<OrdenParaResultados[]> => {
+  const response = await apiClient.get<ApiResponse<OrdenParaResultados[]>>(
+    '/resultados/ordenes-pendientes'
+  );
+  return response.data.data;
+};
+
+/**
+ * Obtener órdenes pendientes de aprobación (CON_RESULTADOS)
+ */
+export const obtenerOrdenesPendientesAprobacion = async (): Promise<OrdenParaResultados[]> => {
+  const response = await apiClient.get<ApiResponse<OrdenParaResultados[]>>(
+    '/resultados/ordenes-pendientes-aprobacion'
+  );
+  return response.data.data;
+};
 
 /**
  * Obtener orden completa con análisis, componentes y resultados
@@ -20,6 +41,34 @@ export const obtenerOrdenConResultados = async (
 ): Promise<OrdenConResultados> => {
   const response = await apiClient.get<ApiResponse<OrdenConResultados>>(
     `/resultados/orden/${ordenId}`
+  );
+  return response.data.data;
+};
+
+/**
+ * Guardar resultados sin aprobar
+ */
+export const guardarResultados = async (
+  ordenId: number,
+  resultados: BulkResultadosInput['resultados']
+): Promise<{ message: string; guardados: number }> => {
+  const response = await apiClient.post<ApiResponse<{ message: string; guardados: number }>>(
+    `/resultados/orden/${ordenId}/guardar`,
+    { resultados }
+  );
+  return response.data.data;
+};
+
+/**
+ * Aprobar orden (guardar resultados y cambiar estado a APROBADA)
+ */
+export const aprobarOrden = async (
+  ordenId: number,
+  resultados: BulkResultadosInput['resultados']
+): Promise<{ message: string }> => {
+  const response = await apiClient.post<ApiResponse<{ message: string }>>(
+    `/resultados/orden/${ordenId}/aprobar`,
+    { resultados }
   );
   return response.data.data;
 };

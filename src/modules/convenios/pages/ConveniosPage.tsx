@@ -11,6 +11,7 @@ import {
   Modal,
   Switch,
   Tag,
+  Avatar,
 } from 'antd';
 import {
   PlusOutlined,
@@ -21,43 +22,38 @@ import {
   MailOutlined,
   IdcardOutlined,
   DollarOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useConvenios, useCrearConvenio, useActualizarConvenio, useEliminarConvenio } from '../hooks';
+import { useAuthStore } from '../../auth/hooks';
 import { ConvenioFormModal } from '../components/ConvenioFormModal';
-import type { Convenio, ConvenioFilters, CreateConvenioInput, UpdateConvenioInput } from '../types';
+import type { Convenio, CreateConvenioInput, UpdateConvenioInput } from '../types';
+import PageContainer from '../../../shared/components/PageContainer';
 
 const { Title, Text } = Typography;
 
 export const ConveniosPage: React.FC = () => {
-  const [filtros, setFiltros] = useState<ConvenioFilters>({
-    page: 1,
-    limit: 20,
-  });
+  const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [convenioSeleccionado, setConvenioSeleccionado] = useState<Convenio | null>(null);
 
-  const { data: convenios, isLoading } = useConvenios(filtros);
+  const { hasPermission } = useAuthStore();
+  const { data: convenios, isLoading } = useConvenios({});
   const crearConvenioMutation = useCrearConvenio();
   const actualizarConvenioMutation = useActualizarConvenio();
   const eliminarConvenioMutation = useEliminarConvenio();
 
-  const handleFiltroChange = (key: keyof ConvenioFilters, value: any) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1,
-    }));
-  };
-
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    setFiltros((prev) => ({
-      ...prev,
-      page,
-      limit: pageSize || prev.limit,
-    }));
-  };
+  // Filtrado local
+  const conveniosFiltrados = convenios?.filter((convenio) => {
+    if (!searchText) return true;
+    const search = searchText.toLowerCase();
+    return (
+      convenio.nombre_empresa.toLowerCase().includes(search) ||
+      convenio.ruc.toLowerCase().includes(search)
+    );
+  });
 
   const handleNuevo = () => {
     setConvenioSeleccionado(null);
@@ -83,6 +79,7 @@ export const ConveniosPage: React.FC = () => {
   };
 
   const handleToggleActivo = async (convenio: Convenio) => {
+    if (!hasPermission('catalogs.convenios.update')) return;
     await actualizarConvenioMutation.mutateAsync({
       id: convenio.id,
       data: { activo: !convenio.activo },
@@ -103,6 +100,30 @@ export const ConveniosPage: React.FC = () => {
   };
 
   const columns: ColumnsType<Convenio> = [
+    {
+      title: 'Logo',
+      dataIndex: 'logo_url',
+      key: 'logo_url',
+      width: 80,
+      align: 'center',
+      render: (logo_url: string | null) => (
+        logo_url ? (
+          <Avatar
+            src={logo_url}
+            size={40}
+            shape="square"
+            style={{ border: '1px solid #d9d9d9' }}
+          />
+        ) : (
+          <Avatar
+            icon={<BankOutlined />}
+            size={40}
+            shape="square"
+            style={{ backgroundColor: '#1890ff' }}
+          />
+        )
+      ),
+    },
     {
       title: 'Empresa',
       dataIndex: 'nombre_empresa',
@@ -147,7 +168,7 @@ export const ConveniosPage: React.FC = () => {
       dataIndex: 'tarifario',
       key: 'tarifario',
       width: 180,
-      render: (tarifario: Convenio['tarifario']) => 
+      render: (tarifario: Convenio['tarifario']) =>
         tarifario ? (
           <Tag icon={<DollarOutlined />} color="blue">
             {tarifario.nombre}
@@ -168,6 +189,7 @@ export const ConveniosPage: React.FC = () => {
           onChange={() => handleToggleActivo(record)}
           checkedChildren="Activo"
           unCheckedChildren="Inactivo"
+          disabled={!hasPermission('catalogs.convenios.update')}
         />
       ),
     },
@@ -185,69 +207,82 @@ export const ConveniosPage: React.FC = () => {
       align: 'center',
       render: (_, record: Convenio) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditar(record)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleEliminar(record)}
-          />
+          {hasPermission('catalogs.convenios.update') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditar(record)}
+            />
+          )}
+          {hasPermission('catalogs.convenios.delete') && (
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleEliminar(record)}
+            />
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ marginBottom: 8 }}>Convenios Empresariales</Title>
+    <PageContainer>
+
+      {/* 🔵 Header con título + buscador + botón */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <Title level={2} style={{ marginBottom: 4 }}>Convenios Empresariales</Title>
           <Text type="secondary">Gestión de convenios con empresas y sus tarifarios</Text>
-        </Col>
-        <Col>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleNuevo}>
-            Nuevo Convenio
-          </Button>
-        </Col>
-      </Row>
+        </div>
 
-      {/* Filtros */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Input
-              placeholder="Buscar por empresa o RUC..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-            />
-          </Col>
-        </Row>
-      </Card>
+        {/* Buscador + botón */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="Buscar por empresa o RUC..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 300 }}
+          />
 
-      {/* Tabla */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={convenios || []}
-          rowKey="id"
-          loading={isLoading}
-          scroll={{ x: 1200 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} convenios`,
-          }}
-        />
-      </Card>
+          {hasPermission('catalogs.convenios.create') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleNuevo}
+            >
+              Nuevo Convenio
+            </Button>
+          )}
+        </div>
+      </div>
 
-      {/* Modal de formulario */}
+      {/* 🔵 Tabla */}
+      <Table
+        columns={columns}
+        dataSource={conveniosFiltrados || []}
+        rowKey="id"
+        loading={isLoading}
+        scroll={{ x: 1200 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} convenios`,
+        }}
+      />
+
+      {/* Modal */}
       <ConvenioFormModal
         open={modalOpen}
         convenio={convenioSeleccionado}
@@ -256,8 +291,12 @@ export const ConveniosPage: React.FC = () => {
           setConvenioSeleccionado(null);
         }}
         onSubmit={handleSubmitForm}
-        loading={crearConvenioMutation.isPending || actualizarConvenioMutation.isPending}
+        loading={
+          crearConvenioMutation.isPending ||
+          actualizarConvenioMutation.isPending
+        }
       />
-    </div>
+    </PageContainer>
   );
+
 };

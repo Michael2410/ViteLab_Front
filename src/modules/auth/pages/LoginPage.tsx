@@ -1,7 +1,8 @@
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Form, Input, Button, Card, message, Typography } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, message, Typography, Checkbox, theme } from 'antd';
+import { UserOutlined, LockOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { authApi } from '../api';
 import { useAuthStore } from '../hooks';
 import type { LoginRequest } from '../types';
@@ -10,102 +11,181 @@ const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setAuth, isAuthenticated } = useAuthStore();
+  const { setAuth, clearAuth, isAuthenticated } = useAuthStore();
   const [form] = Form.useForm();
+  const { token } = theme.useToken();
 
-  const loginMutation = useMutation({
-    mutationFn: authApi.login,
-    onSuccess: (response) => {
-      if (response.success) {
-        const { user, accessToken, refreshToken } = response.data;
-        setAuth(user, accessToken, refreshToken);
-        message.success(`¡Bienvenido ${user.nombres}!`);
-        navigate('/dashboard');
-      } else {
-        message.error('Respuesta incorrecta del servidor');
-      }
-    },
-    onError: (error: any) => {
-      message.error(error.response?.data?.message || 'Error al iniciar sesión');
-    },
-  });
+  useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken && isAuthenticated) clearAuth();
+  }, [isAuthenticated]);
 
-  const handleSubmit = (values: LoginRequest) => {
-    loginMutation.mutate(values);
-  };
+const loginMutation = useMutation({
+  mutationFn: authApi.login,
 
-  // Si ya está autenticado, redirigir al dashboard
-  if (isAuthenticated) {
+  onSuccess: (response) => {
+    if (response.success) {
+      const { user, accessToken, refreshToken } = response.data;
+      setAuth(user, accessToken, refreshToken);
+      message.success(`¡Bienvenido, ${user.nombres}!`);
+      navigate("/dashboard");
+    } else {
+      // Cuando el backend responde 200 pero success=false
+      message.error(response.message || "Credenciales incorrectas");
+    }
+  },
+
+  onError: (err: any) => {
+    const backendMessage =
+      err.response?.data?.message ||
+      err.response?.data?.error ||
+      "Usuario o contraseña incorrectos";
+
+    message.error(backendMessage);
+  },
+});
+
+
+
+  const handleSubmit = (values: LoginRequest) => loginMutation.mutate(values);
+
+  if (isAuthenticated && localStorage.getItem('accessToken')) {
     return <Navigate to="/dashboard" replace />;
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+
+        /* Fondo más profesional, premium tipo "hospital moderno" */
+        background: `
+          radial-gradient(circle at 30% 20%, rgba(0,150,255,0.18), transparent 50%),
+          radial-gradient(circle at 70% 80%, rgba(0,220,180,0.15), transparent 50%),
+          linear-gradient(145deg, #0f172a 0%, #1e293b 100%)
+        `,
+      }}
+    >
       <Card
+        bordered={false}
         style={{
-          width: 400,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-          borderRadius: 8,
+          width: '100%',
+          maxWidth: 430,
+          padding: 0,
+          borderRadius: 20,
+          background: 'rgba(255,255,255,0.94)',
+          backdropFilter: 'blur(8px)',
+
+          /* Sombra premium tipo "material elevation" */
+          boxShadow: '0 18px 45px rgba(0,0,0,0.25)',
         }}
+        bodyStyle={{ padding: 42 }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>
+        {/* ENCABEZADO */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div
+            style={{
+              width: 70,
+              height: 70,
+              margin: '0 auto 18px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${token.colorPrimary} 0%, #4ea4ff 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(0,120,255,0.25)',
+            }}
+          >
+            <ExperimentOutlined style={{ fontSize: 36, color: 'white' }} />
+          </div>
+
+          <Title level={2} style={{ margin: 0, fontWeight: 700 }}>
             ViteLab LIMS
           </Title>
-          <Text type="secondary">Sistema de Laboratorio Clínico</Text>
+
+          <Text type="secondary" style={{ fontSize: 15 }}>
+            Sistema de Gestión de Laboratorio Clínico
+          </Text>
         </div>
 
+        {/* FORMULARIO */}
         <Form
           form={form}
           name="login"
-          onFinish={handleSubmit}
           layout="vertical"
+          onFinish={handleSubmit}
           size="large"
+          initialValues={{ remember: true }}
         >
           <Form.Item
+            label={<Text strong>Usuario</Text>}
             name="username"
-            rules={[{ required: true, message: 'Ingrese su usuario' }]}
+            rules={[{ required: true, message: 'Ingrese su usuario o correo' }]}
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="Usuario"
+              placeholder="Usuario o correo"
+              style={{ borderRadius: 10, padding: '10px 12px' }}
             />
           </Form.Item>
 
           <Form.Item
+            label={<Text strong>Contraseña</Text>}
             name="password"
             rules={[{ required: true, message: 'Ingrese su contraseña' }]}
           >
             <Input.Password
               prefix={<LockOutlined />}
               placeholder="Contraseña"
+              style={{ borderRadius: 10, padding: '10px 12px' }}
             />
           </Form.Item>
 
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              block
-              loading={loginMutation.isPending}
-            >
-              Iniciar Sesión
-            </Button>
-          </Form.Item>
-        </Form>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: 12,
+            }}
+          >
+          </div>
 
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Usuario de prueba: <strong>admin</strong> / Contraseña: <strong>admin123</strong>
-          </Text>
-        </div>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loginMutation.isPending}
+            block
+            style={{
+              height: 50,
+              fontSize: 16,
+              borderRadius: 10,
+              fontWeight: 600,
+              letterSpacing: 0.3,
+              marginTop: 10,
+              boxShadow: `0 8px 20px ${token.colorPrimary}40`,
+            }}
+          >
+            Iniciar Sesión
+          </Button>
+        </Form>
       </Card>
+
+      {/* FOOTER */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          color: 'rgba(255,255,255,0.45)',
+          fontSize: 13,
+          letterSpacing: 0.4,
+        }}
+      >
+        © {new Date().getFullYear()} ViteLab Systems — Plataforma LIMS Profesional
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import {
+  buscarPacientePorDni,
   consultarDni,
   crearOrden,
   obtenerOrdenPorId,
@@ -8,12 +9,14 @@ import {
   actualizarOrden,
   actualizarEstadoOrden,
   eliminarOrden,
+  recepcionarMuestra,
   obtenerSedesActivas,
   obtenerTiposClienteActivos,
   obtenerConveniosActivos,
   obtenerAreasActivas,
   obtenerAnalisisPorArea,
   buscarAnalisis,
+  obtenerMedicos,
 } from './api';
 import type {
   UpdateOrdenInput,
@@ -42,11 +45,24 @@ export const catalogosKeys = {
 };
 
 // ============================================
+// HOOKS - PACIENTES
+// ============================================
+
+/**
+ * Hook para buscar paciente en BD local por DNI
+ */
+export const useBuscarPacientePorDni = () => {
+  return useMutation({
+    mutationFn: buscarPacientePorDni,
+  });
+};
+
+// ============================================
 // HOOKS - DNI
 // ============================================
 
 /**
- * Hook para consultar DNI
+ * Hook para consultar DNI en API externa
  */
 export const useConsultarDni = () => {
   return useMutation({
@@ -158,6 +174,30 @@ export const useEliminarOrden = () => {
   });
 };
 
+/**
+ * Hook para recepcionar muestra
+ */
+export const useRecepcionarMuestra = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => {
+      console.log('🟡 [HOOK] mutationFn llamada con id:', id);
+      return recepcionarMuestra(id);
+    },
+    onSuccess: (data) => {
+      console.log('✅ [HOOK] onSuccess - datos:', data);
+      // Invalidar todas las queries de órdenes para forzar refresh
+      queryClient.invalidateQueries({ queryKey: ['ordenes'] });
+      message.success('Muestra recepcionada exitosamente');
+    },
+    onError: (error: any) => {
+      console.error('❌ [HOOK] onError:', error);
+      message.error(error.response?.data?.message || 'Error al recepcionar muestra');
+    },
+  });
+};
+
 // ============================================
 // HOOKS - CATÁLOGOS
 // ============================================
@@ -226,5 +266,57 @@ export const useBuscarAnalisis = (termino: string, enabled = false) => {
     queryFn: () => buscarAnalisis(termino),
     enabled: enabled && termino.trim().length >= 2,
     staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * Hook para obtener lista de médicos únicos
+ */
+export const useMedicos = () => {
+  return useQuery({
+    queryKey: ['medicos'],
+    queryFn: obtenerMedicos,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// ============================================
+// HOOKS - ALERTAS
+// ============================================
+
+import { obtenerAlertasCounts, marcarOrdenComoImpresa } from './api';
+
+export const alertasKeys = {
+  counts: ['alertas', 'counts'] as const,
+};
+
+/**
+ * Hook para obtener conteo de alertas
+ */
+export const useAlertasCounts = () => {
+  return useQuery({
+    queryKey: alertasKeys.counts,
+    queryFn: obtenerAlertasCounts,
+    refetchInterval: 30000, // Refrescar cada 30 segundos
+    staleTime: 10000, // Considerar datos frescos por 10 segundos
+  });
+};
+
+/**
+ * Hook para marcar orden como impresa
+ */
+export const useMarcarOrdenComoImpresa = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: marcarOrdenComoImpresa,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
+      queryClient.invalidateQueries({ queryKey: ordenesKeys.lists() });
+      message.success('Orden marcada como impresa');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Error al marcar orden como impresa');
+    },
   });
 };

@@ -14,7 +14,7 @@ export const obtenerMetodos = async (filtros?: MetodoFilters): Promise<Metodo[]>
 
 // Obtener solo métodos activos
 export const obtenerMetodosActivos = async (): Promise<Metodo[]> => {
-  const response = await apiClient.get<ApiResponse<Metodo[]>>(`${BASE_URL}/activos`);
+  const response = await apiClient.get<ApiResponse<Metodo[]>>(`${BASE_URL}/active`);
   return response.data.data;
 };
 

@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import {
+  obtenerOrdenesParaResultados,
+  obtenerOrdenesPendientesAprobacion,
   obtenerOrdenConResultados,
+  guardarResultados,
+  aprobarOrden,
   crearResultado,
   crearResultadosBulk,
   obtenerResultadoPorId,
@@ -9,7 +13,7 @@ import {
   actualizarResultado,
   eliminarResultado,
 } from './api';
-import type { UpdateResultadoInput } from './types';
+import type { UpdateResultadoInput, BulkResultadosInput } from './types';
 
 // ============================================
 // QUERY KEYS
@@ -17,6 +21,8 @@ import type { UpdateResultadoInput } from './types';
 
 export const resultadosKeys = {
   all: ['resultados'] as const,
+  ordenesPendientes: ['resultados', 'ordenes-pendientes'] as const,
+  ordenesPendientesAprobacion: ['resultados', 'ordenes-pendientes-aprobacion'] as const,
   ordenConResultados: (ordenId: number) => ['resultados', 'orden', ordenId] as const,
   lists: () => [...resultadosKeys.all, 'list'] as const,
   list: (filters?: any) => [...resultadosKeys.lists(), filters] as const,
@@ -25,8 +31,28 @@ export const resultadosKeys = {
 };
 
 // ============================================
-// HOOKS - ORDEN CON RESULTADOS
+// HOOKS - ÓRDENES PARA RESULTADOS
 // ============================================
+
+/**
+ * Hook para obtener órdenes pendientes para ingreso de resultados (REGISTRADA + muestra recepcionada)
+ */
+export const useOrdenesParaResultados = () => {
+  return useQuery({
+    queryKey: resultadosKeys.ordenesPendientes,
+    queryFn: obtenerOrdenesParaResultados,
+  });
+};
+
+/**
+ * Hook para obtener órdenes pendientes de aprobación (CON_RESULTADOS)
+ */
+export const useOrdenesPendientesAprobacion = () => {
+  return useQuery({
+    queryKey: resultadosKeys.ordenesPendientesAprobacion,
+    queryFn: obtenerOrdenesPendientesAprobacion,
+  });
+};
 
 /**
  * Hook para obtener orden con análisis y resultados
@@ -36,6 +62,52 @@ export const useOrdenConResultados = (ordenId: number, enabled = true) => {
     queryKey: resultadosKeys.ordenConResultados(ordenId),
     queryFn: () => obtenerOrdenConResultados(ordenId),
     enabled: enabled && ordenId > 0,
+  });
+};
+
+/**
+ * Hook para guardar resultados sin aprobar
+ */
+export const useGuardarResultados = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ordenId, resultados }: { ordenId: number; resultados: BulkResultadosInput['resultados'] }) =>
+      guardarResultados(ordenId, resultados),
+    onSuccess: (_, variables) => {
+      // Invalidar la orden específica
+      queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenConResultados(variables.ordenId) });
+      // Invalidar lista de órdenes pendientes para que se actualice la tabla
+      queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientes });
+      // Invalidar órdenes pendientes de aprobación
+      queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientesAprobacion });
+      message.success('Resultados guardados exitosamente');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Error al guardar resultados');
+    },
+  });
+};
+
+/**
+ * Hook para aprobar orden (guardar y cambiar estado)
+ */
+export const useAprobarOrden = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ordenId, resultados }: { ordenId: number; resultados: BulkResultadosInput['resultados'] }) =>
+      aprobarOrden(ordenId, resultados),
+    onSuccess: () => {
+      // Invalidar todas las listas relacionadas
+      queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientes });
+      queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientesAprobacion });
+      queryClient.invalidateQueries({ queryKey: ['ordenes'] });
+      message.success('Orden aprobada exitosamente');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Error al aprobar orden');
+    },
   });
 };
 

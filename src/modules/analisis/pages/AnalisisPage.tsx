@@ -25,47 +25,41 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
-import { 
-  useAnalisis, 
-  useCrearAnalisis, 
-  useActualizarAnalisis, 
-  useEliminarAnalisis 
+import {
+  useAnalisis,
+  useCrearAnalisis,
+  useActualizarAnalisis,
+  useEliminarAnalisis
 } from '../hooks';
+import { useAuthStore } from '../../auth/hooks';
 import { obtenerAnalisisPorId } from '../api';
 import { AnalisisFormModal } from '../components/AnalisisFormModal';
-import type { Analisis, AnalisisFilters, CreateAnalisisInput, UpdateAnalisisInput } from '../types';
+import type { Analisis, CreateAnalisisInput, UpdateAnalisisInput } from '../types';
+import PageContainer from '../../../shared/components/PageContainer';
 
 const { Title, Text } = Typography;
 
 export const AnalisisPage: React.FC = () => {
-  const [filtros, setFiltros] = useState<AnalisisFilters>({
-    page: 1,
-    limit: 20,
-  });
+  const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [analisisSeleccionado, setAnalisisSeleccionado] = useState<Analisis | null>(null);
   const navigate = useNavigate();
 
-  const { data: analisis, isLoading } = useAnalisis(filtros);
+  const { hasPermission } = useAuthStore();
+  const { data: analisis, isLoading } = useAnalisis({});
   const crearAnalisisMutation = useCrearAnalisis();
   const actualizarAnalisisMutation = useActualizarAnalisis();
   const eliminarAnalisisMutation = useEliminarAnalisis();
 
-  const handleFiltroChange = (key: keyof AnalisisFilters, value: any) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1,
-    }));
-  };
-
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    setFiltros((prev) => ({
-      ...prev,
-      page,
-      limit: pageSize || prev.limit,
-    }));
-  };
+  // Filtrado local
+  const analisisFiltrados = analisis?.filter((item) => {
+    if (!searchText) return true;
+    const search = searchText.toLowerCase();
+    return (
+      item.nombre.toLowerCase().includes(search) ||
+      (item.sinonimia && item.sinonimia.some((s) => s.toLowerCase().includes(search)))
+    );
+  });
 
   const handleNuevo = () => {
     setAnalisisSeleccionado(null);
@@ -103,6 +97,7 @@ export const AnalisisPage: React.FC = () => {
   };
 
   const handleToggleActivo = async (analisisItem: Analisis) => {
+    if (!hasPermission('catalogs.analysis.update')) return;
     await actualizarAnalisisMutation.mutateAsync({
       id: analisisItem.id,
       data: { activo: !analisisItem.activo },
@@ -179,6 +174,7 @@ export const AnalisisPage: React.FC = () => {
           onChange={() => handleToggleActivo(record)}
           checkedChildren="Activo"
           unCheckedChildren="Inactivo"
+          disabled={!hasPermission('catalogs.analysis.update')}
         />
       ),
     },
@@ -196,69 +192,82 @@ export const AnalisisPage: React.FC = () => {
       align: 'center',
       render: (_, record: Analisis) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditar(record)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleEliminar(record)}
-          />
+          {hasPermission('catalogs.analysis.update') && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditar(record)}
+            />
+          )}
+          {hasPermission('catalogs.analysis.delete') && (
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleEliminar(record)}
+            />
+          )}
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <Title level={2}>Análisis Clínicos</Title>
-            <Text type="secondary">Gestión de análisis y sus componentes</Text>
-          </div>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleNuevo}>
-            Nuevo Análisis
-          </Button>
+    <PageContainer>
+
+      {/* 🔵 Header con título + buscador + botón */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <Title level={2} style={{ marginBottom: 4 }}>Análisis Clínicos</Title>
+          <Text type="secondary">Gestión de análisis y sus componentes</Text>
+        </div>
+
+        {/* Buscador + botón */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Input
+            placeholder="Buscar por nombre o sinónimos..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 300 }}
+          />
+
+          {hasPermission('catalogs.analysis.create') && (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={handleNuevo}
+            >
+              Nuevo Análisis
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Filtros */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Input
-              placeholder="Buscar por nombre o sinónimos..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={filtros.search}
-              onChange={(e) => handleFiltroChange('search', e.target.value)}
-            />
-          </Col>
-        </Row>
-      </Card>
+      {/* 🔵 Tabla */}
+      <Table
+        columns={columns}
+        dataSource={analisisFiltrados || []}
+        rowKey="id"
+        loading={isLoading}
+        scroll={{ x: 1400 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} análisis`,
+        }}
+      />
 
-      {/* Tabla */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={analisis || []}
-          rowKey="id"
-          loading={isLoading}
-          scroll={{ x: 1400 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} análisis`,
-          }}
-        />
-      </Card>
-
-      {/* Modal de formulario */}
+      {/* Modal */}
       <AnalisisFormModal
         open={modalOpen}
         analisis={analisisSeleccionado}
@@ -267,8 +276,12 @@ export const AnalisisPage: React.FC = () => {
           setAnalisisSeleccionado(null);
         }}
         onSubmit={handleSubmitForm}
-        loading={crearAnalisisMutation.isPending || actualizarAnalisisMutation.isPending}
+        loading={
+          crearAnalisisMutation.isPending ||
+          actualizarAnalisisMutation.isPending
+        }
       />
-    </div>
+    </PageContainer>
   );
+
 };

@@ -4,13 +4,22 @@
 
 export const EstadoOrden = {
   REGISTRADA: 'REGISTRADA',
+  MUESTRA_RECIBIDA: 'MUESTRA_RECIBIDA',
   CON_RESULTADOS: 'CON_RESULTADOS',
   APROBADA: 'APROBADA',
+  IMPRESO: 'IMPRESO',
 } as const;
 
 export type EstadoOrden = typeof EstadoOrden[keyof typeof EstadoOrden];
 
-export type Sexo = 'M' | 'F';
+export const TipoPaciente = {
+  PARTICULAR: 'PARTICULAR',
+  CONVENIO: 'CONVENIO',
+} as const;
+
+export type TipoPaciente = typeof TipoPaciente[keyof typeof TipoPaciente];
+
+export type Genero = 'M' | 'F';
 
 // ============================================
 // INTERFACES
@@ -20,9 +29,11 @@ export interface Paciente {
   id: number;
   dni: string;
   nombres: string;
-  apellidos: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  nombre_completo: string;
   fecha_nacimiento: string;
-  sexo: Sexo;
+  genero: Genero;
   telefono?: string | null;
   email?: string | null;
   direccion?: string | null;
@@ -63,9 +74,13 @@ export interface TipoCliente {
 
 export interface Convenio {
   id: number;
-  nombre: string;
-  tarifario_id: number;
-  tarifario_nombre?: string;
+  nombre_empresa: string;
+  ruc?: string;
+  tarifario_id?: number;
+  tarifario?: {
+    id: number;
+    nombre: string;
+  };
   activo: boolean;
 }
 
@@ -76,24 +91,42 @@ export interface Area {
   activo: boolean;
 }
 
+export interface MuestraSimple {
+  id: number;
+  nombre: string;
+}
+
+export interface ComponenteConMuestras {
+  id: number;
+  nombre: string;
+  unidad_medida?: string;
+  valores_referenciales?: string[];
+  muestras: MuestraSimple[];
+}
+
 export interface Analisis {
   id: number;
-  codigo: string;
   nombre: string;
-  area_id: number;
-  area_nombre?: string;
-  metodo_id: number;
-  metodo_nombre?: string;
-  unidad_medida?: string;
-  tiempo_entrega?: string;
-  precio_base: number;
+  descripcion?: string;
+  sinonimia?: string[];
+  componentes_ids?: number[];
+  componentes?: ComponenteConMuestras[];
+  activo: boolean;
+}
+
+export interface Muestra {
+  id: number;
+  nombre: string;
+  descripcion?: string;
   activo: boolean;
 }
 
 export interface OrdenAnalisis {
   id: number;
-  orden_id: number;
+  orden_id?: number;
   analisis_id: number;
+  nombre?: string;
+  muestras_ids?: number[];
   precio: number;
   analisis?: Analisis;
 }
@@ -106,12 +139,17 @@ export interface Orden {
   tipo_cliente_id: number;
   convenio_id?: number | null;
   estado: EstadoOrden;
+  muestra_recepcionada: boolean;
+  tipo_paciente?: TipoPaciente | null;
   fecha_registro: string;
+  fecha_recepcion?: string | null;
   fecha_aprobacion?: string | null;
   usuario_registro_id: number;
+  usuario_recepcion_id?: number | null;
   usuario_aprobacion_id?: number | null;
   total?: number;
   nota?: string | null;
+  medico?: string | null;
   created_at: string;
   updated_at: string;
   // Campos adicionales que vienen del backend
@@ -121,6 +159,7 @@ export interface Orden {
   sede_nombre?: string;
   tipo_cliente_nombre?: string;
   convenio_nombre?: string;
+  usuario_recepcion_nombre?: string | null;
 }
 
 export interface OrdenDetalle extends Orden {
@@ -130,18 +169,23 @@ export interface OrdenDetalle extends Orden {
   convenio?: Convenio | null;
   usuario_registro?: {
     id: number;
-    nombre: string;
-    email: string;
+    nombres: string;
+    apellidos: string;
   };
+  usuario_recepcion?: {
+    id: number;
+    nombres: string;
+    apellidos: string;
+  } | null;
   usuario_resultados?: {
     id: number;
-    nombre: string;
-    email: string;
+    nombres: string;
+    apellidos: string;
   } | null;
   usuario_aprobacion?: {
     id: number;
-    nombre: string;
-    email: string;
+    nombres: string;
+    apellidos: string;
   } | null;
   analisis: OrdenAnalisis[];
 }
@@ -153,12 +197,18 @@ export interface OrdenDetalle extends Orden {
 export interface PacienteFormInput {
   dni: string;
   nombres: string;
-  apellidos: string;
+  apellido_paterno: string;
+  apellido_materno: string;
   fecha_nacimiento: string;
-  sexo: Sexo;
+  genero: Genero;
   telefono?: string;
   email?: string;
   direccion?: string;
+}
+
+export interface AnalisisSeleccionado {
+  id: number;
+  muestras_ids?: number[];
 }
 
 export interface CreateOrdenInput {
@@ -166,15 +216,16 @@ export interface CreateOrdenInput {
   sede_id: number;
   tipo_cliente_id: number;
   convenio_id?: number;
-  analisis_ids: number[];
-  observaciones?: string;
+  analisis: AnalisisSeleccionado[];
+  nota?: string;
+  medico?: string;
 }
 
 export interface UpdateOrdenInput {
   sede_id?: number;
   tipo_cliente_id?: number;
   convenio_id?: number;
-  observaciones?: string;
+  nota?: string;
 }
 
 export interface UpdateEstadoOrdenInput {
@@ -191,7 +242,7 @@ export interface OrdenFilters {
   fecha_desde?: string;
   fecha_hasta?: string;
   paciente_dni?: string;
-  numero_orden?: string;
+  paciente_nombre?: string;
   page?: number;
   limit?: number;
 }
@@ -202,17 +253,38 @@ export interface OrdenFilters {
 
 export const ESTADO_ORDEN_COLORS: Record<EstadoOrden, string> = {
   [EstadoOrden.REGISTRADA]: 'blue',
+  [EstadoOrden.MUESTRA_RECIBIDA]: 'cyan',
   [EstadoOrden.CON_RESULTADOS]: 'orange',
   [EstadoOrden.APROBADA]: 'green',
+  [EstadoOrden.IMPRESO]: 'default',
 };
 
 export const ESTADO_ORDEN_LABELS: Record<EstadoOrden, string> = {
   [EstadoOrden.REGISTRADA]: 'Registrada',
+  [EstadoOrden.MUESTRA_RECIBIDA]: 'Muestra Recibida',
   [EstadoOrden.CON_RESULTADOS]: 'Con Resultados',
   [EstadoOrden.APROBADA]: 'Aprobada',
+  [EstadoOrden.IMPRESO]: 'Impreso',
 };
 
-export const SEXO_LABELS: Record<Sexo, string> = {
+export const SEXO_LABELS: Record<Genero, string> = {
   M: 'Masculino',
   F: 'Femenino',
 };
+
+// ============================================
+// ALERTAS
+// ============================================
+
+export interface OrdenAprobadaDetalle {
+  id: number;
+  numero_atencion: number;
+  paciente_nombre: string;
+  fecha_aprobacion: string;
+}
+
+export interface AlertasCounts {
+  ordenesAprobadas: number;
+  ordenesPendientesAprobar: number;
+  ordenesAprobadasDetalle: OrdenAprobadaDetalle[];
+}

@@ -59,18 +59,6 @@ export const AreaFormModal: React.FC<AreaFormModalProps> = ({
     >
       <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
         <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Código"
-              name="codigo"
-              rules={[
-                { required: true, message: 'El código es obligatorio' },
-                { max: 10, message: 'El código no puede exceder 10 caracteres' },
-              ]}
-            >
-              <Input placeholder="Ej: HEMA" maxLength={10} />
-            </Form.Item>
-          </Col>
 
           <Col span={12}>
             <Form.Item

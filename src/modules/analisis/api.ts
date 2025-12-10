@@ -14,7 +14,7 @@ export const obtenerAnalisis = async (filtros?: AnalisisFilters): Promise<Analis
 
 // Obtener solo análisis activos
 export const obtenerAnalisisActivos = async (): Promise<Analisis[]> => {
-  const response = await apiClient.get<ApiResponse<Analisis[]>>(`${BASE_URL}/activos`);
+  const response = await apiClient.get<ApiResponse<Analisis[]>>(`${BASE_URL}/active`);
   return response.data.data;
 };
 

@@ -14,7 +14,7 @@ export const obtenerSedes = async (filtros?: SedeFilters): Promise<Sede[]> => {
 
 // Obtener solo sedes activas
 export const obtenerSedesActivas = async (): Promise<Sede[]> => {
-  const response = await apiClient.get<ApiResponse<Sede[]>>(`${BASE_URL}/activas`);
+  const response = await apiClient.get<ApiResponse<Sede[]>>(`${BASE_URL}/active`);
   return response.data.data;
 };
 

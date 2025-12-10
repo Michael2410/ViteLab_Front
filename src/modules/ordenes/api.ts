@@ -2,6 +2,7 @@ import apiClient from '../../shared/utils/apiClient';
 import type { ApiResponse, PaginatedResponse } from '../../shared/types/api.types';
 import type {
   ApiDniResponse,
+  Paciente,
   Orden,
   OrdenDetalle,
   CreateOrdenInput,
@@ -16,11 +17,33 @@ import type {
 } from './types';
 
 // ============================================
+// PACIENTES
+// ============================================
+
+/**
+ * Buscar paciente por DNI en la base de datos local
+ */
+export const buscarPacientePorDni = async (dni: string): Promise<Paciente | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<Paciente>>(
+      `/ordenes/paciente/${dni}`
+    );
+    return response.data.data;
+  } catch (error: any) {
+    // Si es 404, retornar null (paciente no encontrado)
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+// ============================================
 // DNI API
 // ============================================
 
 /**
- * Consultar datos de una persona por DNI
+ * Consultar datos de una persona por DNI (API externa RENIEC)
  */
 export const consultarDni = async (dni: string): Promise<ApiDniResponse> => {
   const response = await apiClient.get<ApiResponse<any>>(
@@ -98,6 +121,18 @@ export const eliminarOrden = async (id: number): Promise<void> => {
   await apiClient.delete(`/ordenes/${id}`);
 };
 
+/**
+ * Recepcionar muestra de una orden
+ */
+export const recepcionarMuestra = async (id: number): Promise<Orden> => {
+  console.log('🟠 [API] recepcionarMuestra llamada con id:', id);
+  const response = await apiClient.patch<ApiResponse<Orden>>(
+    `/ordenes/${id}/recepcionar-muestra`
+  );
+  console.log('🟠 [API] Respuesta recibida:', response.data);
+  return response.data.data;
+};
+
 // ============================================
 // CATÁLOGOS (para formularios)
 // ============================================
@@ -153,5 +188,55 @@ export const buscarAnalisis = async (termino: string): Promise<Analisis[]> => {
   const response = await apiClient.get<ApiResponse<Analisis[]>>('/analisis/search', {
     params: { q: termino },
   });
+  return response.data.data;
+};
+
+/**
+ * Obtener precios de análisis según tarifario
+ */
+export interface PrecioAnalisis {
+  analisis_id: number;
+  nombre: string;
+  precio: number;
+}
+
+export const obtenerPreciosAnalisis = async (
+  analisisIds: number[],
+  convenioId?: number
+): Promise<PrecioAnalisis[]> => {
+  const response = await apiClient.post<ApiResponse<PrecioAnalisis[]>>('/ordenes/precios', {
+    analisis_ids: analisisIds,
+    convenio_id: convenioId,
+  });
+  return response.data.data;
+};
+
+/**
+ * Obtener lista de médicos únicos
+ */
+export const obtenerMedicos = async (): Promise<string[]> => {
+  const response = await apiClient.get<ApiResponse<string[]>>('/ordenes/medicos');
+  return response.data.data;
+};
+
+// ============================================
+// ALERTAS
+// ============================================
+
+import type { AlertasCounts } from './types';
+
+/**
+ * Obtener conteo de alertas (órdenes aprobadas y pendientes de aprobar)
+ */
+export const obtenerAlertasCounts = async (): Promise<AlertasCounts> => {
+  const response = await apiClient.get<ApiResponse<AlertasCounts>>('/ordenes/alertas');
+  return response.data.data;
+};
+
+/**
+ * Marcar orden como impresa
+ */
+export const marcarOrdenComoImpresa = async (id: number): Promise<Orden> => {
+  const response = await apiClient.patch<ApiResponse<Orden>>(`/ordenes/${id}/imprimir`);
   return response.data.data;
 };
