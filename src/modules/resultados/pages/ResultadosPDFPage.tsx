@@ -1,32 +1,31 @@
-import { useRef, useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spin, Typography, Space, Result } from 'antd';
-import { PrinterOutlined, ArrowLeftOutlined, SettingOutlined, LockOutlined } from '@ant-design/icons';
-import { useReactToPrint } from 'react-to-print';
+/**
+ * Página especial para generación de PDF via Puppeteer
+ * Esta página acepta el token via query parameter para autenticación
+ * Solo debe ser usada por el backend para generar PDFs
+ * 
+ * IMPORTANTE: Usa la misma estructura que ResultadosVistaPreviaPage
+ */
+
+import { useEffect, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Spin, Result } from 'antd';
 import dayjs from 'dayjs';
-import { useOrdenConResultados } from '../hooks';
-import { useAuthStore } from '../../auth/hooks';
-import { useMarcarOrdenComoImpresa } from '../../ordenes/hooks';
 import { useConfiguracion } from '../../sistema/hooks';
-import { PrintPreferencesModal, defaultPrintPreferences } from '../components';
+import type { OrdenConResultados, ComponenteConResultado } from '../types';
+import { defaultPrintPreferences } from '../components';
 import type { PrintPreferences } from '../components';
-import type { ComponenteConResultado } from '../types';
 import './ResultadosVistaPreviaPage.css';
 
-const { Title } = Typography;
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const getImageUrl = (path: string | null | undefined) => {
   if (!path) return null;
-  // Si ya es una URL completa, devolverla tal cual
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
-  // Si es solo un path, construir la URL completa
   return `${API_URL.replace('/api', '')}${path}`;
 };
 
-// Calcular edad a partir de fecha de nacimiento
 const calcularEdad = (fechaNacimiento: string | null | undefined): string => {
   if (!fechaNacimiento) return '-';
   const hoy = dayjs();
@@ -35,66 +34,60 @@ const calcularEdad = (fechaNacimiento: string | null | undefined): string => {
   return `${años} a.`;
 };
 
-export const ResultadosVistaPreviaPage: React.FC = () => {
+export const ResultadosPDFPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
   const ordenId = parseInt(id || '0', 10);
-  const printRef = useRef<HTMLDivElement>(null);
-  const { hasPermission } = useAuthStore();
-
-  // Estado para preferencias de impresión
-  const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
-  const [printPreferences, setPrintPreferences] = useState<PrintPreferences>(() => {
-    const saved = localStorage.getItem('printPreferences');
-    return saved ? JSON.parse(saved) : defaultPrintPreferences;
-  });
-
-  const { data: orden, isLoading, error } = useOrdenConResultados(ordenId, ordenId > 0 && hasPermission('results.read'));
+  
+  const [orden, setOrden] = useState<OrdenConResultados | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const { data: configuracion } = useConfiguracion();
-  const marcarImpresaMutation = useMarcarOrdenComoImpresa();
 
-  // Guardar preferencias en localStorage cuando cambien
+  // Cargar preferencias de impresión (usar las por defecto para PDF)
+  const printPreferences: PrintPreferences = defaultPrintPreferences;
+
+  // Cargar datos directamente con el token
   useEffect(() => {
-    localStorage.setItem('printPreferences', JSON.stringify(printPreferences));
-  }, [printPreferences]);
-
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Resultados_${orden?.numero_atencion || 'orden'}`,
-    onAfterPrint: async () => {
-      // Marcar la orden como impresa después de imprimir
-      if (ordenId > 0 && orden?.estado === 'APROBADA') {
-        try {
-          await marcarImpresaMutation.mutateAsync(ordenId);
-        } catch (err) {
-          console.error('Error al marcar orden como impresa:', err);
-        }
+    const fetchOrden = async () => {
+      if (!token || !ordenId) {
+        setError('Token o ID de orden no proporcionado');
+        setLoading(false);
+        return;
       }
-    },
-  });
 
-  const handleSavePreferences = (prefs: PrintPreferences) => {
-    setPrintPreferences(prefs);
-    setPreferencesModalOpen(false);
-  };
+      try {
+        const response = await fetch(`${API_URL}/resultados/orden/${ordenId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-  if (!hasPermission('results.read')) {
-    return (
-      <Result
-        status="403"
-        icon={<LockOutlined />}
-        title="Acceso Denegado"
-        subTitle="No tienes permisos para ver la vista previa de resultados."
-        extra={
-          <Button type="primary" onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>
-            Volver
-          </Button>
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
-      />
-    );
-  }
 
-  if (isLoading) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setOrden(result.data);
+        } else {
+          throw new Error(result.message || 'Error al cargar la orden');
+        }
+      } catch (err: any) {
+        console.error('Error fetching orden:', err);
+        setError(err.message || 'Error al cargar los resultados');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrden();
+  }, [token, ordenId]);
+
+  if (loading) {
     return (
       <div className="loading-container">
         <Spin size="large" tip="Cargando resultados..." />
@@ -104,10 +97,11 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
 
   if (error || !orden) {
     return (
-      <div className="error-container">
-        <Title level={4}>Error al cargar los resultados</Title>
-        <Button onClick={() => navigate(-1)}>Volver</Button>
-      </div>
+      <Result
+        status="error"
+        title="Error"
+        subTitle={error || 'No se pudieron cargar los resultados'}
+      />
     );
   }
 
@@ -134,7 +128,7 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
     return parts.join(' / ');
   };
 
-  // Componente Header que se repetirá en cada página
+  // Componente Header que se repetirá en cada página (igual que ResultadosVistaPreviaPage)
   const HeaderContent = () => (
     <>
       {/* Encabezado con logos */}
@@ -211,7 +205,7 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
     </>
   );
 
-  // Componente Footer que se repetirá en cada página
+  // Componente Footer que se repetirá en cada página (igual que ResultadosVistaPreviaPage)
   const FooterContent = () => (
     <div className="footer-section">
       <div className="firmas">
@@ -246,36 +240,8 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
 
   return (
     <div className="resultados-vista-previa">
-      {/* Barra de acciones */}
-      <div className="acciones-bar">
-        <Space>
-          <Button 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate(-1)}
-          >
-            Volver
-          </Button>
-          <Button 
-            icon={<SettingOutlined />}
-            onClick={() => setPreferencesModalOpen(true)}
-          >
-            Preferencias
-          </Button>
-          {hasPermission('results.print') && (
-            <Button 
-              type="primary" 
-              icon={<PrinterOutlined />}
-              onClick={() => handlePrint()}
-              disabled={!tieneResultados}
-            >
-              Imprimir Resultados
-            </Button>
-          )}
-        </Space>
-      </div>
-
       {/* Contenido imprimible - Estructura de tabla para header/footer en cada página */}
-      <div ref={printRef} className="print-container">
+      <div className="print-container">
         <table className="print-table">
           {/* Header que se repite en cada página */}
           <thead>
@@ -342,7 +308,7 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
                 )}
 
                 {/* Interpretación IA - Solo si está aprobada y tiene interpretación */}
-                {printPreferences.mostrarInterpretacionIA && 
+                {/*{printPreferences.mostrarInterpretacionIA && 
                  orden.interpretacion_ia && 
                  (orden.estado === 'APROBADA' || orden.estado === 'IMPRESO') && (
                   <div className="interpretacion-ia-section">
@@ -357,7 +323,7 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
                       * Esta interpretación ha sido generada por inteligencia artificial y debe ser evaluada por su médico tratante.
                     </div>
                   </div>
-                )}
+                )}*/}
               </td>
             </tr>
           </tbody>
@@ -368,14 +334,8 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
           <FooterContent />
         </div>
       </div>
-
-      {/* Modal de preferencias de impresión */}
-      <PrintPreferencesModal
-        open={preferencesModalOpen}
-        preferences={printPreferences}
-        onSave={handleSavePreferences}
-        onCancel={() => setPreferencesModalOpen(false)}
-      />
     </div>
   );
 };
+
+export default ResultadosPDFPage;

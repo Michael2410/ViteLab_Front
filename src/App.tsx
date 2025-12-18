@@ -20,6 +20,7 @@ import { OrdenImprimiblePage } from './modules/ordenes/pages/OrdenImprimiblePage
 // Módulo Resultados
 import { ResultadosPage } from './modules/resultados/pages/ResultadosPage';
 import { ResultadosVistaPreviaPage } from './modules/resultados/pages/ResultadosVistaPreviaPage';
+import { ResultadosPDFPage } from './modules/resultados/pages/ResultadosPDFPage';
 import { AprobacionesPage } from './modules/resultados/pages/AprobacionesPage';
 
 // Módulo Áreas (Catálogo)
@@ -144,8 +145,11 @@ function App() {
         <AntApp>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
-              {/* Ruta pública */}
+              {/* Rutas públicas */}
               <Route path="/login" element={<LoginPage />} />
+              
+              {/* Ruta especial para generación de PDF (usada por el backend) */}
+              <Route path="/resultados/pdf/:id" element={<ResultadosPDFPage />} />
 
               {/* Rutas protegidas */}
               <Route

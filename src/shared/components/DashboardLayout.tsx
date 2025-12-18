@@ -9,7 +9,8 @@ import {
   theme,
   Space,
   Tag,
-  Grid // Import Grid to use breakpoints
+  Grid, // Import Grid to use breakpoints
+  Tooltip
 } from 'antd';
 import {
   MenuFoldOutlined,
@@ -24,13 +25,15 @@ import {
   CheckSquareOutlined,
   TeamOutlined,
   HomeOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  WhatsAppOutlined
 } from '@ant-design/icons';
 import { useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../modules/auth/hooks';
 import HeaderAlertas from './HeaderAlertas';
 import { usePermissions } from './PermissionGuard';
+import { WhatsAppQRModal, useWhatsAppStatus } from '../../modules/whatsapp';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
@@ -38,11 +41,13 @@ const { useBreakpoint } = Grid; // Destructure useBreakpoint
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, clearAuth } = useAuthStore();
   const { token } = theme.useToken();
   const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
+  const { data: whatsappStatus } = useWhatsAppStatus();
 
   // Hook to detect screen size
   const screens = useBreakpoint();
@@ -315,6 +320,18 @@ export default function DashboardLayout() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 20 }}>
             <HeaderAlertas />
+            <Tooltip title={whatsappStatus?.isConnected ? 'WhatsApp conectado' : 'Vincular WhatsApp'}>
+              <Button
+                type="text"
+                icon={<WhatsAppOutlined />}
+                onClick={() => setWhatsappModalOpen(true)}
+                style={{
+                  fontSize: 20,
+                  paddingBottom: 5,
+                  color: whatsappStatus?.isConnected ? '#25D366' : '#8c8c8c'
+                }}
+              />
+            </Tooltip>
             <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: -20 }}>
               <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
                 <div
@@ -384,6 +401,12 @@ export default function DashboardLayout() {
           </Space>
         </Footer>
       </Layout>
+
+      {/* Modal de WhatsApp */}
+      <WhatsAppQRModal
+        open={whatsappModalOpen}
+        onClose={() => setWhatsappModalOpen(false)}
+      />
     </Layout>
   );
 }

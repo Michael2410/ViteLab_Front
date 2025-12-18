@@ -1,0 +1,33 @@
+/* Estilos para WhatsAppSendModal */
+
+.whatsapp-send-modal-info {
+  margin-bottom: 16px;
+}
+
+.whatsapp-send-modal-label {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.whatsapp-send-modal-value {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.whatsapp-send-modal-footer {
+  margin-bottom: 0;
+  text-align: right;
+}
+
+.whatsapp-send-button {
+  background-color: #25D366 !important;
+  border-color: #25D366 !important;
+}
+
+.whatsapp-send-button:hover {
+  background-color: #128C7E !important;
+  border-color: #128C7E !important;
+}
+
+.whatsapp-icon {
+  color: #25D366;
+}

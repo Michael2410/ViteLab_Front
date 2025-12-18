@@ -22,6 +22,7 @@ import {
   FilterOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
+  WhatsAppOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -37,6 +38,7 @@ import {
   type OrdenFilters,
 } from '../types';
 import PageContainer from '../../../shared/components/PageContainer';
+import { WhatsAppSendModal, useWhatsAppStatus } from '../../whatsapp';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -50,6 +52,13 @@ export const OrdenesPage: React.FC = () => {
     limit: 20,
   });
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  
+  // Estado para modal de WhatsApp
+  const [whatsappModal, setWhatsappModal] = useState<{
+    open: boolean;
+    orden: Orden | null;
+  }>({ open: false, orden: null });
+  const { data: whatsappStatus } = useWhatsAppStatus();
 
   const { data: ordenes, isLoading } = useOrdenes(filtros);
   const { data: sedes } = useSedesActivas();
@@ -209,6 +218,18 @@ export const OrdenesPage: React.FC = () => {
               >
                 Recepcionar
               </Button>
+            </Tooltip>
+          )}
+          {/* Botón WhatsApp - solo si está aprobada o impreso */}
+          {(record.estado === EstadoOrden.APROBADA || record.estado === EstadoOrden.IMPRESO) && (
+            <Tooltip title={whatsappStatus?.isConnected ? 'Enviar por WhatsApp' : 'WhatsApp no conectado'}>
+              <Button
+                type="link"
+                icon={<WhatsAppOutlined />}
+                onClick={() => setWhatsappModal({ open: true, orden: record })}
+                disabled={!whatsappStatus?.isConnected}
+                style={{ color: whatsappStatus?.isConnected ? '#25D366' : undefined }}
+              />
             </Tooltip>
           )}
           {hasPermission('orders.delete') && (
@@ -381,6 +402,17 @@ return (
           onChange: handlePaginationChange,
         }}
       />
+
+    {/* Modal para enviar resultados por WhatsApp */}
+    {whatsappModal.orden && (
+      <WhatsAppSendModal
+        open={whatsappModal.open}
+        onClose={() => setWhatsappModal({ open: false, orden: null })}
+        ordenId={whatsappModal.orden.id}
+        numeroAtencion={whatsappModal.orden.numero_atencion?.toString() || ''}
+        pacienteNombre={`${whatsappModal.orden.paciente_nombres || ''} ${whatsappModal.orden.paciente_apellidos || ''}`}
+      />
+    )}
 
   </PageContainer>
 );

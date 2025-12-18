@@ -1,7 +1,9 @@
 /* ==============================================
-   1. ESTILOS DE PANTALLA (VISTA PREVIA)
+   ESTILOS UNIFICADOS - VISTA PREVIA E IMPRESIÓN
+   La vista previa simula exactamente cómo se verá al imprimir
    ============================================== */
 
+/* --- CONTENEDOR PRINCIPAL --- */
 .resultados-vista-previa {
   padding: 16px;
   background-color: #525659;
@@ -12,191 +14,519 @@
 }
 
 .loading-container, .error-container {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 400px; gap: 16px; color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+  color: white;
 }
 
 .acciones-bar {
-  width: 100%; max-width: 210mm; margin-bottom: 16px; padding: 12px;
-  background: #f5f5f5; border-radius: 8px;
+  width: 100%;
+  max-width: 210mm;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
 }
 
-/* --- CONTENEDOR A4 SIMULADO --- */
+/* ==============================================
+   CONTENEDOR A4 - SIMULA PÁGINA EXACTA
+   ============================================== */
 .print-container {
   background: white;
   width: 210mm;
-  /* Altura exacta para simular la hoja completa en pantalla */
-  height: 297mm; 
+  min-height: 297mm;
   margin: 0 auto;
-  border: 1px solid #e8e8e8;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   box-sizing: border-box;
-  
-  /* Sistema de coordenadas relativo para atrapar al footer */
-  position: relative !important;
-  
-  /* Padding lateral y superior. Abajo NO, porque el footer es absoluto */
-  padding: 15mm 15mm 0 15mm; 
-  overflow: hidden; 
-  display: block;
+  padding: 10mm;
 }
 
-/* --- TABLA ESTRUCTURAL --- */
-.print-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    /* Margen inferior grande para empujar contenido y no choque con footer */
-    margin-bottom: 50mm; 
+/* ==============================================
+   TABLA ESTRUCTURAL PARA REPETIR HEADER/FOOTER
+   ============================================== */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.print-table thead { display: table-header-group; }
-.print-table tbody { display: table-row-group; }
+/* El thead y tfoot se repiten en cada página al imprimir */
+.print-table thead {
+  display: table-header-group;
+}
 
-/* Header Logos */
+.print-table tfoot {
+  display: table-footer-group;
+}
+
+.print-table tbody {
+  display: table-row-group;
+}
+
+/* Celdas sin bordes visibles */
+.print-table th,
+.print-table td {
+  padding: 0;
+  border: none;
+  vertical-align: top;
+}
+
+/* ==============================================
+   HEADER - LOGOS Y DATOS DEL PACIENTE
+   ============================================== */
 .header-logos {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 24px; padding-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 2px solid #003366;
 }
-.logo-left { flex: 1; text-align: left; }
-.logo-right { flex: 1; text-align: right; }
-.header-logo-img { max-width: 180px; max-height: 80px; object-fit: contain; }
-.header-logo-img.convenio-logo { max-width: 150px; max-height: 60px; }
+
+.logo-left {
+  flex: 1;
+  text-align: left;
+}
+
+.logo-right {
+  flex: 1;
+  text-align: right;
+}
+
+.header-logo-img {
+  max-height: 70px;      /* Controlas la altura */
+  width: auto;           /* Mantiene proporción */
+  max-width: 180px;      /* Evita que se vuelva gigante */
+  height: auto;
+  object-fit: contain;   
+}
+
+.header-logo-img.convenio-logo {
+  max-height: 55px;
+  max-width: 140px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
 
 /* Textos branding */
-.lab-name { font-size: 10px; color: #666; margin-bottom: 4px; }
-.lab-brand { font-size: 28px; font-weight: bold; color: #003366; letter-spacing: 2px; }
-.empresa-name { font-size: 24px; font-weight: bold; color: #c41e3a; letter-spacing: 1px; }
+.lab-name {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 4px;
+}
 
-/* --- INFORMACIÓN PACIENTE --- */
-.info-section { margin-bottom: 20px; }
-.info-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.lab-brand {
+  font-size: 26px;
+  font-weight: bold;
+  color: #003366;
+  letter-spacing: 2px;
+}
 
-.info-table td { padding: 4px 8px; border: 1px solid #ccc; }
-.info-table .label { font-weight: bold; color: #333; width: 90px; background: #f9f9f9; }
-.info-table .value { color: #000; }
-.info-table .paciente-nombre { color: #003366; font-weight: 800; text-transform: uppercase; }
+.empresa-name {
+  font-size: 22px;
+  font-weight: bold;
+  color: #c41e3a;
+  letter-spacing: 1px;
+}
+
+/* ==============================================
+   INFORMACIÓN DEL PACIENTE
+   ============================================== */
+.info-section {
+  margin-bottom: 15px;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.info-table td {
+  padding: 4px 8px;
+  border: 1px solid #999;
+}
+
+.info-table .label {
+  font-weight: bold;
+  color: #333;
+  width: 85px;
+  background: #f5f5f5;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.info-table .value {
+  color: #000;
+}
+
+.info-table .paciente-nombre {
+  color: #003366;
+  font-weight: 800;
+  text-transform: uppercase;
+}
 
 .info-table .edad-label {
-  display: inline-block; margin-left: 30px; padding-left: 15px;
-  border-left: 1px solid #ccc; font-weight: bold; color: #333;
+  display: inline-block;
+  margin-left: 25px;
+  padding-left: 12px;
+  border-left: 1px solid #999;
+  font-weight: bold;
+  color: #333;
 }
-.info-table .edad-value { margin-left: 5px; }
 
-/* --- RESULTADOS --- */
+.info-table .edad-value {
+  margin-left: 5px;
+}
+
+/* ==============================================
+   ENCABEZADO DE RESULTADOS
+   ============================================== */
 .resultados-header {
-  display: flex; background: #003366; color: white;
-  font-weight: bold; font-size: 11px; padding: 8px 0; margin-bottom: 10px;
-  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  display: flex;
+  background: #003366;
+  color: white;
+  font-weight: bold;
+  font-size: 10px;
+  padding: 6px 0;
+  margin-bottom: 8px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
-.col { padding: 0 5px; }
-.col.analisis { flex: 2.5; padding-left: 10px; text-align: left; }
-.col.resultado { flex: 1; text-align: center; }
-.col.unidad { flex: 0.8; text-align: center; }
-.col.rango { flex: 1.5; text-align: center; }
-.col.metodo { flex: 1.2; text-align: right; padding-right: 10px; }
-
-.analisis-group { margin-bottom: 12px; page-break-inside: avoid; }
-.analisis-nombre { 
-  font-weight: bold; font-size: 12px; color: #003366; 
-  padding: 5px 10px; background: #f5f5f5; border-left: 4px solid #003366; margin-bottom: 5px;
-  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+.col {
+  padding: 0 5px;
 }
-.componente-row { display: flex; font-size: 11px; padding: 4px 0; border-bottom: 1px dotted #eee; align-items: center; }
-.componente-row .componente-nombre { padding-left: 20px; font-weight: 500; }
-.componente-row .resultado { font-weight: bold; }
 
-/* --- INTERPRETACIÓN IA --- */
-.interpretacion-ia-section {
-  margin-top: 15px; 
-  background-color: #f4f7fb; 
-  border: 1px solid #cce0ff;
-  border-radius: 6px; 
-  padding: 12px 15px; 
+.col.analisis {
+  flex: 2.5;
+  padding-left: 10px;
+  text-align: left;
+}
+
+.col.resultado {
+  flex: 1;
+  text-align: center;
+}
+
+.col.unidad {
+  flex: 0.8;
+  text-align: center;
+}
+
+.col.rango {
+  flex: 1.5;
+  text-align: center;
+}
+
+.col.metodo {
+  flex: 1.2;
+  text-align: right;
+  padding-right: 10px;
+}
+
+/* ==============================================
+   CONTENIDO - RESULTADOS
+   ============================================== */
+.print-body-content {
+  padding-top: 5px;
+}
+
+.analisis-group {
+  margin-bottom: 10px;
   page-break-inside: avoid;
 }
-.interpretacion-ia-header { 
-  display: flex; align-items: center; gap: 10px; margin-bottom: 8px; 
-  color: #003366; border-bottom: 1px solid #dae1e7; padding-bottom: 6px;
-}
-.interpretacion-ia-title { font-weight: 800; font-size: 13px; text-transform: uppercase; }
-.interpretacion-ia-icon { font-size: 16px; }
-.interpretacion-ia-content { font-size: 11px; line-height: 1.6; color: #2c3e50; text-align: justify; margin-bottom: 8px; }
-.interpretacion-ia-disclaimer { font-size: 9px; color: #7f8c8d; font-style: italic; margin-top: 6px; }
 
-/* --- FOOTER Y FIRMAS --- */
+.analisis-nombre {
+  font-weight: bold;
+  font-size: 11px;
+  color: #003366;
+  padding: 4px 10px;
+  background: #f0f4f8;
+  border-left: 3px solid #003366;
+  margin-bottom: 4px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.componente-row {
+  display: flex;
+  font-size: 10px;
+  padding: 3px 0;
+  border-bottom: 1px dotted #ddd;
+  align-items: center;
+}
+
+.componente-row .componente-nombre {
+  padding-left: 20px;
+  font-weight: 500;
+}
+
+.componente-row .resultado {
+  font-weight: bold;
+}
+
+.no-resultados {
+  text-align: center;
+  padding: 30px;
+  color: #999;
+  font-style: italic;
+}
+
+/* ==============================================
+   INTERPRETACIÓN IA
+   ============================================== */
+.interpretacion-ia-section {
+  margin-top: 12px;
+  background-color: #f4f7fb;
+  border: 1px solid #cce0ff;
+  border-radius: 5px;
+  padding: 10px 12px;
+  page-break-inside: avoid;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.interpretacion-ia-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #003366;
+  border-bottom: 1px solid #dae1e7;
+  padding-bottom: 5px;
+}
+
+.interpretacion-ia-title {
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.interpretacion-ia-icon {
+  font-size: 14px;
+}
+
+.interpretacion-ia-content {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #2c3e50;
+  text-align: justify;
+  margin-bottom: 6px;
+}
+
+.interpretacion-ia-disclaimer {
+  font-size: 8px;
+  color: #7f8c8d;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* ==============================================
+   FOOTER - FIRMAS Y DIRECCIÓN
+   ============================================== */
 .footer-section {
-  /* En pantalla, posición absoluta al fondo del contenedor */
-  position: absolute !important; 
-  bottom: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  
-  padding-bottom: 15mm;
-  padding-top: 10px;
-  background-color: white; 
-  z-index: 100;
+  padding-top: 15px;
+  margin-top: 10px;
+  border-top: 1px solid #ccc;
+}
+
+.footer-divider {
+  height: 1px;
+  background: #ddd;
+  margin-bottom: 10px;
 }
 
 .firmas {
-  display: flex; justify-content: space-around; alignItems: flex-end;
-  margin-top: 10px; margin-bottom: 10px;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
-.firma-item { text-align: center; width: 200px; }
-.firma-img { height: 60px; object-fit: contain; margin-bottom: 2px; display: block; margin: 0 auto; }
-.firma-linea { border-top: 1px solid #333; margin-bottom: 4px; width: 80%; margin: 0 auto 4px auto; }
-.firma-cargo { font-size: 11px; color: #444; font-weight: bold; }
-.footer-address { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }
 
+.firma-item {
+  text-align: center;
+  width: 180px;
+}
+
+.firma-img {
+  height: 55px;
+  object-fit: contain;
+  margin-bottom: 2px;
+  display: block;
+  margin: 0 auto;
+}
+
+.firma-linea {
+  border-top: 1px solid #333;
+  margin-bottom: 4px;
+  width: 80%;
+  margin: 0 auto 4px auto;
+}
+
+.firma-cargo {
+  font-size: 10px;
+  color: #444;
+  font-weight: bold;
+}
+
+.footer-address {
+  text-align: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+  font-size: 15px;
+  color: #0a0a0a;
+}
 
 /* ==============================================
-   2. ESTILOS DE IMPRESIÓN (REAL)
+   ESTILOS DE IMPRESIÓN
    ============================================== */
 @media print {
-  @page { margin: 10mm; size: A4; }
+  /* Configuración de página A4 */
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
 
-  /* Reset del contenedor */
+  /* Ocultar todo excepto el contenedor de impresión */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-container,
+  .print-container * {
+    visibility: visible !important;
+  }
+
+  /* Ocultar barra de acciones y modales */
+  .acciones-bar,
+  .preferences-modal {
+    display: none !important;
+  }
+
+  /* Reset del fondo */
+  .resultados-vista-previa {
+    padding: 0;
+    background: white;
+  }
+
+  /* Contenedor sin decoración */
   .print-container {
-    position: static !important;
-    height: auto !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  /* Tabla ocupa todo el ancho */
+  .print-table {
+    width: 100%;
+  }
+
+  /* Header se repite en cada página */
+  .print-table thead {
+    display: table-header-group;
+  }
+
+  /* tfoot actúa como espaciador para reservar espacio del footer fijo */
+  .print-table tfoot {
+    display: table-footer-group;
+  }
+
+  /* El contenido del tfoot se oculta completamente, solo reserva espacio */
+  .print-table tfoot td {
+    height: 40mm;
     padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-table tfoot .footer-section {
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
     border: none !important;
-    display: block !important;
-    overflow: visible !important;
   }
-  
-  .print-container, .print-container * { visibility: visible !important; }
-  body * { visibility: hidden; }
 
-  /* Bordes negros en tablas */
-  .info-table td { border: 1px solid #000 !important; }
-
-  /* Tablas */
-  .print-table { 
-      margin-bottom: 50mm !important; /* Espacio reservado para el footer fijo */
-      display: table !important; 
-      width: 100% !important;
+  .print-table tbody {
+    display: table-row-group;
   }
-  
-  /* FOOTER FIJO AL PAPEL */
-  .footer-section {
+
+  /* FOOTER FIJO EN LA PARTE INFERIOR DE CADA PÁGINA */
+  .footer-fixed-print {
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
+    right: 0 !important;
     width: 100% !important;
-    padding-bottom: 5mm !important;
-    background: white; 
-    z-index: 999;
+    background: white;
+    padding: 5mm 10mm 5mm 10mm;
+    visibility: visible !important;
   }
-  
-  tr { page-break-inside: auto !important; }
-  .analisis-group, .interpretacion-ia-section, .firmas { page-break-inside: avoid; }
 
-  .header-logos, .resultados-header, .componente-row, .firmas, .interpretacion-ia-header {
+  /* Bordes más oscuros para impresión */
+  .info-table td {
+    border: 1px solid #000 !important;
+  }
+
+  /* Control de saltos de página */
+  tr {
+    page-break-inside: avoid;
+  }
+
+  .analisis-group {
+    page-break-inside: avoid;
+  }
+
+  .interpretacion-ia-section {
+    page-break-inside: avoid;
+  }
+
+  .firmas {
+    page-break-inside: avoid;
+  }
+
+  /* Asegurar flex en elementos importantes */
+  .header-logos,
+  .resultados-header,
+  .componente-row,
+  .firmas,
+  .interpretacion-ia-header {
     display: flex !important;
   }
 
-  .acciones-bar, .preferences-modal { display: none !important; }
-  .resultados-vista-previa { padding: 0; background: white; }
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  /* Preservar colores de fondo */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Espaciado para que el contenido no choque con header/footer */
+  .print-body-content {
+    padding-bottom: 20px;
+  }
+}
+
+/* Footer fijo para impresión - oculto en pantalla */
+.footer-fixed-print {
+  display: none;
+}
+
+@media print {
+  .footer-fixed-print {
+    display: block !important;
+  }
 }
