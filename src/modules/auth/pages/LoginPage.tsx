@@ -1,5 +1,5 @@
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Form, Input, Button, Card, message, Typography, Checkbox, theme } from 'antd';
+import { Form, Input, Button, Card, message, Typography, theme } from 'antd';
 import { UserOutlined, LockOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect } from 'react';

@@ -44,7 +44,7 @@ import {
   type OrdenAnalisis,
 } from '../types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export const OrdenDetallePage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,9 +53,7 @@ export const OrdenDetallePage: React.FC = () => {
   const { token } = theme.useToken();
   const { hasPermission } = useAuthStore();
 
-  const { data: orden, isLoading, error } = useOrdenDetalle(ordenId, {
-    enabled: hasPermission('orders.read'),
-  });
+  const { data: orden, isLoading, error } = useOrdenDetalle(ordenId, hasPermission('orders.read'));
 
   // Columnas de la tabla
   const columnsAnalisis: ColumnsType<OrdenAnalisis> = [

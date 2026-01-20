@@ -23,13 +23,13 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   ExperimentOutlined,
-  EyeOutlined,
   EditOutlined,
   FileTextOutlined,
   WarningOutlined,
   SaveOutlined,
   LockOutlined,
   ArrowLeftOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -67,9 +67,7 @@ export const AprobacionesPage: React.FC = () => {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [form] = Form.useForm();
 
-  const { data: ordenesPendientes, isLoading: loadingOrdenes } = useOrdenesPendientesAprobacion({
-    enabled: hasPermission('results.read'),
-  });
+  const { data: ordenesPendientes, isLoading: loadingOrdenes } = useOrdenesPendientesAprobacion();
   const { data: ordenDetalle, isLoading: loadingDetalle } = useOrdenConResultados(
     ordenSeleccionada || 0,
     !!ordenSeleccionada && hasPermission('results.read')

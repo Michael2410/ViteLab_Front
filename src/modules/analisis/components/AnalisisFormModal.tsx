@@ -12,7 +12,7 @@ interface ComponenteTemp {
   key: string;
   id?: number; // ID del componente si ya existe en la BD
   nombre: string;
-  valor_referencial?: string;
+  valores_referenciales?: string[]; // Array for display consistency
   unidad_medida?: string;
   area_id?: number;
   metodo_id?: number;
@@ -57,7 +57,8 @@ export const AnalisisFormModal: React.FC<AnalisisFormModalProps> = ({
           key: `existing_${comp.id}`,
           id: comp.id,
           nombre: comp.nombre,
-          valor_referencial: comp.valor_referencial || undefined,
+          // Convert string valor_referencial to string[] for consistency with ComponenteTemp
+          valores_referenciales: comp.valor_referencial ? [comp.valor_referencial] : [],
           unidad_medida: comp.unidad_medida || undefined,
           area_id: comp.area_id || undefined,
           metodo_id: comp.metodo_id || undefined,
@@ -94,7 +95,7 @@ export const AnalisisFormModal: React.FC<AnalisisFormModalProps> = ({
       key: `comp_${componente.id}`,
       id: componente.id,
       nombre: componente.nombre,
-      valor_referencial: componente.valor_referencial || undefined,
+      valores_referenciales: componente.valores_referenciales || undefined,
       unidad_medida: componente.unidad_medida || undefined,
       area_id: componente.area_id || undefined,
       metodo_id: componente.metodo_id || undefined,
@@ -144,11 +145,11 @@ export const AnalisisFormModal: React.FC<AnalisisFormModalProps> = ({
       width: 200,
     },
     {
-      title: 'Valor Referencial',
-      dataIndex: 'valor_referencial',
-      key: 'valor_referencial',
+      title: 'Valores Referenciales',
+      dataIndex: 'valores_referenciales',
+      key: 'valores_referenciales',
       width: 150,
-      render: (val) => val || '-',
+      render: (val) => val ? val.join(', ') : '-',
     },
     {
       title: 'Unidad',
