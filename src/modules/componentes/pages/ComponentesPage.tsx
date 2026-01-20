@@ -5,7 +5,6 @@ import {
   Space,
   Typography,
   Input,
-  Card,
   Row,
   Col,
   Modal,
@@ -18,7 +17,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  SortAscendingOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -116,7 +114,7 @@ export const ComponentesPage: React.FC = () => {
       dataIndex: 'nombre',
       key: 'nombre',
       width: 150,
-      render: (nombre: string, record: Componente) => (
+      render: (nombre: string) => (
         <Space direction="vertical" size="small">
           <Text strong>{nombre}</Text>
         </Space>

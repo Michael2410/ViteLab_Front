@@ -8,7 +8,7 @@ import {
   actualizarAnalisis,
   eliminarAnalisis,
 } from './api';
-import type { AnalisisFilters, CreateAnalisisInput, UpdateAnalisisInput } from './types';
+import type { AnalisisFilters, UpdateAnalisisInput } from './types';
 
 // Query keys
 export const analisisKeys = {

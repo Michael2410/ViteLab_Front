@@ -4,11 +4,7 @@ import {
   Button,
   Space,
   Typography,
-  Tag,
   Input,
-  Card,
-  Row,
-  Col,
   Modal,
   Switch,
 } from 'antd';

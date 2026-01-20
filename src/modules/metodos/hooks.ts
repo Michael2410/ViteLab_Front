@@ -8,7 +8,7 @@ import {
   actualizarMetodo,
   eliminarMetodo,
 } from './api';
-import type { MetodoFilters, CreateMetodoInput, UpdateMetodoInput } from './types';
+import type { MetodoFilters, UpdateMetodoInput } from './types';
 
 // Query keys
 export const metodosKeys = {

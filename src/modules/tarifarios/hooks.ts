@@ -13,9 +13,7 @@ import {
 } from './api';
 import type { 
   TarifarioFilters, 
-  CreateTarifarioInput, 
   UpdateTarifarioInput,
-  CreateTarifarioPrecioInput,
   UpdateTarifarioPrecioInput,
 } from './types';
 
@@ -129,7 +127,7 @@ export const useActualizarTarifarioPrecio = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, tarifarioId, data }: { id: number; tarifarioId: number; data: UpdateTarifarioPrecioInput }) =>
+    mutationFn: ({ id, data }: { id: number; tarifarioId: number; data: UpdateTarifarioPrecioInput }) =>
       actualizarTarifarioPrecio(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tarifariosKeys.detail(variables.tarifarioId) });
@@ -146,7 +144,7 @@ export const useEliminarTarifarioPrecio = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, tarifarioId }: { id: number; tarifarioId: number }) =>
+    mutationFn: ({ id }: { id: number; tarifarioId: number }) =>
       eliminarTarifarioPrecio(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tarifariosKeys.detail(variables.tarifarioId) });

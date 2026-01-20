@@ -8,7 +8,7 @@ import {
   actualizarConvenio,
   eliminarConvenio,
 } from './api';
-import type { ConvenioFilters, CreateConvenioInput, UpdateConvenioInput } from './types';
+import type { ConvenioFilters, UpdateConvenioInput } from './types';
 
 // Query keys
 export const conveniosKeys = {

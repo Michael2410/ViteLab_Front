@@ -9,7 +9,7 @@ import {
   actualizarComponente,
   eliminarComponente,
 } from './api';
-import type { ComponenteFilters, CreateComponenteInput, UpdateComponenteInput } from './types';
+import type { ComponenteFilters, UpdateComponenteInput } from './types';
 
 // Query keys
 export const componentesKeys = {

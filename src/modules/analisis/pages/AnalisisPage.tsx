@@ -5,13 +5,9 @@ import {
   Space,
   Typography,
   Input,
-  Card,
-  Row,
-  Col,
   Modal,
   Switch,
   Tag,
-  Badge,
   Tooltip,
 } from 'antd';
 import {
@@ -20,11 +16,9 @@ import {
   DeleteOutlined,
   SearchOutlined,
   ExperimentOutlined,
-  EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { useNavigate } from 'react-router-dom';
 import {
   useAnalisis,
   useCrearAnalisis,
@@ -43,7 +37,6 @@ export const AnalisisPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [analisisSeleccionado, setAnalisisSeleccionado] = useState<Analisis | null>(null);
-  const navigate = useNavigate();
 
   const { hasPermission } = useAuthStore();
   const { data: analisis, isLoading } = useAnalisis({});

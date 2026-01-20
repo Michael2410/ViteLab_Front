@@ -143,172 +143,174 @@ function App() {
       >
 
         <AntApp>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Routes>
-              {/* Rutas públicas */}
-              <Route path="/login" element={<LoginPage />} />
-              
-              {/* Ruta especial para generación de PDF (usada por el backend) */}
-              <Route path="/resultados/pdf/:id" element={<ResultadosPDFPage />} />
+          <MessageConfig>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <Routes>
+                {/* Rutas públicas */}
+                <Route path="/login" element={<LoginPage />} />
 
-              {/* Rutas protegidas */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={
-                  <ProtectedRoute requiredPermission="dashboard.read">
-                    <DashboardPage />
-                  </ProtectedRoute>
-                } />
+                {/* Ruta especial para generación de PDF (usada por el backend) */}
+                <Route path="/resultados/pdf/:id" element={<ResultadosPDFPage />} />
 
-                {/* Módulo de Órdenes */}
-                <Route path="ordenes" element={
-                  <ProtectedRoute requiredPermission="orders.read">
-                    <OrdenesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="ordenes/nueva" element={
-                  <ProtectedRoute requiredPermission="orders.create">
-                    <NuevaOrdenPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="ordenes/:id" element={
-                  <ProtectedRoute requiredPermission="orders.read">
-                    <OrdenDetallePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/ordenes/:id/imprimir" element={
-                  <ProtectedRoute requiredPermission="orders.print">
-                    <OrdenImprimiblePage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Módulo de Resultados */}
-                <Route path="resultados" element={
-                  <ProtectedRoute requiredPermissions={['results.read', 'results.create', 'results.update']}>
-                    <ResultadosPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="resultados/orden/:id" element={
-                  <ProtectedRoute requiredPermission="results.read">
-                    <ResultadosVistaPreviaPage />
-                  </ProtectedRoute>
-                } />
+                {/* Rutas protegidas */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={
+                    <ProtectedRoute requiredPermission="dashboard.read">
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Módulo de Aprobaciones */}
-                <Route path="aprobaciones" element={
-                  <ProtectedRoute requiredPermission="results.approve">
-                    <AprobacionesPage />
-                  </ProtectedRoute>
-                } />
+                  {/* Módulo de Órdenes */}
+                  <Route path="ordenes" element={
+                    <ProtectedRoute requiredPermission="orders.read">
+                      <OrdenesPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="ordenes/nueva" element={
+                    <ProtectedRoute requiredPermission="orders.create">
+                      <NuevaOrdenPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="ordenes/:id" element={
+                    <ProtectedRoute requiredPermission="orders.read">
+                      <OrdenDetallePage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ordenes/:id/imprimir" element={
+                    <ProtectedRoute requiredPermission="orders.print">
+                      <OrdenImprimiblePage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Módulo de Catálogos */}
-                <Route path="catalogos/areas" element={
-                  <ProtectedRoute requiredPermission="catalogs.areas.read">
-                    <AreasPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/metodos" element={
-                  <ProtectedRoute requiredPermission="catalogs.methods.read">
-                    <MetodosPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/sedes" element={
-                  <ProtectedRoute requiredPermission="catalogs.sedes.read">
-                    <SedesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/tipos-cliente" element={
-                  <ProtectedRoute requiredPermission="catalogs.tipos-cliente.read">
-                    <TiposClientePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/convenios" element={
-                  <ProtectedRoute requiredPermission="catalogs.convenios.read">
-                    <ConveniosPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/analisis" element={
-                  <ProtectedRoute requiredPermission="catalogs.analysis.read">
-                    <AnalisisPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/componentes" element={
-                  <ProtectedRoute requiredPermission="catalogs.components.read">
-                    <ComponentesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/tarifarios" element={
-                  <ProtectedRoute requiredPermission="tariffs.read">
-                    <TarifariosPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/muestras" element={
-                  <ProtectedRoute requiredPermission="catalogs.muestras.read">
-                    <MuestrasPage />
-                  </ProtectedRoute>
-                } />
+                  {/* Módulo de Resultados */}
+                  <Route path="resultados" element={
+                    <ProtectedRoute requiredPermissions={['results.read', 'results.create', 'results.update']}>
+                      <ResultadosPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="resultados/orden/:id" element={
+                    <ProtectedRoute requiredPermission="results.read">
+                      <ResultadosVistaPreviaPage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Módulo de Usuarios */}
-                <Route path="usuarios" element={
-                  <ProtectedRoute requiredPermission="auth.users.read">
-                    <UsuariosPage />
-                  </ProtectedRoute>
-                } />
+                  {/* Módulo de Aprobaciones */}
+                  <Route path="aprobaciones" element={
+                    <ProtectedRoute requiredPermission="results.approve">
+                      <AprobacionesPage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Módulo de Configuración */}
-                <Route path="settings/roles" element={
-                  <ProtectedRoute requiredPermission="auth.roles.read">
-                    <RolesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="settings/sistema" element={
-                  <ProtectedRoute requiredPermission="settings.read">
-                    <SistemaPage />
-                  </ProtectedRoute>
-                } />
+                  {/* Módulo de Catálogos */}
+                  <Route path="catalogos/areas" element={
+                    <ProtectedRoute requiredPermission="catalogs.areas.read">
+                      <AreasPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/metodos" element={
+                    <ProtectedRoute requiredPermission="catalogs.methods.read">
+                      <MetodosPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/sedes" element={
+                    <ProtectedRoute requiredPermission="catalogs.sedes.read">
+                      <SedesPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/tipos-cliente" element={
+                    <ProtectedRoute requiredPermission="catalogs.tipos-cliente.read">
+                      <TiposClientePage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/convenios" element={
+                    <ProtectedRoute requiredPermission="catalogs.convenios.read">
+                      <ConveniosPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/analisis" element={
+                    <ProtectedRoute requiredPermission="catalogs.analysis.read">
+                      <AnalisisPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/componentes" element={
+                    <ProtectedRoute requiredPermission="catalogs.components.read">
+                      <ComponentesPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/tarifarios" element={
+                    <ProtectedRoute requiredPermission="tariffs.read">
+                      <TarifariosPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="catalogos/muestras" element={
+                    <ProtectedRoute requiredPermission="catalogs.muestras.read">
+                      <MuestrasPage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Módulo de Reportes */}
-                <Route path="reportes" element={
-                  <ProtectedRoute requiredPermission="reports.read">
-                    <ReportesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="reportes/ordenes-periodo" element={
-                  <ProtectedRoute requiredPermission="reports.read">
-                    <ReporteOrdenesPeriodoPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="reportes/ingresos-sede" element={
-                  <ProtectedRoute requiredPermission="reports.read">
-                    <ReporteIngresosSedeP />
-                  </ProtectedRoute>
-                } />
-                <Route path="reportes/analisis-ranking" element={
-                  <ProtectedRoute requiredPermission="reports.read">
-                    <ReporteAnalisisRankingPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="reportes/productividad" element={
-                  <ProtectedRoute requiredPermission="reports.read">
-                    <ReporteProductividadPage />
-                  </ProtectedRoute>
-                } />
+                  {/* Módulo de Usuarios */}
+                  <Route path="usuarios" element={
+                    <ProtectedRoute requiredPermission="auth.users.read">
+                      <UsuariosPage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Ruta 404 dentro del dashboard */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
+                  {/* Módulo de Configuración */}
+                  <Route path="settings/roles" element={
+                    <ProtectedRoute requiredPermission="auth.roles.read">
+                      <RolesPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="settings/sistema" element={
+                    <ProtectedRoute requiredPermission="settings.read">
+                      <SistemaPage />
+                    </ProtectedRoute>
+                  } />
 
-              {/* Ruta 404 para no autenticados */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </BrowserRouter>
+                  {/* Módulo de Reportes */}
+                  <Route path="reportes" element={
+                    <ProtectedRoute requiredPermission="reports.read">
+                      <ReportesPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="reportes/ordenes-periodo" element={
+                    <ProtectedRoute requiredPermission="reports.read">
+                      <ReporteOrdenesPeriodoPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="reportes/ingresos-sede" element={
+                    <ProtectedRoute requiredPermission="reports.read">
+                      <ReporteIngresosSedeP />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="reportes/analisis-ranking" element={
+                    <ProtectedRoute requiredPermission="reports.read">
+                      <ReporteAnalisisRankingPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="reportes/productividad" element={
+                    <ProtectedRoute requiredPermission="reports.read">
+                      <ReporteProductividadPage />
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Ruta 404 dentro del dashboard */}
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
+
+                {/* Ruta 404 para no autenticados */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </MessageConfig>
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>

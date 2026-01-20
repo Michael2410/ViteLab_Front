@@ -9,8 +9,9 @@ import {
   theme,
   Space,
   Tag,
-  Grid, // Import Grid to use breakpoints
-  Tooltip
+  Grid,
+  Tooltip,
+  type MenuProps
 } from 'antd';
 import {
   MenuFoldOutlined,
@@ -37,7 +38,7 @@ import { WhatsAppQRModal, useWhatsAppStatus } from '../../modules/whatsapp';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
-const { useBreakpoint } = Grid; // Destructure useBreakpoint
+const { useBreakpoint } = Grid;
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -58,8 +59,8 @@ export default function DashboardLayout() {
   };
 
   // --- Menu Configuration con permisos ---
-  const menuItems = useMemo(() => {
-    const items: any[] = [];
+  const menuItems: MenuProps['items'] = useMemo(() => {
+    const items: MenuProps['items'] = [];
 
     // Dashboard - siempre visible (o permiso dashboard.read)
     if (isSuperAdmin || hasPermission('dashboard.read')) {
@@ -226,7 +227,7 @@ export default function DashboardLayout() {
     if (route) navigate(route);
   };
 
-  const userMenuItems = [
+  const userMenuItems: MenuProps['items'] = [
     { key: 'profile', icon: <UserOutlined />, label: 'Mi Perfil', onClick: () => navigate('/perfil') },
     { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Cerrar Sesión', onClick: handleLogout, danger: true },

@@ -1,10 +1,10 @@
-import { ReactNode } from 'react';
+import type { ReactNode, ReactElement } from 'react';
 
 interface PageContainerProps {
   children: ReactNode;
 }
 
-export default function PageContainer({ children }: PageContainerProps) {
+export default function PageContainer({ children }: PageContainerProps): ReactElement {
   return (
     <div 
       style={{ 

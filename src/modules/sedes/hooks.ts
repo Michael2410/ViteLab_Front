@@ -8,7 +8,7 @@ import {
   actualizarSede,
   eliminarSede,
 } from './api';
-import type { SedeFilters, CreateSedeInput, UpdateSedeInput } from './types';
+import type { SedeFilters, UpdateSedeInput } from './types';
 
 // Query keys
 export const sedesKeys = {

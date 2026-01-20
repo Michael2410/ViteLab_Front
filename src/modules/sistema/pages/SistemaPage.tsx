@@ -10,7 +10,6 @@ import {
   Spin,
   Upload,
   Image,
-  InputNumber,
   Space,
   theme,
   message,
@@ -26,10 +25,7 @@ import {
   GlobalOutlined,
   EnvironmentOutlined,
   NumberOutlined,
-  PercentageOutlined,
-  DollarOutlined,
   CloudUploadOutlined,
-  FileTextOutlined,
   PictureOutlined,
   LockOutlined,
   ArrowLeftOutlined,
@@ -43,7 +39,6 @@ import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
-const { TextArea } = Input;
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

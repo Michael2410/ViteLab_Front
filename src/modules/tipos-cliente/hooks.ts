@@ -8,7 +8,7 @@ import {
   actualizarTipoCliente,
   eliminarTipoCliente,
 } from './api';
-import type { TipoClienteFilters, CreateTipoClienteInput, UpdateTipoClienteInput } from './types';
+import type { TipoClienteFilters, UpdateTipoClienteInput } from './types';
 
 // Query keys
 export const tiposClienteKeys = {
