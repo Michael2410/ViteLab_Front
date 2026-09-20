@@ -31,18 +31,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import type { ColumnsType } from 'antd/es/table';
-
 import { obtenerDashboardStats } from '../../modules/sistema/api';
 import type { DashboardStats } from '../../modules/sistema/types';
 import { useAuthStore } from '../../modules/auth/hooks';
-import { useOrdenes } from '../../modules/ordenes/hooks';
-import {
-  ESTADO_ORDEN_COLORS,
-  ESTADO_ORDEN_LABELS,
-  type Orden,
-} from '../../modules/ordenes/types';
-import { useWhatsAppStatus, WhatsAppQRModal } from '../../modules/whatsapp';
 
 dayjs.locale('es');
 const { Title, Text, Paragraph } = Typography;
@@ -52,14 +43,6 @@ export default function DashboardPage() {
   const { user, hasPermission } = useAuthStore();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-
-  // Queries
-  const { data: whatsappStatus } = useWhatsAppStatus();
-  const { data: ordenesData, isLoading: loadingOrdenes, refetch: refetchOrdenes } = useOrdenes({
-    limit: 6,
-    page: 1,
-  });
 
   const fetchStats = async () => {
     try {
@@ -77,7 +60,6 @@ export default function DashboardPage() {
     fetchStats();
     const interval = setInterval(() => {
       fetchStats();
-      refetchOrdenes();
     }, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -94,85 +76,6 @@ export default function DashboardPage() {
     const f = dayjs().format('dddd, D [de] MMMM [de] YYYY');
     return f.charAt(0).toUpperCase() + f.slice(1);
   }, []);
-
-  // Columnas para la tabla de órdenes recientes
-  const columnasOrdenes: ColumnsType<Orden> = [
-    {
-      title: 'N° Orden',
-      dataIndex: 'numero_atencion',
-      key: 'numero_atencion',
-      width: 100,
-      render: (num: number) => (
-        <Tag color="blue" style={{ fontWeight: 700, borderRadius: 6 }}>
-          #{num}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Paciente',
-      key: 'paciente',
-      render: (_, record) => (
-        <div>
-          <Text strong style={{ fontSize: 13, color: '#1e293b' }}>
-            {record.paciente_nombres} {record.paciente_apellidos}
-          </Text>
-          <div style={{ fontSize: 11, color: '#64748b' }}>
-            DNI: {record.paciente_dni || '—'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Sede',
-      dataIndex: 'sede_nombre',
-      key: 'sede_nombre',
-      width: 130,
-      render: (sede: string) => (
-        <Text style={{ fontSize: 12, color: '#475569' }}>{sede || 'Central'}</Text>
-      ),
-    },
-    {
-      title: 'Total',
-      dataIndex: 'total',
-      key: 'total',
-      width: 90,
-      align: 'right',
-      render: (total: number) => (
-        <Text strong style={{ color: '#0f172a', fontSize: 13 }}>
-          S/ {(Number(total) || 0).toFixed(2)}
-        </Text>
-      ),
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado',
-      key: 'estado',
-      width: 130,
-      render: (estado: any) => (
-        <Tag
-          color={ESTADO_ORDEN_COLORS[estado as keyof typeof ESTADO_ORDEN_COLORS] || 'default'}
-          style={{ borderRadius: 6, fontWeight: 600, fontSize: 11 }}
-        >
-          {ESTADO_ORDEN_LABELS[estado as keyof typeof ESTADO_ORDEN_LABELS] || estado}
-        </Tag>
-      ),
-    },
-    {
-      title: '',
-      key: 'acciones',
-      width: 50,
-      render: (_, record) => (
-        <Tooltip title="Ver detalle">
-          <Button
-            type="text"
-            size="small"
-            icon={<EyeOutlined style={{ color: '#2563eb' }} />}
-            onClick={() => navigate(`/ordenes/${record.id}`)}
-          />
-        </Tooltip>
-      ),
-    },
-  ];
 
   return (
     <div style={{ width: '100%', padding: '16px 24px 8px 24px', boxSizing: 'border-box' }}>
@@ -317,10 +220,7 @@ export default function DashboardPage() {
               type="text"
               size="small"
               icon={<ReloadOutlined spin={loading} style={{ color: '#2563eb' }} />}
-              onClick={() => {
-                fetchStats();
-                refetchOrdenes();
-              }}
+              onClick={fetchStats}
               style={{ borderRadius: 6, fontWeight: 500, color: '#64748b' }}
             >
               Sincronizar
@@ -786,9 +686,6 @@ export default function DashboardPage() {
             </Card>
         </Col>
       </Row>
-
-      {/* Modal QR de WhatsApp */}
-      <WhatsAppQRModal open={qrModalOpen} onClose={() => setQrModalOpen(false)} />
     </div>
   );
 }
