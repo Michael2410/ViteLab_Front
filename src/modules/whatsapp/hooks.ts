@@ -31,9 +31,24 @@ export const useWhatsAppStatus = () => {
  */
 export const useWhatsAppSession = () => {
   const queryClient = useQueryClient();
+  const { data: currentStatus } = useWhatsAppStatus();
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
-  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    currentStatus?.isConnected ? 'connected' : 'disconnected'
+  );
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(
+    currentStatus?.phoneNumber || null
+  );
+
+  // Sincronizar con el estado REST actual
+  useEffect(() => {
+    if (currentStatus?.isConnected) {
+      setConnectionState('connected');
+      if (currentStatus.phoneNumber) {
+        setPhoneNumber(currentStatus.phoneNumber);
+      }
+    }
+  }, [currentStatus]);
 
   // Conectar Socket.io al montar
   useEffect(() => {

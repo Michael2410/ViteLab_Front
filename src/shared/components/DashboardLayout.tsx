@@ -46,6 +46,7 @@ export default function DashboardLayout() {
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const isDashboard = location.pathname === '/dashboard' || location.pathname === '/';
   const { user, clearAuth } = useAuthStore();
   const { token } = theme.useToken();
   const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
@@ -488,10 +489,10 @@ export default function DashboardLayout() {
         {/* CONTENT WRAPPER */}
         <Content
           style={{
-            margin: '20px 24px 0',
+            margin: isDashboard ? '12px 24px 0' : '20px 24px 0',
             minHeight: 280,
             background: 'transparent',
-            flex: 1,
+            flex: isDashboard ? 'none' : 1,
             overflow: 'initial'
           }}
         >
@@ -503,8 +504,8 @@ export default function DashboardLayout() {
           style={{
             textAlign: 'center',
             background: 'transparent',
-            padding: '20px 24px',
-            marginTop: 'auto'
+            padding: isDashboard ? '10px 24px 24px' : '20px 24px',
+            marginTop: isDashboard ? 4 : 'auto'
           }}
         >
           <Space direction="vertical" size={2}>
