@@ -47,10 +47,11 @@ export const useOrdenesParaResultados = () => {
 /**
  * Hook para obtener órdenes pendientes de aprobación (CON_RESULTADOS)
  */
-export const useOrdenesPendientesAprobacion = () => {
+export const useOrdenesPendientesAprobacion = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: resultadosKeys.ordenesPendientesAprobacion,
     queryFn: obtenerOrdenesPendientesAprobacion,
+    ...options,
   });
 };
 
@@ -81,6 +82,8 @@ export const useGuardarResultados = () => {
       queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientes });
       // Invalidar órdenes pendientes de aprobación
       queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientesAprobacion });
+      // Invalidar alertas para actualizar badges de cabecera
+      queryClient.invalidateQueries({ queryKey: ['alertas'] });
       message.success('Resultados guardados exitosamente');
     },
     onError: (error: any) => {
@@ -103,6 +106,8 @@ export const useAprobarOrden = () => {
       queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientes });
       queryClient.invalidateQueries({ queryKey: resultadosKeys.ordenesPendientesAprobacion });
       queryClient.invalidateQueries({ queryKey: ['ordenes'] });
+      // Invalidar alertas para actualizar badges de cabecera de inmediato
+      queryClient.invalidateQueries({ queryKey: ['alertas'] });
       message.success('Orden aprobada exitosamente');
     },
     onError: (error: any) => {
@@ -153,6 +158,7 @@ export const useCrearResultado = () => {
       queryClient.invalidateQueries({
         queryKey: resultadosKeys.ordenConResultados(data.orden_id),
       });
+      queryClient.invalidateQueries({ queryKey: ['alertas'] });
       message.success('Resultado registrado exitosamente');
     },
     onError: (error: any) => {
@@ -176,6 +182,7 @@ export const useCrearResultadosBulk = () => {
       });
       // Invalidar también las órdenes para actualizar el estado
       queryClient.invalidateQueries({ queryKey: ['ordenes'] });
+      queryClient.invalidateQueries({ queryKey: ['alertas'] });
       message.success(
         `${data.created} resultados registrados. Orden actualizada a CON_RESULTADOS`
       );
@@ -201,6 +208,7 @@ export const useActualizarResultado = () => {
       queryClient.invalidateQueries({
         queryKey: resultadosKeys.ordenConResultados(data.orden_id),
       });
+      queryClient.invalidateQueries({ queryKey: ['alertas'] });
       message.success('Resultado actualizado exitosamente');
     },
     onError: (error: any) => {
@@ -219,6 +227,7 @@ export const useEliminarResultado = () => {
     mutationFn: eliminarResultado,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resultadosKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['alertas'] });
       message.success('Resultado eliminado exitosamente');
     },
     onError: (error: any) => {

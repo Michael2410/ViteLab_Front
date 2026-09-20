@@ -5,12 +5,8 @@ import {
   Space,
   Typography,
   Input,
-  Card,
-  Row,
-  Col,
   Modal,
   Switch,
-  Tag,
 } from 'antd';
 import {
   PlusOutlined,

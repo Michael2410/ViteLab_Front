@@ -14,6 +14,7 @@ import NotFoundPage from './shared/pages/NotFoundPage';
 // Módulo Órdenes
 import { OrdenesPage } from './modules/ordenes/pages/OrdenesPage';
 import { NuevaOrdenPage } from './modules/ordenes/pages/NuevaOrdenPage';
+import { EditarOrdenPage } from './modules/ordenes/pages/EditarOrdenPage';
 import { OrdenDetallePage } from './modules/ordenes/pages/OrdenDetallePage';
 import { OrdenImprimiblePage } from './modules/ordenes/pages/OrdenImprimiblePage';
 
@@ -176,6 +177,11 @@ function App() {
                 <Route path="ordenes/nueva" element={
                   <ProtectedRoute requiredPermission="orders.create">
                     <NuevaOrdenPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="ordenes/:id/editar" element={
+                  <ProtectedRoute requiredPermission="orders.update">
+                    <EditarOrdenPage />
                   </ProtectedRoute>
                 } />
                 <Route path="ordenes/:id" element={

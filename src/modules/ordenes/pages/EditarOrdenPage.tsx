@@ -15,6 +15,8 @@ import {
   Tag,
   Result,
   Avatar,
+  Spin,
+  Alert,
 } from 'antd';
 import {
   SaveOutlined,
@@ -31,54 +33,127 @@ import {
   CheckOutlined,
   EditOutlined,
   InfoCircleOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useAuthStore } from '../../auth/hooks';
 import { BuscarPaciente } from '../components/BuscarPaciente';
-import { SeleccionAnalisis } from '../components/SeleccionAnalisis';
+import { SeleccionAnalisis, type AnalisisConMuestras } from '../components/SeleccionAnalisis';
 import {
-  useCrearOrden,
+  useOrdenDetalle,
+  useActualizarOrden,
   useSedesActivas,
   useTiposClienteActivos,
   useConveniosActivos,
   useMedicos,
 } from '../hooks';
-import type { CreateOrdenInput, PacienteFormInput, AnalisisSeleccionado } from '../types';
+import {
+  ESTADO_ORDEN_COLORS,
+  ESTADO_ORDEN_LABELS,
+  EstadoOrden,
+  type UpdateOrdenInput,
+  type PacienteFormInput,
+  type AnalisisSeleccionado,
+} from '../types';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-export const NuevaOrdenPage: React.FC = () => {
+export const EditarOrdenPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const ordenId = Number(id);
   const navigate = useNavigate();
   const { token } = theme.useToken();
-  const { hasPermission } = useAuthStore();
-  
+  const { hasPermission, user } = useAuthStore();
+  const isSuperAdmin = user?.rol_nombre === 'SUPER_ADMIN' || user?.rol_id === 1;
+  const canUpdate = isSuperAdmin || hasPermission('orders.update');
+
   // --- Estado y Formularios ---
   const [formPaciente] = Form.useForm();
   const [formOrden] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [analisisSeleccionados, setAnalisisSeleccionados] = useState<AnalisisSeleccionado[]>([]);
+  const [analisisIniciales, setAnalisisIniciales] = useState<AnalisisConMuestras[]>([]);
   const [tipoClienteSeleccionado, setTipoClienteSeleccionado] = useState<number | null>(null);
+  const [datosCargados, setDatosCargados] = useState(false);
 
   // --- Queries y Mutaciones ---
-  const crearOrdenMutation = useCrearOrden();
+  const { data: orden, isLoading: loadingOrden, isError, error } = useOrdenDetalle(ordenId);
+  const actualizarOrdenMutation = useActualizarOrden();
   const { data: sedes, isLoading: loadingSedes } = useSedesActivas();
   const { data: tiposCliente, isLoading: loadingTipos } = useTiposClienteActivos();
   const { data: convenios, isLoading: loadingConvenios } = useConveniosActivos();
   const { data: medicosExistentes } = useMedicos();
 
+  // --- Cargar Datos Iniciales de la Orden ---
+  useEffect(() => {
+    if (orden && !datosCargados) {
+      // 1. Cargar Paciente
+      if (orden.paciente) {
+        formPaciente.setFieldsValue({
+          dni: orden.paciente.dni,
+          nombres: orden.paciente.nombres,
+          apellido_paterno: orden.paciente.apellido_paterno,
+          apellido_materno: orden.paciente.apellido_materno,
+          fecha_nacimiento: orden.paciente.fecha_nacimiento
+            ? dayjs(orden.paciente.fecha_nacimiento)
+            : undefined,
+          genero: orden.paciente.genero,
+          telefono: orden.paciente.telefono || undefined,
+          email: orden.paciente.email || undefined,
+          direccion: orden.paciente.direccion || undefined,
+        });
+      }
+
+      // 2. Cargar Orden
+      formOrden.setFieldsValue({
+        sede_id: orden.sede_id,
+        tipo_cliente_id: orden.tipo_cliente_id,
+        convenio_id: orden.convenio_id || undefined,
+        medico: orden.medico || undefined,
+        nota: orden.nota || undefined,
+      });
+      setTipoClienteSeleccionado(orden.tipo_cliente_id);
+
+      // 3. Cargar Análisis
+      if (orden.analisis && Array.isArray(orden.analisis)) {
+        const initialSelected: AnalisisSeleccionado[] = orden.analisis.map((oa) => ({
+          id: oa.analisis_id,
+          muestras_ids: oa.muestras_ids || [],
+          precio: Number(oa.precio),
+        }));
+
+        const initialList: AnalisisConMuestras[] = orden.analisis.map((oa) => ({
+          id: oa.analisis_id,
+          nombre: oa.nombre || oa.analisis?.nombre || `Análisis #${oa.analisis_id}`,
+          activo: true,
+          precio: Number(oa.precio),
+          muestras_ids: oa.muestras_ids || [],
+          componentes: oa.analisis?.componentes || [],
+        }));
+
+        setAnalisisSeleccionados(initialSelected);
+        setAnalisisIniciales(initialList);
+      }
+
+      setDatosCargados(true);
+    }
+  }, [orden, datosCargados, formPaciente, formOrden]);
+
   // --- Lógica Auxiliar ---
   const medicoOptions = useMemo(() => {
-    return medicosExistentes?.map((medico) => ({
-      value: medico,
-      label: (
-        <Space>
-           <UserOutlined style={{ color: token.colorTextSecondary }} /> 
-           {medico}
-        </Space>
-      ),
-    })) || [];
+    return (
+      medicosExistentes?.map((medico) => ({
+        value: medico,
+        label: (
+          <Space>
+            <UserOutlined style={{ color: token.colorTextSecondary }} />
+            {medico}
+          </Space>
+        ),
+      })) || []
+    );
   }, [medicosExistentes, token]);
 
   const tipoClienteParticular = tiposCliente?.find(
@@ -95,7 +170,7 @@ export const NuevaOrdenPage: React.FC = () => {
   const steps = [
     { title: 'Paciente', subTitle: 'Identificación', icon: <UserOutlined /> },
     { title: 'Detalles', subTitle: 'Sede y Convenio', icon: <SolutionOutlined /> },
-    { title: 'Análisis', subTitle: 'Selección', icon: <ExperimentOutlined /> },
+    { title: 'Análisis', subTitle: 'Selección y Precios', icon: <ExperimentOutlined /> },
   ];
 
   // --- Handlers ---
@@ -118,10 +193,11 @@ export const NuevaOrdenPage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!hasPermission('orders.create')) {
-      message.error('No tienes permisos para crear órdenes.');
+    if (!canUpdate) {
+      message.error('No tienes permisos para editar órdenes.');
       return;
     }
+
     try {
       if (analisisSeleccionados.length === 0) {
         message.error('Debe seleccionar al menos un análisis');
@@ -145,7 +221,7 @@ export const NuevaOrdenPage: React.FC = () => {
         direccion: pacienteValues.direccion || undefined,
       };
 
-      const ordenData: CreateOrdenInput = {
+      const updateData: UpdateOrdenInput = {
         paciente: pacienteData,
         sede_id: ordenValues.sede_id,
         tipo_cliente_id: ordenValues.tipo_cliente_id,
@@ -155,22 +231,26 @@ export const NuevaOrdenPage: React.FC = () => {
         medico: ordenValues.medico || undefined,
       };
 
-      const ordenCreada = await crearOrdenMutation.mutateAsync(ordenData);
-      message.success(`Orden ${ordenCreada.numero_atencion} creada exitosamente`);
-      navigate(`/ordenes/${ordenCreada.id}`);
+      await actualizarOrdenMutation.mutateAsync({
+        id: ordenId,
+        data: updateData,
+      });
+
+      message.success(`Orden ${orden?.numero_atencion || ordenId} actualizada exitosamente`);
+      navigate(`/ordenes/${ordenId}`);
     } catch (error: any) {
       console.error(error);
-      message.error(error.response?.data?.message || 'Error al crear la orden');
+      message.error(error.response?.data?.message || 'Error al actualizar la orden');
     }
   };
 
-  if (!hasPermission('orders.create')) {
+  if (!canUpdate) {
     return (
       <Result
         status="403"
         icon={<LockOutlined />}
         title="Acceso Denegado"
-        subTitle="No tienes permisos para registrar nuevas órdenes."
+        subTitle="No tienes permisos para editar órdenes de atención."
         extra={
           <Button type="primary" onClick={() => navigate('/ordenes')} icon={<ArrowLeftOutlined />}>
             Volver al listado
@@ -180,7 +260,29 @@ export const NuevaOrdenPage: React.FC = () => {
     );
   }
 
-  // --- RENDER ---
+  if (loadingOrden) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Spin size="large" tip="Cargando datos de la orden..." />
+      </div>
+    );
+  }
+
+  if (isError || !orden) {
+    return (
+      <Result
+        status="error"
+        title="Orden no encontrada"
+        subTitle={error?.message || `No se pudo encontrar la orden con ID #${ordenId}`}
+        extra={
+          <Button type="primary" onClick={() => navigate('/ordenes')} icon={<ArrowLeftOutlined />}>
+            Volver al listado
+          </Button>
+        }
+      />
+    );
+  }
+
   return (
     <div
       style={{
@@ -204,21 +306,39 @@ export const NuevaOrdenPage: React.FC = () => {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/ordenes')}
+            onClick={() => navigate(`/ordenes/${ordenId}`)}
             style={{ paddingLeft: 0, color: '#64748b', fontSize: 12, height: 'auto', marginBottom: 2 }}
           >
-            Volver al listado
+            Volver al detalle de la orden
           </Button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>
-              Nueva Orden de Atención
+              Editar Orden #{orden.numero_atencion}
             </Title>
+            <Tag
+              color={ESTADO_ORDEN_COLORS[orden.estado]}
+              style={{ borderRadius: 6, fontWeight: 600, padding: '2px 10px', fontSize: 12 }}
+            >
+              {ESTADO_ORDEN_LABELS[orden.estado] || orden.estado}
+            </Tag>
             <Tag color="blue" style={{ borderRadius: 6, fontWeight: 600, padding: '1px 8px', fontSize: 12 }}>
               Paso {currentStep + 1} de 3
             </Tag>
           </div>
         </div>
       </div>
+
+      {/* Alerta si la orden ya tiene muestras o resultados */}
+      {orden.estado !== EstadoOrden.REGISTRADA && (
+        <Alert
+          message="Edición en Estado Avanzado"
+          description={`Esta orden se encuentra en estado "${ESTADO_ORDEN_LABELS[orden.estado]}". Las modificaciones respetarán los resultados de los análisis no eliminados. Esta función debe usarse bajo autorización gerencial.`}
+          type="warning"
+          showIcon
+          icon={<WarningOutlined />}
+          style={{ marginBottom: 14, borderRadius: 8 }}
+        />
+      )}
 
       {/* 2. Stepper Esbelto y Compacto */}
       <div
@@ -302,12 +422,18 @@ export const NuevaOrdenPage: React.FC = () => {
                   </span>
                   <span style={{ fontSize: 13, color: '#94a3b8' }}>• {step.subTitle}</span>
                   {isCompleted && (
-                    <Tag color="success" style={{ borderRadius: 10, fontSize: 10, padding: '0 5px', margin: 0, lineHeight: '16px' }}>
+                    <Tag
+                      color="success"
+                      style={{ borderRadius: 10, fontSize: 10, padding: '0 5px', margin: 0, lineHeight: '16px' }}
+                    >
                       Listo
                     </Tag>
                   )}
                   {isActive && (
-                    <Tag color="blue" style={{ borderRadius: 10, fontSize: 10, padding: '0 5px', margin: 0, lineHeight: '16px' }}>
+                    <Tag
+                      color="blue"
+                      style={{ borderRadius: 10, fontSize: 10, padding: '0 5px', margin: 0, lineHeight: '16px' }}
+                    >
                       En curso
                     </Tag>
                   )}
@@ -346,7 +472,7 @@ export const NuevaOrdenPage: React.FC = () => {
         })}
       </div>
 
-      {/* 3. Tarjeta del Formulario con Padding Óptimo */}
+      {/* 3. Tarjeta del Formulario */}
       <Card
         bordered={true}
         className="wizard-card"
@@ -360,7 +486,7 @@ export const NuevaOrdenPage: React.FC = () => {
         }}
         bodyStyle={{ padding: 0 }}
       >
-        {/* Cuerpo del Contenido con Altura Mínima Consistente */}
+        {/* Contenido con Altura Mínima Consistente */}
         <div style={{ padding: '20px 24px 18px 24px', minHeight: 520, boxSizing: 'border-box' }}>
           {/* Mini-Ficha del Paciente (Visible en Paso 1 y Paso 2) */}
           {currentStep > 0 && (
@@ -390,7 +516,8 @@ export const NuevaOrdenPage: React.FC = () => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
-                      {formPaciente.getFieldValue('nombres')} {formPaciente.getFieldValue('apellido_paterno') || ''} {formPaciente.getFieldValue('apellido_materno') || ''}
+                      {formPaciente.getFieldValue('nombres')} {formPaciente.getFieldValue('apellido_paterno') || ''}{' '}
+                      {formPaciente.getFieldValue('apellido_materno') || ''}
                     </Text>
                     <Tag color="blue" style={{ borderRadius: 4, fontWeight: 700, margin: 0, fontSize: 11, padding: '0 5px' }}>
                       DNI: {formPaciente.getFieldValue('dni')}
@@ -433,7 +560,7 @@ export const NuevaOrdenPage: React.FC = () => {
                 Datos de Identificación del Paciente
               </Title>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                Consulte el DNI para autocompletar con RENIEC o la base de datos interna
+                Edite los datos del paciente o consulte otro DNI si requiere reemplazarlo
               </Text>
             </div>
             <BuscarPaciente form={formPaciente} />
@@ -609,10 +736,10 @@ export const NuevaOrdenPage: React.FC = () => {
             >
               <div>
                 <Title level={4} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
-                  Selección de Análisis
+                  Selección de Análisis y Precios
                 </Title>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  {esParticular ? 'Tarifario Particular' : 'Tarifario de Convenio'} aplicado
+                  {esParticular ? 'Tarifario Particular' : 'Tarifario de Convenio'} aplicado. Puede modificar análisis o ajustar precios si cuenta con permiso.
                 </Text>
               </div>
               <Tag
@@ -628,12 +755,13 @@ export const NuevaOrdenPage: React.FC = () => {
                 analisisSeleccionados={analisisSeleccionados}
                 onAnalisisChange={setAnalisisSeleccionados}
                 convenioId={esParticular ? undefined : formOrden.getFieldValue('convenio_id')}
+                analisisIniciales={analisisIniciales}
               />
             </div>
           </div>
         </div>
 
-        {/* Footer de Acciones Sticky (Siempre Visible sin Scroll) */}
+        {/* Footer de Acciones Sticky */}
         <div
           style={{
             position: 'sticky',
@@ -657,19 +785,19 @@ export const NuevaOrdenPage: React.FC = () => {
             {currentStep === 0 && (
               <Text type="secondary" style={{ fontSize: 13 }}>
                 <InfoCircleOutlined style={{ color: '#1677ff', marginRight: 6 }} />
-                Paso 1 de 3 • Complete o consulte el DNI para autocompletar
+                Paso 1 de 3 • Verifique o actualice los datos del paciente
               </Text>
             )}
             {currentStep === 1 && (
               <Text type="secondary" style={{ fontSize: 13 }}>
                 <InfoCircleOutlined style={{ color: '#1677ff', marginRight: 6 }} />
-                Paso 2 de 3 • Sede de atención y tarifario aplicable
+                Paso 2 de 3 • Verifique la sede de atención y tarifario
               </Text>
             )}
             {currentStep === 2 && (
               <Text type="secondary" style={{ fontSize: 13 }}>
                 <InfoCircleOutlined style={{ color: '#1677ff', marginRight: 6 }} />
-                Paso 3 de 3 • Verifique los exámenes antes de finalizar
+                Paso 3 de 3 • Revise los exámenes y precios antes de guardar
               </Text>
             )}
           </div>
@@ -713,7 +841,7 @@ export const NuevaOrdenPage: React.FC = () => {
                 type="primary"
                 size="middle"
                 icon={<SaveOutlined />}
-                loading={crearOrdenMutation.isPending}
+                loading={actualizarOrdenMutation.isPending}
                 onClick={handleSubmit}
                 disabled={analisisSeleccionados.length === 0}
                 style={{
@@ -721,11 +849,11 @@ export const NuevaOrdenPage: React.FC = () => {
                   padding: '0 28px',
                   fontWeight: 600,
                   height: 38,
-                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                  boxShadow: '0 2px 10px rgba(37, 99, 235, 0.35)',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  boxShadow: '0 2px 10px rgba(16, 185, 129, 0.35)',
                 }}
               >
-                Finalizar Orden
+                Guardar Cambios
               </Button>
             )}
           </Space>

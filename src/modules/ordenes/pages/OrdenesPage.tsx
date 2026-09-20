@@ -17,12 +17,14 @@ import {
 import {
   PlusOutlined,
   EyeOutlined,
+  EditOutlined,
   DeleteOutlined,
   SearchOutlined,
   FilterOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   WhatsAppOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -39,6 +41,7 @@ import {
 } from '../types';
 import PageContainer from '../../../shared/components/PageContainer';
 import { WhatsAppSendModal, useWhatsAppStatus } from '../../whatsapp';
+import { CondicionesPreanaliticasModal } from '../components/CondicionesPreanaliticasModal';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -54,10 +57,14 @@ export const OrdenesPage: React.FC = () => {
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   
   // Estado para modal de WhatsApp
-  const [whatsappModal, setWhatsappModal] = useState<{
-    open: boolean;
-    orden: Orden | null;
-  }>({ open: false, orden: null });
+  const [whatsappModal, setWhatsappModal] = useState<{ open: boolean; orden: Orden | null }>({
+    open: false,
+    orden: null,
+  });
+  const [preanaliticaModal, setPreanaliticaModal] = useState<{ open: boolean; orden: Orden | null }>({
+    open: false,
+    orden: null,
+  });
   const { data: whatsappStatus } = useWhatsAppStatus();
 
   const { data: ordenes, isLoading } = useOrdenes(filtros);
@@ -95,8 +102,8 @@ export const OrdenesPage: React.FC = () => {
   };
 
   const handleRecepcionarMuestra = (record: Orden) => {
-    console.log('🔵 [RECEPCIONAR] Botón clickeado para orden:', record.id, record.numero_atencion);
-    console.log('🔵 [RECEPCIONAR] Record completo:', record);
+    console.log('[RECEPCIONAR] Botón clickeado para orden:', record.id, record.numero_atencion);
+    console.log('[RECEPCIONAR] Record completo:', record);
     
     modal.confirm({
       title: '¿Confirmar recepción de muestra?',
@@ -105,12 +112,12 @@ export const OrdenesPage: React.FC = () => {
       cancelText: 'Cancelar',
       icon: <ExclamationCircleOutlined style={{ color: '#1890ff' }} />,
       onOk: async () => {
-        console.log('🟢 [RECEPCIONAR] Modal confirmado, llamando a mutateAsync...');
+        console.log('[RECEPCIONAR] Modal confirmado, llamando a mutateAsync...');
         try {
           const resultado = await recepcionarMuestraMutation.mutateAsync(record.id);
-          console.log('✅ [RECEPCIONAR] Mutación exitosa:', resultado);
+          console.log('[RECEPCIONAR] Mutación exitosa:', resultado);
         } catch (error) {
-          console.error('❌ [RECEPCIONAR] Error en mutación:', error);
+          console.error('[RECEPCIONAR] Error en mutación:', error);
         }
       },
     });
@@ -129,7 +136,7 @@ export const OrdenesPage: React.FC = () => {
       title: 'N° Orden',
       dataIndex: 'numero_atencion',
       key: 'numero_atencion',
-      width: 80,
+      width: 100,
       render: (numero: number) => <Text strong>{numero}</Text>,
     },
     {
@@ -196,19 +203,37 @@ export const OrdenesPage: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
-      width: 120,
+      width: 140,
       render: (_, record) => (
         <Space size="small">
           {hasPermission('orders.read') && (
-            <Tooltip title="Ver detalle">
+            <>
+              <Tooltip title="Ver detalle">
+                <Button
+                  type="link"
+                  icon={<EyeOutlined />}
+                  onClick={() => navigate(`/ordenes/${record.id}`)}
+                />
+              </Tooltip>
+              <Tooltip title="Condiciones Pre-Analíticas (IA)">
+                <Button
+                  type="link"
+                  icon={<RobotOutlined />}
+                  onClick={() => setPreanaliticaModal({ open: true, orden: record })}
+                />
+              </Tooltip>
+            </>
+          )}
+          {hasPermission('orders.update') && (
+            <Tooltip title="Editar orden">
               <Button
                 type="link"
-                icon={<EyeOutlined />}
-                onClick={() => navigate(`/ordenes/${record.id}`)}
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/ordenes/${record.id}/editar`)}
               />
             </Tooltip>
           )}
-          {hasPermission('orders.update') && record.estado === EstadoOrden.REGISTRADA && (
+          {hasPermission('orders.read') && record.estado === EstadoOrden.REGISTRADA && (
             <Tooltip title="Recepcionar Muestra">
               <Button
                 type="primary"
@@ -259,7 +284,7 @@ export const OrdenesPage: React.FC = () => {
 return (
   <PageContainer>
 
-    {/* 🔵 Header: título + búsqueda + filtros + botón nueva orden */}
+    {/* Header: título + búsqueda + filtros + botón nueva orden */}
     <div
       style={{
         display: 'flex',
@@ -327,7 +352,7 @@ return (
       </div>
     </div>
 
-    {/* 🔵 Filtros avanzados */}
+    {/* Filtros avanzados */}
     {mostrarFiltros && (
       <div style={{ marginBottom: 16 }}>
         <Card>
@@ -386,7 +411,7 @@ return (
       </div>
     )}
 
-    {/* 🔵 Tabla */}
+    {/* Tabla */}
       <Table
         columns={columns}
         dataSource={ordenes?.items || []}
@@ -411,8 +436,16 @@ return (
         ordenId={whatsappModal.orden.id}
         numeroAtencion={whatsappModal.orden.numero_atencion?.toString() || ''}
         pacienteNombre={`${whatsappModal.orden.paciente_nombres || ''} ${whatsappModal.orden.paciente_apellidos || ''}`}
+        telefonoPaciente={whatsappModal.orden.paciente_telefono || undefined}
       />
     )}
+
+    {/* Modal de Condiciones Pre-Analíticas IA */}
+    <CondicionesPreanaliticasModal
+      open={preanaliticaModal.open}
+      onClose={() => setPreanaliticaModal({ open: false, orden: null })}
+      orden={preanaliticaModal.orden}
+    />
 
   </PageContainer>
 );

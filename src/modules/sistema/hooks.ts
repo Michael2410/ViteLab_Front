@@ -11,10 +11,11 @@ export const sistemaKeys = {
 /**
  * Hook para obtener la configuración del sistema
  */
-export const useConfiguracion = () => {
+export const useConfiguracion = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: sistemaKeys.configuracion,
     queryFn: obtenerConfiguracion,
+    ...options,
   });
 };
 

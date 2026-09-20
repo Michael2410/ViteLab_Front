@@ -9,8 +9,10 @@ import {
   theme,
   Space,
   Tag,
-  Grid, // Import Grid to use breakpoints
-  Tooltip
+  Grid,
+  Tooltip,
+  Badge,
+  type MenuProps
 } from 'antd';
 import {
   MenuFoldOutlined,
@@ -28,7 +30,7 @@ import {
   BarChartOutlined,
   WhatsAppOutlined
 } from '@ant-design/icons';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../../modules/auth/hooks';
 import HeaderAlertas from './HeaderAlertas';
@@ -194,18 +196,30 @@ export default function DashboardLayout() {
 
   const activeKey = useMemo(() => {
     const currentPath = location.pathname;
-    let bestMatchKey = 'dashboard';
 
     if (currentPath === '/') return 'dashboard';
 
-    Object.entries(routeMap).forEach(([key, route]) => {
-      if (currentPath.startsWith(route) && route !== '/dashboard') {
-        bestMatchKey = key;
-      }
-    });
+    // Ordenar entradas por longitud de ruta descendente para que las más específicas (/ordenes/nueva) se evalúen antes que las genéricas (/ordenes)
+    const sortedEntries = Object.entries(routeMap).sort((a, b) => b[1].length - a[1].length);
 
-    return bestMatchKey;
+    for (const [key, route] of sortedEntries) {
+      if (route === '/dashboard') continue;
+      if (currentPath === route || currentPath.startsWith(route + '/')) {
+        return key;
+      }
+    }
+
+    return 'dashboard';
   }, [location.pathname]);
+
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (activeKey.includes('-')) {
+      const parentKey = activeKey.split('-')[0];
+      setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [...prev, parentKey]));
+    }
+  }, [activeKey]);
 
   const breadcrumbItems = useMemo(() => {
     const pathSnippets = location.pathname.split('/').filter((i) => i);
@@ -226,14 +240,66 @@ export default function DashboardLayout() {
     if (route) navigate(route);
   };
 
-  const userMenuItems = [
+  const userMenuItems: MenuProps['items'] = [
     { key: 'profile', icon: <UserOutlined />, label: 'Mi Perfil', onClick: () => navigate('/perfil') },
     { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Cerrar Sesión', onClick: handleLogout, danger: true },
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f4f7fb' }}>
+      <style>{`
+        /* Sidebar Menu Styles */
+        .vitelab-sider-menu.ant-menu-dark {
+          background: transparent !important;
+        }
+        .vitelab-sider-menu .ant-menu-item,
+        .vitelab-sider-menu .ant-menu-submenu-title {
+          border-radius: 8px !important;
+          margin: 4px 8px !important;
+          width: calc(100% - 16px) !important;
+          transition: all 0.2s ease !important;
+        }
+        .vitelab-sider-menu .ant-menu-item .ant-menu-item-icon,
+        .vitelab-sider-menu .ant-menu-submenu-title .ant-menu-item-icon {
+          font-size: 16px !important;
+          min-width: 16px !important;
+          text-align: center !important;
+        }
+        .vitelab-sider-menu .ant-menu-item-selected {
+          background: linear-gradient(90deg, rgba(37, 99, 235, 0.3) 0%, rgba(37, 99, 235, 0.08) 100%) !important;
+          border-left: 3px solid #38bdf8 !important;
+          color: #ffffff !important;
+          font-weight: 600 !important;
+        }
+        .vitelab-sider-menu .ant-menu-item:hover,
+        .vitelab-sider-menu .ant-menu-submenu-title:hover {
+          color: #ffffff !important;
+          background: rgba(255, 255, 255, 0.06) !important;
+        }
+        .vitelab-sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title {
+          color: #38bdf8 !important;
+        }
+        .user-dropdown-trigger:hover {
+          background: rgba(226, 232, 240, 0.9) !important;
+        }
+        .btn-header-wsp-connected {
+          color: #25D366 !important;
+          background: rgba(37, 211, 102, 0.08) !important;
+        }
+        .btn-header-wsp-connected:hover {
+          color: #25D366 !important;
+          background: rgba(37, 211, 102, 0.16) !important;
+        }
+        .btn-header-wsp-neutral {
+          color: #64748b !important;
+        }
+        .btn-header-wsp-neutral:hover {
+          color: #1e293b !important;
+          background: rgba(0, 0, 0, 0.04) !important;
+        }
+      `}</style>
+
       {/* SIDER */}
       <Sider
         trigger={null}
@@ -241,7 +307,8 @@ export default function DashboardLayout() {
         collapsed={collapsed}
         width={260}
         style={{
-          background: '#001529',
+          background: '#070f1e',
+          borderRight: '1px solid rgba(255, 255, 255, 0.07)',
           overflow: 'hidden',
           height: '100vh',
           position: 'fixed',
@@ -249,33 +316,56 @@ export default function DashboardLayout() {
           top: 0,
           bottom: 0,
           zIndex: 100,
-          boxShadow: '2px 0 8px rgba(0,0,0,0.15)'
+          boxShadow: '4px 0 20px rgba(0, 0, 0, 0.2)'
         }}
       >
+        {/* Logo Header */}
         <div style={{
           height: 64,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          background: '#002140',
-          transition: 'all 0.2s'
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          padding: collapsed ? '0' : '0 18px',
+          background: '#050a14',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          transition: 'all 0.25s ease',
+          gap: 12
         }}>
-          <Space>
-            <span style={{ fontSize: 24 }}>🧪</span>
-            {!collapsed && (
-              <Text strong style={{ color: 'white', fontSize: 18, whiteSpace: 'nowrap' }}>
-                ViteLab <span style={{ fontWeight: 300, opacity: 0.7 }}>LIMS</span>
-              </Text>
-            )}
-          </Space>
+          <div style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(14, 165, 233, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            flexShrink: 0
+          }}>
+            <ExperimentOutlined style={{ fontSize: 20, color: '#ffffff' }} />
+          </div>
+          {!collapsed && (
+            <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', letterSpacing: '0.4px', lineHeight: 1.1 }}>
+                ViteLab
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#38bdf8', letterSpacing: '1.4px', textTransform: 'uppercase', marginTop: 2 }}>
+                Clinical LIMS
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Menu */}
         <div style={{ height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
           <Menu
             theme="dark"
             mode="inline"
+            className="vitelab-sider-menu"
             selectedKeys={[activeKey]}
-            defaultOpenKeys={activeKey.includes('-') ? [activeKey.split('-')[0]] : []}
+            openKeys={collapsed ? [] : openKeys}
+            onOpenChange={(keys) => setOpenKeys(keys)}
             items={menuItems}
             onClick={handleMenuClick}
             style={{ borderRight: 0, padding: '8px 0' }}
@@ -290,21 +380,25 @@ export default function DashboardLayout() {
           transition: 'margin-left 0.2s ease',
           minHeight: '100vh',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          background: '#f4f7fb'
         }}
       >
         {/* HEADER */}
         <Header
           style={{
             padding: '0 24px',
-            background: '#fff',
+            background: 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
             zIndex: 99,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            borderBottom: '1px solid #e2e8f0',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
             height: 64
           }}
         >
@@ -313,68 +407,90 @@ export default function DashboardLayout() {
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 16, width: 40, height: 40, marginRight: 16 }}
+              style={{ fontSize: 17, width: 38, height: 38, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 14, color: '#475569' }}
             />
             <Breadcrumb items={breadcrumbItems} style={{ display: collapsed ? 'none' : 'flex' }} />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 20 }}>
-            <HeaderAlertas />
-            <Tooltip title={whatsappStatus?.isConnected ? 'WhatsApp conectado' : 'Vincular WhatsApp'}>
-              <Button
-                type="text"
-                icon={<WhatsAppOutlined />}
-                onClick={() => setWhatsappModalOpen(true)}
-                style={{
-                  fontSize: 20,
-                  paddingBottom: 5,
-                  color: whatsappStatus?.isConnected ? '#25D366' : '#8c8c8c'
-                }}
-              />
-            </Tooltip>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: -20 }}>
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    borderRadius: 8,
-                    transition: 'background 0.3s'
-                  }}
-                  className="user-dropdown-trigger"
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Toolbar de Acciones: Alertas y WhatsApp */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <HeaderAlertas />
+              
+              <Tooltip title={whatsappStatus?.isConnected ? 'WhatsApp Conectado' : 'Vincular WhatsApp'}>
+                <Badge
+                  dot={Boolean(whatsappStatus?.isConnected)}
+                  color="#25D366"
+                  offset={[-4, 5]}
                 >
-                  {/* Corrected logic for responsiveness */}
-                  <div style={{
-                    textAlign: 'right',
-                    marginRight: 12,
-                    lineHeight: 1.2,
-                    display: screens.md ? 'block' : 'none'
-                  }}>
-                    <Text strong style={{ display: 'block', color: token.colorTextHeading }}>{user?.nombres}</Text>
-                    <Tag color="blue" style={{ margin: 0, fontSize: 10, lineHeight: '16px', border: 0 }}>
+                  <Button
+                    type="text"
+                    className={whatsappStatus?.isConnected ? 'btn-header-wsp-connected' : 'btn-header-wsp-neutral'}
+                    icon={<WhatsAppOutlined style={{ fontSize: 19, color: whatsappStatus?.isConnected ? '#25D366' : '#64748b' }} />}
+                    onClick={() => setWhatsappModalOpen(true)}
+                    style={{ 
+                      width: 38, 
+                      height: 38, 
+                      borderRadius: 8, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      color: whatsappStatus?.isConnected ? '#25D366' : '#64748b',
+                      background: whatsappStatus?.isConnected ? 'rgba(37, 211, 102, 0.08)' : 'transparent',
+                      transition: 'all 0.2s ease',
+                    }}
+                  />
+                </Badge>
+              </Tooltip>
+            </div>
+
+            {/* Separador vertical sutil */}
+            <div style={{ width: 1, height: 22, backgroundColor: '#e2e8f0', margin: '0 2px' }} />
+
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  padding: '4px 12px 4px 6px',
+                  borderRadius: 24,
+                  transition: 'all 0.2s',
+                  background: 'rgba(241, 245, 249, 0.85)',
+                  border: '1px solid #e2e8f0',
+                }}
+                className="user-dropdown-trigger"
+              >
+                <Avatar
+                  size={32}
+                  icon={<UserOutlined />}
+                  style={{
+                    background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+                    boxShadow: '0 2px 8px rgba(14, 165, 233, 0.35)',
+                    marginRight: screens.md ? 10 : 0
+                  }}
+                />
+                {screens.md && (
+                  <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                      {user?.nombres || 'Usuario'}
+                    </div>
+                    <Tag color="blue" style={{ margin: '2px 0 0 0', fontSize: 10, lineHeight: '15px', padding: '0 6px', border: 0, borderRadius: 4 }}>
                       {user?.rol_nombre || 'Usuario'}
                     </Tag>
                   </div>
-                  <Avatar
-                    size="large"
-                    icon={<UserOutlined />}
-                    style={{ backgroundColor: token.colorPrimary, boxShadow: `0 2px 8px ${token.colorPrimary}40` }}
-                  />
-                </div>
-              </Dropdown>
-            </div>
+                )}
+              </div>
+            </Dropdown>
           </div>
         </Header>
 
         {/* CONTENT WRAPPER */}
         <Content
           style={{
-            margin: '24px 24px 0',
+            margin: '20px 24px 0',
             minHeight: 280,
-            background: token.colorBgContainer,
-            borderRadius: token.borderRadiusLG,
+            background: 'transparent',
             flex: 1,
             overflow: 'initial'
           }}
@@ -387,16 +503,16 @@ export default function DashboardLayout() {
           style={{
             textAlign: 'center',
             background: 'transparent',
-            padding: '16px 24px',
+            padding: '20px 24px',
             marginTop: 'auto'
           }}
         >
-          <Space direction="vertical" size={0}>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              ViteLab LIMS ©{new Date().getFullYear()}
+          <Space direction="vertical" size={2}>
+            <Text type="secondary" style={{ fontSize: 12, color: '#64748b' }}>
+              © {new Date().getFullYear()} ViteLab Systems — Plataforma de Gestión Clínica
             </Text>
-            <Text type="secondary" style={{ fontSize: 11, opacity: 0.7 }}>
-              Sistema de Gestión de Laboratorio Clínico v1.0.0
+            <Text type="secondary" style={{ fontSize: 11, color: '#94a3b8' }}>
+              v1.0.0
             </Text>
           </Space>
         </Footer>

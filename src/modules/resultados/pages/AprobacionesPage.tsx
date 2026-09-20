@@ -83,7 +83,7 @@ export const AprobacionesPage: React.FC = () => {
       title: 'N° Atención',
       dataIndex: 'numero_atencion',
       key: 'numero_atencion',
-      width: 100,
+      width: 150,
       render: (num: number) => <Tag color="orange">{num}</Tag>,
     },
     {

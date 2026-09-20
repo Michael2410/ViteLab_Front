@@ -14,7 +14,7 @@ const { Text, Title } = Typography;
 
 export default function HeaderAlertas() {
   const navigate = useNavigate();
-  const { data: alertas, isLoading } = useAlertasCounts();
+  const { data: alertas, refetch } = useAlertasCounts();
   const [ordenesApprobadasVisible, setOrdenesApprobadasVisible] = useState(false);
 
   const ordenesAprobadas = alertas?.ordenesAprobadas || 0;
@@ -33,6 +33,13 @@ export default function HeaderAlertas() {
 
   const handleVerPendientesAprobar = () => {
     navigate('/aprobaciones');
+  };
+
+  const handleOpenPopoverChange = (open: boolean) => {
+    setOrdenesApprobadasVisible(open);
+    if (open) {
+      refetch();
+    }
   };
 
   const ordenesAprobadasContent = (
@@ -98,34 +105,39 @@ export default function HeaderAlertas() {
     </div>
   );
 
+  const hasAprobadas = ordenesAprobadas > 0;
+  const hasPendientes = ordenesPendientes > 0;
+
   return (
-    <Space size="middle">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {/* Campana de órdenes aprobadas (pendientes de imprimir) */}
       <Popover
         content={ordenesAprobadasContent}
         trigger="click"
         placement="bottomRight"
         open={ordenesApprobadasVisible}
-        onOpenChange={setOrdenesApprobadasVisible}
+        onOpenChange={handleOpenPopoverChange}
       >
-        <Tooltip title="Órdenes aprobadas pendientes de imprimir">
+        <Tooltip title={hasAprobadas ? `${ordenesAprobadas} órdenes aprobadas` : 'Órdenes aprobadas'}>
           <Badge 
-            count={ordenesAprobadas} 
-            offset={[-2, 2]}
-            style={{ 
-              backgroundColor: ordenesAprobadas > 0 ? '#52c41a' : undefined,
-            }}
+            dot={hasAprobadas} 
+            color="#52c41a"
+            offset={[-4, 5]}
           >
             <Button 
               type="text" 
-              icon={<BellOutlined style={{ fontSize: 20 }} />}
-              loading={isLoading}
+              className={hasAprobadas ? 'btn-header-alerta-aprobada' : 'btn-header-alerta-neutral'}
+              icon={<BellOutlined style={{ fontSize: 19, color: hasAprobadas ? '#52c41a' : '#64748b' }} />}
               style={{ 
-                width: 40, 
-                height: 40,
+                width: 38, 
+                height: 38,
+                borderRadius: 8,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                color: hasAprobadas ? '#52c41a' : '#64748b',
+                background: hasAprobadas ? 'rgba(82, 196, 26, 0.08)' : 'transparent',
+                transition: 'all 0.2s ease',
               }}
             />
           </Badge>
@@ -133,25 +145,27 @@ export default function HeaderAlertas() {
       </Popover>
 
       {/* Alerta de órdenes pendientes de aprobar */}
-      <Tooltip title="Órdenes pendientes de aprobar">
+      <Tooltip title={hasPendientes ? `${ordenesPendientes} órdenes pendientes de aprobar` : 'Pendientes de aprobar'}>
         <Badge 
-          count={ordenesPendientes} 
-          offset={[-2, 2]}
-          style={{ 
-            backgroundColor: ordenesPendientes > 0 ? '#faad14' : undefined,
-          }}
+          dot={hasPendientes} 
+          color="#faad14"
+          offset={[-4, 5]}
         >
           <Button 
             type="text" 
-            icon={<IssuesCloseOutlined style={{ fontSize: 20 }} />}
+            className={hasPendientes ? 'btn-header-alerta-pendiente' : 'btn-header-alerta-neutral'}
+            icon={<IssuesCloseOutlined style={{ fontSize: 19, color: hasPendientes ? '#faad14' : '#64748b' }} />}
             onClick={handleVerPendientesAprobar}
-            loading={isLoading}
             style={{ 
-              width: 40, 
-              height: 40,
+              width: 38, 
+              height: 38,
+              borderRadius: 8,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              color: hasPendientes ? '#faad14' : '#64748b',
+              background: hasPendientes ? 'rgba(250, 173, 20, 0.08)' : 'transparent',
+              transition: 'all 0.2s ease',
             }}
           />
         </Badge>
@@ -161,7 +175,30 @@ export default function HeaderAlertas() {
         .alerta-item-hover:hover {
           background-color: #f5f5f5 !important;
         }
+        .btn-header-alerta-aprobada {
+          color: #52c41a !important;
+          background: rgba(82, 196, 26, 0.08) !important;
+        }
+        .btn-header-alerta-aprobada:hover {
+          color: #52c41a !important;
+          background: rgba(82, 196, 26, 0.16) !important;
+        }
+        .btn-header-alerta-pendiente {
+          color: #faad14 !important;
+          background: rgba(250, 173, 20, 0.08) !important;
+        }
+        .btn-header-alerta-pendiente:hover {
+          color: #faad14 !important;
+          background: rgba(250, 173, 20, 0.16) !important;
+        }
+        .btn-header-alerta-neutral {
+          color: #64748b !important;
+        }
+        .btn-header-alerta-neutral:hover {
+          color: #1e293b !important;
+          background: rgba(0, 0, 0, 0.04) !important;
+        }
       `}</style>
-    </Space>
+    </div>
   );
 }

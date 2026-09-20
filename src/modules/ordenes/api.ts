@@ -240,3 +240,14 @@ export const marcarOrdenComoImpresa = async (id: number): Promise<Orden> => {
   const response = await apiClient.patch<ApiResponse<Orden>>(`/ordenes/${id}/imprimir`);
   return response.data.data;
 };
+
+/**
+ * Obtener o generar condiciones pre-analíticas por IA de una orden
+ */
+export const obtenerPreanalitica = async (id: number): Promise<string> => {
+  const response = await apiClient.get<ApiResponse<{ condiciones_preanaliticas: string }>>(
+    `/ordenes/${id}/preanalitica`
+  );
+  return response.data.data.condiciones_preanaliticas;
+};
+

@@ -20,7 +20,7 @@ export const OrdenImprimiblePage: React.FC = () => {
   return (
     <div style={{ background: "#fff", padding: 24, minHeight: "100vh" }}>
 
-      {/* 🔥 Barra superior como en ResultadosVistaPrevia */}
+      {/* Barra superior como en ResultadosVistaPrevia */}
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
         <Button 
           icon={<ArrowLeftOutlined />} 
@@ -41,7 +41,7 @@ export const OrdenImprimiblePage: React.FC = () => {
         </Space>
       </div>
 
-      {/* 🔥 Componente imprimible */}
+      {/* Componente imprimible */}
       <OrdenImprimible 
         orden={orden} 
         configuracion={configuracion || null}

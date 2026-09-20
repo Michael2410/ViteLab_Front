@@ -108,6 +108,7 @@ export const useCrearOrden = () => {
     mutationFn: crearOrden,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ordenesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
       message.success('Orden creada exitosamente');
     },
     onError: (error: any) => {
@@ -128,6 +129,7 @@ export const useActualizarOrden = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ordenesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ordenesKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
       message.success('Orden actualizada exitosamente');
     },
     onError: (error: any) => {
@@ -148,6 +150,7 @@ export const useActualizarEstadoOrden = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ordenesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ordenesKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
       message.success('Estado actualizado exitosamente');
     },
     onError: (error: any) => {
@@ -166,6 +169,7 @@ export const useEliminarOrden = () => {
     mutationFn: eliminarOrden,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ordenesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
       message.success('Orden eliminada exitosamente');
     },
     onError: (error: any) => {
@@ -189,6 +193,7 @@ export const useRecepcionarMuestra = () => {
       console.log('✅ [HOOK] onSuccess - datos:', data);
       // Invalidar todas las queries de órdenes para forzar refresh
       queryClient.invalidateQueries({ queryKey: ['ordenes'] });
+      queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
       message.success('Muestra recepcionada exitosamente');
     },
     onError: (error: any) => {
@@ -284,7 +289,7 @@ export const useMedicos = () => {
 // HOOKS - ALERTAS
 // ============================================
 
-import { obtenerAlertasCounts, marcarOrdenComoImpresa } from './api';
+import { obtenerAlertasCounts, marcarOrdenComoImpresa, obtenerPreanalitica } from './api';
 
 export const alertasKeys = {
   counts: ['alertas', 'counts'] as const,
@@ -297,8 +302,9 @@ export const useAlertasCounts = () => {
   return useQuery({
     queryKey: alertasKeys.counts,
     queryFn: obtenerAlertasCounts,
-    refetchInterval: 30000, // Refrescar cada 30 segundos
-    staleTime: 10000, // Considerar datos frescos por 10 segundos
+    refetchInterval: 10000, // Refrescar cada 10 segundos
+    staleTime: 0, // Inmediatamente considerado stale para que las invalidaciones siempre actualicen
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -318,5 +324,22 @@ export const useMarcarOrdenComoImpresa = () => {
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Error al marcar orden como impresa');
     },
+  });
+};
+
+/**
+ * Hook para obtener o generar condiciones pre-analíticas por IA (con Smart Polling)
+ */
+export const usePreanalitica = (ordenId: number, enabled = true) => {
+  return useQuery({
+    queryKey: [...ordenesKeys.detail(ordenId), 'preanalitica'],
+    queryFn: () => obtenerPreanalitica(ordenId),
+    enabled: enabled && ordenId > 0,
+    refetchInterval: (query) => {
+      // Si ya tenemos las condiciones pre-analíticas, detener polling; si aún no están listas, consultar cada 2s
+      return query.state.data ? false : 2000;
+    },
+    refetchIntervalInBackground: false,
+    staleTime: 60000,
   });
 };

@@ -341,23 +341,29 @@ export const ResultadosVistaPreviaPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Interpretación IA - Solo si está aprobada y tiene interpretación */}
-                {printPreferences.mostrarInterpretacionIA && 
-                 orden.interpretacion_ia && 
-                 (orden.estado === 'APROBADA' || orden.estado === 'IMPRESO') && (
-                  <div className="interpretacion-ia-section">
-                    <div className="interpretacion-ia-header">
-                      <span className="interpretacion-ia-icon">🤖</span>
-                      <span className="interpretacion-ia-title">Interpretación de Resultados</span>
+                {/* 
+                  ===================================================================
+                  [FEATURE_IA - DESACTIVADO TEMPORALMENTE EN EL FRONTEND]
+                  Para reactivar la visualización de la interpretación IA en la vista previa:
+                  Descomentar el siguiente bloque de código.
+                  ===================================================================
+                  {printPreferences.mostrarInterpretacionIA && 
+                   orden.interpretacion_ia && 
+                   (orden.estado === 'APROBADA' || orden.estado === 'IMPRESO') && (
+                    <div className="interpretacion-ia-section">
+                      <div className="interpretacion-ia-header">
+                        <span className="interpretacion-ia-icon">🤖</span>
+                        <span className="interpretacion-ia-title">Interpretación de Resultados</span>
+                      </div>
+                      <div className="interpretacion-ia-content">
+                        {orden.interpretacion_ia}
+                      </div>
+                      <div className="interpretacion-ia-disclaimer">
+                        * Esta interpretación ha sido generada por inteligencia artificial y debe ser evaluada por su médico tratante.
+                      </div>
                     </div>
-                    <div className="interpretacion-ia-content">
-                      {orden.interpretacion_ia}
-                    </div>
-                    <div className="interpretacion-ia-disclaimer">
-                      * Esta interpretación ha sido generada por inteligencia artificial y debe ser evaluada por su médico tratante.
-                    </div>
-                  </div>
-                )}
+                  )}
+                */}
               </td>
             </tr>
           </tbody>

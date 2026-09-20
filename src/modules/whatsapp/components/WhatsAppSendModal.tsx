@@ -1,7 +1,3 @@
-/**
- * Modal para enviar resultados por WhatsApp
- */
-
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Button, Typography, Space, Alert } from 'antd';
 import { WhatsAppOutlined, SendOutlined } from '@ant-design/icons';
@@ -9,6 +5,23 @@ import { useSendWhatsAppResults, useWhatsAppStatus } from '../hooks';
 import './WhatsAppSendModal.css';
 
 const { Text } = Typography;
+
+const DEFAULT_COUNTRY_CODE = '+51';
+
+function normalizarTelefono(raw: string): { codigoPais: string; numero: string } {
+  const limpio = raw.trim().replace(/\s+/g, '');
+
+  if (limpio.startsWith('+')) {
+    const match = limpio.match(/^(\+\d{1,3})(\d+)$/);
+    if (match) return { codigoPais: match[1], numero: match[2] };
+  }
+
+  if (limpio.startsWith('51') && limpio.length > 9) {
+    return { codigoPais: '+51', numero: limpio.slice(2) };
+  }
+
+  return { codigoPais: DEFAULT_COUNTRY_CODE, numero: limpio };
+}
 
 interface WhatsAppSendModalProps {
   open: boolean;
@@ -31,24 +44,24 @@ export const WhatsAppSendModal: React.FC<WhatsAppSendModalProps> = ({
   const sendMutation = useSendWhatsAppResults();
   const { data: status } = useWhatsAppStatus();
 
-  // Pre-llenar el teléfono del paciente
   useEffect(() => {
-    if (open && telefonoPaciente) {
-      form.setFieldsValue({ phoneNumber: telefonoPaciente });
+    if (open) {
+      if (telefonoPaciente) {
+        const { codigoPais, numero } = normalizarTelefono(telefonoPaciente);
+        form.setFieldsValue({ codigoPais, numero });
+      } else {
+        form.setFieldsValue({ codigoPais: DEFAULT_COUNTRY_CODE, numero: '' });
+      }
     }
   }, [open, telefonoPaciente, form]);
 
-  const handleSubmit = async (values: { phoneNumber: string }) => {
+  const handleSubmit = async (values: { codigoPais: string; numero: string }) => {
+    const phoneNumber = `${values.codigoPais}${values.numero}`;
     try {
-      await sendMutation.mutateAsync({
-        ordenId,
-        phoneNumber: values.phoneNumber,
-      });
+      await sendMutation.mutateAsync({ ordenId, phoneNumber });
       form.resetFields();
       onClose();
-    } catch {
-      // El error ya se maneja en el hook
-    }
+    } catch {}
   };
 
   const isWhatsAppConnected = status?.isConnected;
@@ -91,32 +104,63 @@ export const WhatsAppSendModal: React.FC<WhatsAppSendModalProps> = ({
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
-            initialValues={{ phoneNumber: telefonoPaciente || '' }}
+            initialValues={{ codigoPais: DEFAULT_COUNTRY_CODE, numero: '' }}
           >
             <Form.Item
-              name="phoneNumber"
               label="Número de WhatsApp"
-              rules={[
-                { required: true, message: 'Ingresa el número de teléfono' },
-                { 
-                  pattern: /^\+?[0-9]{9,15}$/, 
-                  message: 'Ingresa un número válido (ej: +51999888777)' 
-                },
-              ]}
-              extra="Incluye el código de país (ej: +51 para Perú)"
+              extra={
+                telefonoPaciente
+                  ? 'Número registrado del paciente. Edita si es necesario.'
+                  : 'Ingresa el número del destinatario.'
+              }
             >
-              <Input
-                prefix={<WhatsAppOutlined className="whatsapp-icon" />}
-                placeholder="+51999888777"
-                size="large"
-              />
+              <Space.Compact style={{ width: '100%' }}>
+                {/* Código de país — editable para casos especiales */}
+                <Form.Item
+                  name="codigoPais"
+                  noStyle
+                  rules={[
+                    { required: true, message: 'Requerido' },
+                    {
+                      pattern: /^\+\d{1,4}$/,
+                      message: 'Formato: +51',
+                    },
+                  ]}
+                >
+                  <Input
+                    style={{ width: 72, textAlign: 'center', fontWeight: 600 }}
+                    placeholder="+51"
+                    maxLength={5}
+                    size="large"
+                  />
+                </Form.Item>
+
+                {/* Número local */}
+                <Form.Item
+                  name="numero"
+                  noStyle
+                  rules={[
+                    { required: true, message: 'Ingresa el número' },
+                    {
+                      pattern: /^[0-9]{7,12}$/,
+                      message: 'Solo dígitos, entre 7 y 12 caracteres',
+                    },
+                  ]}
+                >
+                  <Input
+                    prefix={<WhatsAppOutlined className="whatsapp-icon" />}
+                    placeholder="987654321"
+                    size="large"
+                    maxLength={12}
+                    style={{ flex: 1 }}
+                  />
+                </Form.Item>
+              </Space.Compact>
             </Form.Item>
 
             <Form.Item className="whatsapp-send-modal-footer">
               <Space>
-                <Button onClick={onClose}>
-                  Cancelar
-                </Button>
+                <Button onClick={onClose}>Cancelar</Button>
                 <Button
                   type="primary"
                   htmlType="submit"

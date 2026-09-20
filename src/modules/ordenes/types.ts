@@ -150,12 +150,14 @@ export interface Orden {
   total?: number;
   nota?: string | null;
   medico?: string | null;
+  condiciones_preanaliticas?: string | null;
   created_at: string;
   updated_at: string;
   // Campos adicionales que vienen del backend
   paciente_dni?: string;
   paciente_nombres?: string;
   paciente_apellidos?: string;
+  paciente_telefono?: string | null;
   sede_nombre?: string;
   tipo_cliente_nombre?: string;
   convenio_nombre?: string;
@@ -209,6 +211,7 @@ export interface PacienteFormInput {
 export interface AnalisisSeleccionado {
   id: number;
   muestras_ids?: number[];
+  precio?: number;
 }
 
 export interface CreateOrdenInput {
@@ -222,9 +225,12 @@ export interface CreateOrdenInput {
 }
 
 export interface UpdateOrdenInput {
+  paciente?: PacienteFormInput;
   sede_id?: number;
   tipo_cliente_id?: number;
   convenio_id?: number;
+  medico?: string;
+  analisis?: AnalisisSeleccionado[];
   nota?: string;
 }
 

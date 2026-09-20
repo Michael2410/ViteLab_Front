@@ -31,11 +31,14 @@ import {
   CheckCircleOutlined,
   SyncOutlined,
   LockOutlined,
+  RobotOutlined,
+  LoadingOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { useOrdenDetalle } from '../hooks';
+import { useOrdenDetalle, usePreanalitica } from '../hooks';
 import { useAuthStore } from '../../auth/hooks';
 import {
   ESTADO_ORDEN_COLORS,
@@ -53,9 +56,11 @@ export const OrdenDetallePage: React.FC = () => {
   const { token } = theme.useToken();
   const { hasPermission } = useAuthStore();
 
-  const { data: orden, isLoading, error } = useOrdenDetalle(ordenId, {
-    enabled: hasPermission('orders.read'),
-  });
+  const { data: orden, isLoading, error } = useOrdenDetalle(ordenId, hasPermission('orders.read'));
+
+  const { data: preanaliticaIA, isLoading: loadingPreanalitica } = usePreanalitica(ordenId, hasPermission('orders.read'));
+
+  const textoPreanalitica = preanaliticaIA || orden?.condiciones_preanaliticas;
 
   // Columnas de la tabla
   const columnsAnalisis: ColumnsType<OrdenAnalisis> = [
@@ -160,6 +165,14 @@ export const OrdenDetallePage: React.FC = () => {
           </div>
 
           <Space>
+            {hasPermission('orders.update') && (
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/ordenes/${orden.id}/editar`)}
+              >
+                Editar Orden
+              </Button>
+            )}
             {hasPermission('orders.print') && (
               <Button
                 icon={<PrinterOutlined />}
@@ -167,7 +180,6 @@ export const OrdenDetallePage: React.FC = () => {
               >
                 Imprimir Orden
               </Button>
-
             )}
             {hasPermission('results.read') && (
               <Button 
@@ -257,6 +269,37 @@ export const OrdenDetallePage: React.FC = () => {
                         />
                     </Space>
                 </div>
+            </Card>
+
+            {/* Tarjeta de Condiciones Pre-Analíticas (IA) */}
+            <Card
+                title={
+                  <Space>
+                    <RobotOutlined style={{ color: token.colorPrimary }} /> 
+                    Condiciones Pre-Analíticas (IA)
+                  </Space>
+                }
+                bordered={false}
+                style={{ 
+                    borderRadius: token.borderRadiusLG, 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                    marginTop: 24
+                }}
+            >
+                {textoPreanalitica ? (
+                    <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: 14 }}>
+                        {textoPreanalitica}
+                    </div>
+                ) : loadingPreanalitica ? (
+                    <Space style={{ padding: '8px 0' }}>
+                        <Spin indicator={<LoadingOutlined style={{ fontSize: 20 }} spin />} />
+                        <Text type="secondary">Generando indicaciones pre-analíticas con IA...</Text>
+                    </Space>
+                ) : (
+                    <Text type="secondary" italic>
+                      No se registraron indicaciones pre-analíticas para esta orden.
+                    </Text>
+                )}
             </Card>
         </Col>
 

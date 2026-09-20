@@ -143,27 +143,33 @@ export const PrintPreferencesModal: React.FC<PrintPreferencesModalProps> = ({
           </Space>
         </div>
 
-        <Divider style={{ margin: '12px 0' }} />
+        {/* 
+          ===================================================================
+          [FEATURE_IA - DESACTIVADO TEMPORALMENTE EN EL FRONTEND]
+          Para reactivar la opción de IA en las preferencias de impresión:
+          Descomentar el siguiente bloque (<Divider /> y <div>).
+          ===================================================================
+          <Divider style={{ margin: '12px 0' }} />
 
-        {/* Sección de Interpretación IA */}
-        <div>
-          <Title level={5} style={{ marginBottom: 12 }}>
-            <RobotOutlined style={{ marginRight: 8 }} />
-            Inteligencia Artificial
-          </Title>
-          
-          <Space direction="vertical" style={{ width: '100%' }} size="small">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text>Mostrar interpretación de resultados (IA)</Text>
-              <Form.Item name="mostrarInterpretacionIA" valuePropName="checked" noStyle>
-                <Switch size="small" />
-              </Form.Item>
-            </div>
-          </Space>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            La interpretación es generada automáticamente por IA y debe ser revisada por el médico tratante.
-          </Text>
-        </div>
+          <div>
+            <Title level={5} style={{ marginBottom: 12 }}>
+              <RobotOutlined style={{ marginRight: 8 }} />
+              Inteligencia Artificial
+            </Title>
+            
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text>Mostrar interpretación de resultados (IA)</Text>
+                <Form.Item name="mostrarInterpretacionIA" valuePropName="checked" noStyle>
+                  <Switch size="small" />
+                </Form.Item>
+              </div>
+            </Space>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              La interpretación es generada automáticamente por IA y debe ser revisada por el médico tratante.
+            </Text>
+          </div>
+        */}
       </Form>
     </Modal>
   );
