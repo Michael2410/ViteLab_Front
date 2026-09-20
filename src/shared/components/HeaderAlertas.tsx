@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge, Button, Popover, List, Typography, Space, Empty, Divider, Tooltip } from 'antd';
 import { BellOutlined, CheckCircleOutlined, IssuesCloseOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useAlertasCounts } from '../../modules/ordenes/hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAlertasCounts, alertasKeys } from '../../modules/ordenes/hooks';
+import { appSocket } from '../utils/socket';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/es';
@@ -14,8 +16,39 @@ const { Text, Title } = Typography;
 
 export default function HeaderAlertas() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: alertas, refetch } = useAlertasCounts();
   const [ordenesApprobadasVisible, setOrdenesApprobadasVisible] = useState(false);
+
+  // Escuchar eventos en tiempo real para refrescar alertas instantáneamente sin polling
+  useEffect(() => {
+    let timer: any = null;
+    const invalidateAlertas = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: alertasKeys.counts });
+      }, 200);
+    };
+
+    const unsubDashboard = appSocket.on('dashboard:update', invalidateAlertas);
+    const unsubOrdenCreada = appSocket.on('orden:creada', invalidateAlertas);
+    const unsubOrdenActualizada = appSocket.on('orden:actualizada', invalidateAlertas);
+    const unsubOrdenEstado = appSocket.on('orden:estado_cambiado', invalidateAlertas);
+    const unsubOrdenEliminada = appSocket.on('orden:eliminada', invalidateAlertas);
+    const unsubResultadoAprobado = appSocket.on('resultado:aprobado', invalidateAlertas);
+    const unsubResultadoGuardado = appSocket.on('resultado:guardado', invalidateAlertas);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubDashboard();
+      unsubOrdenCreada();
+      unsubOrdenActualizada();
+      unsubOrdenEstado();
+      unsubOrdenEliminada();
+      unsubResultadoAprobado();
+      unsubResultadoGuardado();
+    };
+  }, [queryClient]);
 
   const ordenesAprobadas = alertas?.ordenesAprobadas || 0;
   const ordenesPendientes = alertas?.ordenesPendientesAprobar || 0;

@@ -15,7 +15,7 @@ class WhatsAppSocketService {
    * Conecta al servidor Socket.io
    */
   connect(): void {
-    if (this.socket?.connected) {
+    if (this.socket) {
       return;
     }
 

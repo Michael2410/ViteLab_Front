@@ -14,15 +14,11 @@ import type {
   SendResultsPayload
 } from './types';
 
-/**
- * Hook para manejar el estado de conexión de WhatsApp
- */
 export const useWhatsAppStatus = () => {
   return useQuery({
     queryKey: ['whatsapp', 'status'],
     queryFn: whatsappApi.getStatus,
-    refetchInterval: 30000, // Refrescar cada 30 segundos
-    staleTime: 10000,
+    staleTime: Infinity, // Se mantiene sincronizado en tiempo real vía WebSocket
   });
 };
 
@@ -74,8 +70,13 @@ export const useWhatsAppSession = () => {
         setQrCode(null);
         setPhoneNumber(data.phoneNumber || null);
         message.success('WhatsApp conectado exitosamente');
-        // Invalidar query de status
-        queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] });
+        // Actualizar caché de React Query en memoria sin lanzar petición HTTP
+        queryClient.setQueryData(['whatsapp', 'status'], {
+          isConnected: true,
+          phoneNumber: data.phoneNumber || null,
+          lastConnectedAt: new Date().toISOString(),
+          state: 'connected',
+        });
       } else if (data.state === 'disconnected') {
         setQrCode(null);
         setPhoneNumber(null);
@@ -84,7 +85,13 @@ export const useWhatsAppSession = () => {
         } else if (data.reason === 'auth_error') {
           message.warning(data.message || 'Error de autenticación. Intente vincular de nuevo.');
         }
-        queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] });
+        // Actualizar caché de React Query en memoria sin lanzar petición HTTP
+        queryClient.setQueryData(['whatsapp', 'status'], {
+          isConnected: false,
+          phoneNumber: null,
+          lastConnectedAt: null,
+          state: 'disconnected',
+        });
       }
     });
 
@@ -114,7 +121,12 @@ export const useWhatsAppSession = () => {
       setPhoneNumber(null);
       setConnectionState('disconnected');
       message.success('Sesión de WhatsApp cerrada');
-      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] });
+      queryClient.setQueryData(['whatsapp', 'status'], {
+        isConnected: false,
+        phoneNumber: null,
+        lastConnectedAt: null,
+        state: 'disconnected',
+      });
     },
     onError: (error: Error) => {
       message.error(error.message || 'Error al cerrar sesión');

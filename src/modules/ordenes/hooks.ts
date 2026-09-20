@@ -302,9 +302,8 @@ export const useAlertasCounts = () => {
   return useQuery({
     queryKey: alertasKeys.counts,
     queryFn: obtenerAlertasCounts,
-    refetchInterval: 10000, // Refrescar cada 10 segundos
-    staleTime: 0, // Inmediatamente considerado stale para que las invalidaciones siempre actualicen
-    refetchOnWindowFocus: true,
+    staleTime: Infinity, // Se consulta 1 vez al cargar la página y luego solo reactivamente por eventos de WebSocket
+    refetchOnWindowFocus: false,
   });
 };
 

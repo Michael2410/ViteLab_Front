@@ -34,6 +34,7 @@ import 'dayjs/locale/es';
 import { obtenerDashboardStats } from '../../modules/sistema/api';
 import type { DashboardStats } from '../../modules/sistema/types';
 import { useAuthStore } from '../../modules/auth/hooks';
+import { appSocket } from '../utils/socket';
 
 dayjs.locale('es');
 const { Title, Text, Paragraph } = Typography;
@@ -58,10 +59,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(() => {
-      fetchStats();
-    }, 30000);
-    return () => clearInterval(interval);
+
+    // Suscribirse a actualizaciones en tiempo real vía Socket.io con debounce
+    let timer: any = null;
+    const unsubscribe = appSocket.on('dashboard:update', () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        fetchStats();
+      }, 200);
+    });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
 
   // Saludo dinámico según la hora
