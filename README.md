@@ -1,73 +1,125 @@
-# React + TypeScript + Vite
+# ViteLab Frontend - Sistema de Laboratorio Clínico (LIMS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz de usuario moderna, reactiva y elegante desarrollada con React 19, TypeScript, Vite y Ant Design para la gestión operativa y administrativa de laboratorios clínicos.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tecnologías
 
-## React Compiler
+- **Core:** React 19 + TypeScript + Vite
+- **UI & Componentes:** Ant Design (AntD) 5 + `@ant-design/icons`
+- **Routing:** React Router DOM 7 (SPA)
+- **Estado Global:** Zustand
+- **Peticiones HTTP & Caché:** TanStack React Query + Axios
+- **WebSockets (Cliente):** Socket.io Client (notificaciones en tiempo real y estado de WhatsApp)
+- **Exportación:** HTML2Canvas + jsPDF para reportes y órdenes
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Variables de Entorno
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Copia el archivo `.env.example` a `.env` y configura la URL de la API:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Métodos de Despliegue
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Despliegue Local (Desarrollo / Producción)
+
+#### Prerrequisitos:
+- Node.js 20+ y npm instalados.
+- Backend de ViteLab en ejecución o accesible mediante `VITE_API_URL`.
+
+#### Pasos:
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Iniciar servidor de desarrollo con Hot Module Replacement (HMR)
+npm run dev
+
+# 3. Compilar bundle de producción optimizado
+npm run build
+
+# 4. Previsualizar el bundle de producción localmente
+npm run preview
 ```
+* **Acceso en desarrollo:** `http://localhost:5173`
+
+---
+
+### 2. Despliegue con Docker (Contenedor Individual con Nginx)
+
+El frontend cuenta con un `Dockerfile` multi-stage que compila los activos estáticos y los sirve con un servidor web **Nginx Alpine** de alto rendimiento.
+
+#### Pasos:
+```bash
+# 1. Construir la imagen Docker
+docker build -t vitelab-front .
+
+# 2. Ejecutar el contenedor
+docker run -d \
+  --name vitelab-front \
+  -p 8080:80 \
+  --restart unless-stopped \
+  vitelab-front
+```
+* **Acceso a la aplicación:** `http://localhost:8080`
+
+---
+
+### 3. Despliegue con Docker Compose (Stack Completo)
+
+Desde la raíz del repositorio general (`ViteLab`), el archivo `docker-compose.yml` inicia conjuntamente el Frontend y el Backend en la misma red interna:
+
+```bash
+# 1. Construir y encender los contenedores
+docker compose up -d --build
+
+# 2. Consultar logs del frontend en tiempo real
+docker compose logs -f frontend
+
+# 3. Detener y remover los contenedores
+docker compose down
+```
+* **Frontend:** `http://localhost:8080`
+* **Backend:** `http://localhost:3000`
+
+---
+
+### 4. Despliegue en Entornos Gratuitos (Demo en la Nube: Vercel)
+
+Vercel es la plataforma ideal y 100% gratuita para desplegar este frontend gracias a su red CDN global y certificados SSL automáticos.
+
+#### Prerrequisitos:
+- El proyecto ya incluye el archivo `vercel.json` configurado para manejar el enrutamiento SPA de React Router y evitar errores 404 al recargar páginas:
+  ```json
+  {
+    "rewrites": [
+      {
+        "source": "/(.*)",
+        "destination": "/index.html"
+      }
+    ]
+  }
+  ```
+
+#### Pasos en Vercel:
+1. Inicia sesión en [Vercel Dashboard](https://vercel.com).
+2. Haz clic en **Add New... > Project** e importa el repositorio `ViteLab_Front`.
+3. En la configuración del proyecto:
+   - **Framework Preset:** `Vite` (detectado automáticamente).
+   - **Root Directory:** `./`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+4. En la sección **Environment Variables**, añade:
+   - **Key:** `VITE_API_URL`
+   - **Value:** `https://vitelab-api.onrender.com/api` (la URL pública de tu backend desplegado en Render).
+   - **Entornos:** Selecciona `Production` y `Preview`.
+5. Haz clic en **Deploy**.
+
+> Vercel compilará la app en segundos y te otorgará un enlace público HTTPS (ej. `https://vitelab-front.vercel.app`).
