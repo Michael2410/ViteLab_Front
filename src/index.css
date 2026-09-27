@@ -65,3 +65,166 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Homogenización de botones principales en todos los módulos de ViteLab */
+.ant-btn-primary:not(.ant-btn-dangerous):not(.ant-btn-background-ghost) {
+  background: linear-gradient(135deg, #0284c7 0%, #059669 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28) !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ant-btn-primary:not(.ant-btn-dangerous):not(.ant-btn-background-ghost):hover {
+  background: linear-gradient(135deg, #0369a1 0%, #10b981 100%) !important;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ant-btn-primary:not(.ant-btn-dangerous):not(.ant-btn-background-ghost):active {
+  transform: translateY(0.5px) !important;
+}
+
+/* ========================================================
+   ESTILOS CALENDARIO RRHH / VACACIONES
+   ======================================================== */
+.vitelab-vacaciones-calendar .ant-picker-calendar-header {
+  display: none !important;
+}
+
+/* Tabla general del calendario */
+.vitelab-vacaciones-calendar .ant-picker-calendar {
+  background: transparent !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-content {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+
+/* Fila de encabezado: Días de la semana (Lun, Mar, Mié, ...) */
+.vitelab-vacaciones-calendar .ant-picker-content thead {
+  background: #f8fafc !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-content thead th {
+  padding: 12px 6px !important;
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  text-align: center !important;
+  background-color: #f1f5f9 !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-content thead th:first-child {
+  border-top-left-radius: 10px !important;
+  border-bottom-left-radius: 10px !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-content thead th:last-child {
+  border-top-right-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
+}
+
+/* Fines de semana en encabezado (Sáb y Dom) */
+.vitelab-vacaciones-calendar .ant-picker-content thead th:nth-child(6),
+.vitelab-vacaciones-calendar .ant-picker-content thead th:nth-child(7) {
+  color: #64748b !important;
+  background-color: #e2e8f0 !important;
+}
+
+/* Celdas individuales de los días */
+.vitelab-vacaciones-calendar .ant-picker-calendar-date {
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  margin: 4px 3px !important;
+  min-height: 110px !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  padding: 8px 10px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Hover interactivo sobre la celda */
+.vitelab-vacaciones-calendar .ant-picker-calendar-date:hover {
+  background-color: #f0fdfa !important;
+  border-color: #0d9488 !important;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.14) !important;
+  transform: translateY(-2px);
+  cursor: pointer;
+}
+
+/* Número del día */
+.vitelab-vacaciones-calendar .ant-picker-calendar-date-value {
+  font-weight: 800 !important;
+  font-size: 14px !important;
+  color: #0f172a !important;
+  padding: 2px 4px !important;
+  line-height: 1 !important;
+  align-self: flex-start !important;
+}
+
+/* Días de otros meses (mes anterior / siguiente) */
+.vitelab-vacaciones-calendar .ant-picker-cell-out-view .ant-picker-calendar-date {
+  background-color: #f8fafc !important;
+  border: 1px dashed #cbd5e1 !important;
+  opacity: 0.5 !important;
+  box-shadow: none !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-cell-out-view .ant-picker-calendar-date-value {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+}
+
+/* Fines de semana (Columnas 6 y 7) */
+.vitelab-vacaciones-calendar .ant-picker-cell:nth-child(6) .ant-picker-calendar-date,
+.vitelab-vacaciones-calendar .ant-picker-cell:nth-child(7) .ant-picker-calendar-date {
+  background-color: #fafaf9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-cell:nth-child(6) .ant-picker-calendar-date:hover,
+.vitelab-vacaciones-calendar .ant-picker-cell:nth-child(7) .ant-picker-calendar-date:hover {
+  background-color: #f0fdfa !important;
+  border-color: #0d9488 !important;
+}
+
+/* Día de Hoy */
+.vitelab-vacaciones-calendar .ant-picker-calendar-date-today {
+  border: 2px solid #0d9488 !important;
+  background-color: #f0fdfa !important;
+  box-shadow: 0 0 0 1px #0d9488, 0 4px 14px rgba(13, 148, 136, 0.16) !important;
+}
+
+.vitelab-vacaciones-calendar .ant-picker-calendar-date-today .ant-picker-calendar-date-value {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+  border-radius: 999px !important;
+  min-width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 6px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35) !important;
+}
+
+/* Día seleccionado con click */
+.vitelab-vacaciones-calendar .ant-picker-cell-selected .ant-picker-calendar-date {
+  border-color: #0284c7 !important;
+  background-color: #f0f9ff !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25) !important;
+}
+
+

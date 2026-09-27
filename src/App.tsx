@@ -7,69 +7,76 @@ import MessageConfig from './shared/components/MessageConfig';
 // Pages
 import LoginPage from './modules/auth/pages/LoginPage';
 import ProtectedRoute from './modules/auth/components/ProtectedRoute';
-import DashboardLayout from './shared/components/DashboardLayout';
-import DashboardPage from './shared/pages/DashboardPage';
+import { usePermissions } from './shared/components/PermissionGuard';
+import { LaboratorioLayout as DashboardLayout, DashboardPage } from './modules/laboratorio';
 import NotFoundPage from './shared/pages/NotFoundPage';
 
-// Módulo Órdenes
-import { OrdenesPage } from './modules/ordenes/pages/OrdenesPage';
-import { NuevaOrdenPage } from './modules/ordenes/pages/NuevaOrdenPage';
-import { EditarOrdenPage } from './modules/ordenes/pages/EditarOrdenPage';
-import { OrdenDetallePage } from './modules/ordenes/pages/OrdenDetallePage';
-import { OrdenImprimiblePage } from './modules/ordenes/pages/OrdenImprimiblePage';
+// Portal & Suites
+import { PortalPage } from './modules/portal';
+import { AlmacenComingSoonPage } from './modules/almacen';
+import {
+  PersonalPage,
+  PersonalCatalogosPage,
+  ContratosPage,
+  VacacionesPage,
+  AsistenciaPage,
+  DocumentosPage,
+  PersonalLayout,
+} from './modules/personal';
 
-// Módulo Resultados
-import { ResultadosPage } from './modules/resultados/pages/ResultadosPage';
-import { ResultadosVistaPreviaPage } from './modules/resultados/pages/ResultadosVistaPreviaPage';
-import { ResultadosPDFPage } from './modules/resultados/pages/ResultadosPDFPage';
-import { AprobacionesPage } from './modules/resultados/pages/AprobacionesPage';
+// Módulo Órdenes (Laboratorio)
+import { OrdenesPage } from './modules/laboratorio/ordenes/pages/OrdenesPage';
+import { OrdenDetallePage } from './modules/laboratorio/ordenes/pages/OrdenDetallePage';
+import { OrdenImprimiblePage } from './modules/laboratorio/ordenes/pages/OrdenImprimiblePage';
 
-// Módulo Áreas (Catálogo)
-import { AreasPage } from './modules/areas/pages/AreasPage';
+// Módulo Resultados (Laboratorio)
+import { ResultadosPage } from './modules/laboratorio/resultados/pages/ResultadosPage';
+import { ResultadosVistaPreviaPage } from './modules/laboratorio/resultados/pages/ResultadosVistaPreviaPage';
+import { ResultadosPDFPage } from './modules/laboratorio/resultados/pages/ResultadosPDFPage';
+import { AprobacionesPage } from './modules/laboratorio/resultados/pages/AprobacionesPage';
 
-// Módulo Métodos (Catálogo)
-import { MetodosPage } from './modules/metodos/pages/MetodosPage';
+// Módulo Áreas (Laboratorio - Catálogo)
+import { AreasPage } from './modules/laboratorio/areas/pages/AreasPage';
 
-// Módulo Sedes (Catálogo)
-import { SedesPage } from './modules/sedes/pages/SedesPage';
+// Módulo Métodos (Laboratorio - Catálogo)
+import { MetodosPage } from './modules/laboratorio/metodos/pages/MetodosPage';
 
-// Módulo Tipos de Cliente (Catálogo)
-import { TiposClientePage } from './modules/tipos-cliente/pages/TiposClientePage';
+// Módulo Tipos de Cliente (Laboratorio - Catálogo)
+import { TiposClientePage } from './modules/laboratorio/tipos-cliente/pages/TiposClientePage';
 
-// Módulo Convenios (Catálogo)
-import { ConveniosPage } from './modules/convenios/pages/ConveniosPage';
+// Módulo Convenios (Laboratorio - Catálogo)
+import { ConveniosPage } from './modules/laboratorio/convenios/pages/ConveniosPage';
 
-// Módulo Análisis (Catálogo)
-import { AnalisisPage } from './modules/analisis/pages/AnalisisPage';
+// Módulo Análisis (Laboratorio - Catálogo)
+import { AnalisisPage } from './modules/laboratorio/analisis/pages/AnalisisPage';
 
-// Módulo Componentes (Catálogo)
-import { ComponentesPage } from './modules/componentes/pages/ComponentesPage';
+// Módulo Componentes (Laboratorio - Catálogo)
+import { ComponentesPage } from './modules/laboratorio/componentes/pages/ComponentesPage';
 
-// Módulo Tarifarios (Catálogo)
-import { TarifariosPage } from './modules/tarifarios/pages/TarifariosPage';
+// Módulo Tarifarios (Laboratorio - Catálogo)
+import { TarifariosPage } from './modules/laboratorio/tarifarios/pages/TarifariosPage';
 
-// Módulo Muestras (Catálogo)
-import { MuestrasPage } from './modules/muestras/pages/MuestrasPage';
+// Módulo Muestras (Laboratorio - Catálogo)
+import { MuestrasPage } from './modules/laboratorio/muestras/pages/MuestrasPage';
 
-// Módulo Usuarios
-import { UsuariosPage } from './modules/usuarios/pages/UsuariosPage';
+// Módulo Configuración & Seguridad (Suite independiente)
+import {
+  ConfiguracionLayout,
+  UsuariosPage,
+  SistemaPage,
+  RolesPage,
+  SedesPage,
+} from './modules/configuracion';
 
-// Módulo Sistema (Configuración)
-import { SistemaPage } from './modules/sistema/pages/SistemaPage';
-
-// Módulo Roles
-import { RolesPage } from './modules/roles/pages/RolesPage';
-
-// Módulo Reportes
+// Módulo Reportes (Laboratorio)
 import {
   ReportesPage,
   ReporteOrdenesPeriodoPage,
   ReporteIngresosSedeP,
   ReporteAnalisisRankingPage,
   ReporteProductividadPage
-} from './modules/reportes';
+} from './modules/laboratorio/reportes';
 
-// Configuración de React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -78,6 +85,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function ConfiguracionIndexRedirect() {
+  const { hasPermission, isSuperAdmin } = usePermissions();
+  if (isSuperAdmin || hasPermission('auth.users.read')) return <Navigate to="/configuracion/usuarios" replace />;
+  if (hasPermission('auth.roles.read')) return <Navigate to="/configuracion/roles" replace />;
+  if (hasPermission('catalogs.sedes.read')) return <Navigate to="/configuracion/sedes" replace />;
+  if (hasPermission('settings.read')) return <Navigate to="/configuracion/sistema" replace />;
+  return <Navigate to="/portal" replace />;
+}
 
 function App() {
   return (
@@ -108,13 +124,18 @@ function App() {
                ╚══════════════════════════════╝ */
             Button: {
               controlHeight: 34,
+              controlHeightLG: 38,
+              controlHeightSM: 28,
+              borderRadius: 8,
+              borderRadiusLG: 8,
+              borderRadiusSM: 6,
               fontWeight: 600,
-              paddingInline: 20,
+              paddingInline: 18,
               contentFontSize: 14,
               colorPrimary: '#0958d9', 
               colorPrimaryHover: '#003eb3',
               defaultShadow: '0 1px 2px rgba(0,0,0,0.04)',
-              primaryShadow: '0 4px 12px rgba(22, 119, 255, 0.22)', // Más suavizado
+              primaryShadow: '0 4px 12px rgba(22, 119, 255, 0.22)',
               algorithm: true,
             },
             /* ╔══════════════════════════════╗
@@ -144,7 +165,8 @@ function App() {
       >
 
         <AntApp>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <MessageConfig>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
               {/* Rutas públicas */}
               <Route path="/login" element={<LoginPage />} />
@@ -152,7 +174,150 @@ function App() {
               {/* Ruta especial para generación de PDF (usada por el backend) */}
               <Route path="/resultados/pdf/:id" element={<ResultadosPDFPage />} />
 
-              {/* Rutas protegidas */}
+              {/* Portal Selector de Módulos */}
+              <Route
+                path="/portal"
+                element={
+                  <ProtectedRoute>
+                    <PortalPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Módulo Almacén (Próximamente) */}
+              <Route
+                path="/almacen"
+                element={
+                  <ProtectedRoute>
+                    <AlmacenComingSoonPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Módulo Personal & RRHH (Layout propio) */}
+              <Route
+                path="/personal"
+                element={
+                  <ProtectedRoute
+                    requiredPermissions={[
+                      'personal.directorio.read',
+                      'personal.contratos.read',
+                      'personal.catalogos.read',
+                      'personal.vacaciones.read',
+                      'personal.asistencia.read',
+                      'personal.documentos.read',
+                    ]}
+                  >
+                    <PersonalLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <ProtectedRoute requiredPermission="personal.directorio.read">
+                      <PersonalPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="contratos"
+                  element={
+                    <ProtectedRoute requiredPermission="personal.contratos.read">
+                      <ContratosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="catalogos"
+                  element={
+                    <ProtectedRoute requiredPermission="personal.catalogos.read">
+                      <PersonalCatalogosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="vacaciones"
+                  element={
+                    <ProtectedRoute requiredPermission="personal.vacaciones.read">
+                      <VacacionesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="asistencia"
+                  element={
+                    <ProtectedRoute requiredPermission="personal.asistencia.read">
+                      <AsistenciaPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="documentos"
+                  element={
+                    <ProtectedRoute requiredPermission="personal.documentos.read">
+                      <DocumentosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="roles"
+                  element={<Navigate to="/configuracion/roles" replace />}
+                />
+              </Route>
+
+              {/* Módulo Configuración & Seguridad (Layout propio) */}
+              <Route
+                path="/configuracion"
+                element={
+                  <ProtectedRoute
+                    requiredPermissions={[
+                      'auth.users.read',
+                      'auth.roles.read',
+                      'catalogs.sedes.read',
+                      'settings.read',
+                    ]}
+                  >
+                    <ConfiguracionLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ConfiguracionIndexRedirect />} />
+                <Route
+                  path="usuarios"
+                  element={
+                    <ProtectedRoute requiredPermission="auth.users.read">
+                      <UsuariosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="roles"
+                  element={
+                    <ProtectedRoute requiredPermission="auth.roles.read">
+                      <RolesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="sedes"
+                  element={
+                    <ProtectedRoute requiredPermission="catalogs.sedes.read">
+                      <SedesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="sistema"
+                  element={
+                    <ProtectedRoute requiredPermission="settings.read">
+                      <SistemaPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+
+              {/* Rutas del Sistema de Laboratorio Clínico */}
               <Route
                 path="/"
                 element={
@@ -161,7 +326,7 @@ function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route index element={<Navigate to="/portal" replace />} />
                 <Route path="dashboard" element={
                   <ProtectedRoute requiredPermission="dashboard.read">
                     <DashboardPage />
@@ -172,16 +337,6 @@ function App() {
                 <Route path="ordenes" element={
                   <ProtectedRoute requiredPermission="orders.read">
                     <OrdenesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="ordenes/nueva" element={
-                  <ProtectedRoute requiredPermission="orders.create">
-                    <NuevaOrdenPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="ordenes/:id/editar" element={
-                  <ProtectedRoute requiredPermission="orders.update">
-                    <EditarOrdenPage />
                   </ProtectedRoute>
                 } />
                 <Route path="ordenes/:id" element={
@@ -225,11 +380,7 @@ function App() {
                     <MetodosPage />
                   </ProtectedRoute>
                 } />
-                <Route path="catalogos/sedes" element={
-                  <ProtectedRoute requiredPermission="catalogs.sedes.read">
-                    <SedesPage />
-                  </ProtectedRoute>
-                } />
+                <Route path="catalogos/sedes" element={<Navigate to="/configuracion/sedes" replace />} />
                 <Route path="catalogos/tipos-cliente" element={
                   <ProtectedRoute requiredPermission="catalogs.tipos-cliente.read">
                     <TiposClientePage />
@@ -261,24 +412,10 @@ function App() {
                   </ProtectedRoute>
                 } />
 
-                {/* Módulo de Usuarios */}
-                <Route path="usuarios" element={
-                  <ProtectedRoute requiredPermission="auth.users.read">
-                    <UsuariosPage />
-                  </ProtectedRoute>
-                } />
-
-                {/* Módulo de Configuración */}
-                <Route path="settings/roles" element={
-                  <ProtectedRoute requiredPermission="auth.roles.read">
-                    <RolesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="settings/sistema" element={
-                  <ProtectedRoute requiredPermission="settings.read">
-                    <SistemaPage />
-                  </ProtectedRoute>
-                } />
+                {/* Redirecciones de compatibilidad hacia Suite Configuración */}
+                <Route path="usuarios" element={<Navigate to="/configuracion/usuarios" replace />} />
+                <Route path="settings/roles" element={<Navigate to="/configuracion/roles" replace />} />
+                <Route path="settings/sistema" element={<Navigate to="/configuracion/sistema" replace />} />
 
                 {/* Módulo de Reportes */}
                 <Route path="reportes" element={
@@ -315,6 +452,7 @@ function App() {
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </BrowserRouter>
+          </MessageConfig>
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>

@@ -1,16 +1,19 @@
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Form, Input, Button, message, ConfigProvider, theme } from 'antd';
-import { UserOutlined, LockOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { Form, Input, Button, message, ConfigProvider, theme, Modal } from 'antd';
+import { UserOutlined, LockOutlined, SafetyCertificateOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { authApi } from '../api';
 import { useAuthStore } from '../hooks';
 import type { LoginRequest } from '../types';
+import viteLogo from '../../../assets/logo/logo.png';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth, clearAuth, isAuthenticated } = useAuthStore();
   const [form] = Form.useForm();
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
@@ -25,9 +28,11 @@ export default function LoginPage() {
         const { user, accessToken, refreshToken } = response.data;
         setAuth(user, accessToken, refreshToken);
         message.success(`¡Bienvenido, ${user.nombres}!`);
-        navigate("/dashboard");
+        navigate("/portal");
       } else {
-        message.error(response.message || "Credenciales incorrectas");
+        const msg = response.message || "Usuario o contraseña incorrectos";
+        setErrorMessage(msg);
+        setErrorModalOpen(true);
       }
     },
 
@@ -37,51 +42,61 @@ export default function LoginPage() {
         err.response?.data?.error ||
         "Usuario o contraseña incorrectos";
 
-      message.error(backendMessage);
+      setErrorMessage(backendMessage);
+      setErrorModalOpen(true);
     },
   });
 
-  const handleSubmit = (values: LoginRequest) => loginMutation.mutate(values);
+  const handleSubmit = (values: LoginRequest) => {
+    loginMutation.mutate(values);
+  };
 
   if (isAuthenticated && localStorage.getItem('accessToken')) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/portal" replace />;
   }
 
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.darkAlgorithm,
+        algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#2563eb',
-          colorBgContainer: 'transparent',
-          colorBorder: 'transparent',
-          colorText: '#f8fafc',
+          colorPrimary: '#0284c7',
+          colorText: '#0f172a',
+          colorTextSecondary: '#64748b',
           colorTextPlaceholder: '#94a3b8',
-          borderRadius: 10,
+          borderRadius: 12,
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         },
       }}
     >
       <style>{`
-        /* Contenedor tipo Input con Título e Ícono embebido (exacto a la referencia FCS) */
+        /* Contenedor tipo Input con Título e Ícono embebido en Efecto Glass Transparente */
         .vitelab-embedded-input {
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.24);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 2px solid rgba(255, 255, 255, 0.75);
+          border-radius: 14px;
           padding: 8px 14px 6px 14px;
-          transition: all 0.25s ease;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
           cursor: text;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 2px rgba(255, 255, 255, 0.5);
         }
         .vitelab-embedded-input:hover {
-          border-color: rgba(255, 255, 255, 0.28);
-          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.36);
+          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
         }
         .vitelab-embedded-input:focus-within {
-          border-color: #3b82f6 !important;
-          box-shadow: 0 0 14px rgba(59, 130, 246, 0.35) !important;
-          background: rgba(255, 255, 255, 0.11) !important;
+          border-color: #0284c7 !important;
+          box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.25), 0 4px 14px rgba(14, 165, 233, 0.15) !important;
+          background: rgba(255, 255, 255, 0.45) !important;
+        }
+        .vitelab-embedded-input:focus-within .vitelab-input-label {
+          color: #0284c7 !important;
         }
         
-        /* Eliminar bordes, fondos y sombras internas de Ant Design para que no haya doble cuadro */
+        /* Eliminar bordes, fondos y sombras internas de Ant Design */
         .vitelab-embedded-input .ant-input,
         .vitelab-embedded-input .ant-input-affix-wrapper,
         .vitelab-embedded-input input {
@@ -91,8 +106,14 @@ export default function LoginPage() {
           box-shadow: none !important;
           outline: none !important;
           padding: 0 !important;
-          color: #ffffff !important;
-          font-size: 14px !important;
+          color: #0f172a !important;
+          font-weight: 600 !important;
+          font-size: 14.5px !important;
+        }
+        .vitelab-embedded-input .ant-input::placeholder,
+        .vitelab-embedded-input input::placeholder {
+          color: #475569 !important;
+          font-weight: 500 !important;
         }
         .vitelab-embedded-input .ant-input-affix-wrapper:focus,
         .vitelab-embedded-input .ant-input-affix-wrapper-focused {
@@ -101,26 +122,51 @@ export default function LoginPage() {
           background: transparent !important;
         }
         
-        /* Evitar que autofill ponga blanco el texto o el fondo */
+        /* Evitar que autofill altere los estilos claros */
         .vitelab-embedded-input input:-webkit-autofill,
         .vitelab-embedded-input input:-webkit-autofill:hover, 
         .vitelab-embedded-input input:-webkit-autofill:focus, 
         .vitelab-embedded-input input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 1000px #0b1526 inset !important;
-          -webkit-text-fill-color: #ffffff !important;
-          caret-color: #ffffff !important;
+          -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.45) inset !important;
+          -webkit-text-fill-color: #0f172a !important;
+          caret-color: #0f172a !important;
           transition: background-color 5000s ease-in-out 0s !important;
         }
 
         /* Icono de visibilidad de contraseña (el ojo) */
         .vitelab-embedded-input .ant-input-password-icon {
-          color: #94a3b8 !important;
+          color: #334155 !important;
           transition: color 0.2s;
         }
         .vitelab-embedded-input .ant-input-password-icon:hover {
+          color: #0284c7 !important;
+        }
+
+        /* Botón Iniciar Sesión con gradiente Azul-Menta */
+        .vitelab-btn-submit {
+          height: 48px !important;
+          font-size: 14px !important;
+          border-radius: 12px !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.8px !important;
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #059669 100%) !important;
+          border: none !important;
+          color: #ffffff !important;
+          box-shadow: 0 8px 24px -3px rgba(2, 132, 199, 0.45) !important;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .vitelab-btn-submit:hover {
+          background: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #10b981 100%) !important;
+          box-shadow: 0 10px 26px -3px rgba(2, 132, 199, 0.55) !important;
+          transform: translateY(-1.5px) !important;
           color: #ffffff !important;
         }
+        .vitelab-btn-submit:active {
+          transform: translateY(0.5px) !important;
+          box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4) !important;
+        }
       `}</style>
+
       <div
         style={{
           minHeight: '100vh',
@@ -131,33 +177,31 @@ export default function LoginPage() {
           padding: '30px 20px',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: '#040914',
-          /* Imagen fotográfica de fondo de laboratorio con iluminación cinematográfica */
-          backgroundImage: `
-            radial-gradient(circle at 50% 10%, rgba(14, 165, 233, 0.2) 0%, transparent 55%),
-            linear-gradient(to bottom, rgba(4, 9, 20, 0.45) 0%, rgba(4, 9, 20, 0.72) 100%),
-            url("/login-bg.jpg")
-          `,
+          backgroundColor: '#0f172a',
+          /* Imagen nítida de laboratorio clínico de fondo */
+          backgroundImage: 'url("/login-bg.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Tarjeta Transparente con Difuminado Sutil */}
+        {/* Tarjeta Glassmorphic Transparente con Fondo Difuminado y Contorno Grueso */}
         <div
           style={{
             width: '100%',
-            maxWidth: 420,
-            borderRadius: 20,
-            background: 'rgba(15, 23, 42, 0.28)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.16)',
+            maxWidth: 440,
+            borderRadius: 28,
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.12) 100%)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '2.5px solid rgba(255, 255, 255, 0.75)',
             boxShadow: `
-              0 20px 50px rgba(0, 0, 0, 0.5),
-              inset 0 1px 1px rgba(255, 255, 255, 0.2)
+              0 25px 50px -10px rgba(0, 0, 0, 0.16),
+              0 10px 20px -5px rgba(2, 132, 199, 0.10),
+              inset 0 1px 2px rgba(255, 255, 255, 0.8),
+              inset 0 -1px 2px rgba(255, 255, 255, 0.2)
             `,
-            padding: '38px 34px 30px 34px',
+            padding: '40px 38px 34px 38px',
             position: 'relative',
             zIndex: 2,
           }}
@@ -169,29 +213,30 @@ export default function LoginPage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 14,
-              marginBottom: 30,
+              marginBottom: 24,
             }}
           >
+            {/* Contenedor del Logo con gradiente Azul y Verde Menta */}
             <div
               style={{
                 width: 48,
                 height: 48,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 6px 20px rgba(14, 165, 233, 0.45)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 8px 22px -3px rgba(2, 132, 199, 0.35)',
+                border: '1px solid rgba(255, 255, 255, 0.7)',
                 flexShrink: 0,
               }}
             >
-              <ExperimentOutlined style={{ fontSize: 26, color: '#ffffff' }} />
+              <img src={viteLogo} alt="ViteLab" style={{ width: 32, height: 32, objectFit: 'contain' }} />
             </div>
 
             <div
               style={{
-                borderLeft: '1px solid rgba(255, 255, 255, 0.25)',
+                borderLeft: '1.5px solid #e2e8f0',
                 paddingLeft: 14,
                 textAlign: 'left',
               }}
@@ -200,8 +245,8 @@ export default function LoginPage() {
                 style={{
                   fontSize: 24,
                   fontWeight: 800,
-                  color: '#ffffff',
-                  letterSpacing: '0.5px',
+                  color: '#0f172a',
+                  letterSpacing: '0.4px',
                   lineHeight: 1.1,
                 }}
               >
@@ -210,15 +255,54 @@ export default function LoginPage() {
               <div
                 style={{
                   fontSize: 11,
-                  fontWeight: 600,
-                  color: '#38bdf8',
-                  letterSpacing: '1.6px',
+                  fontWeight: 700,
+                  color: '#0284c7',
+                  letterSpacing: '1.5px',
                   textTransform: 'uppercase',
                   marginTop: 3,
                 }}
               >
                 Clinical LIMS
               </div>
+            </div>
+          </div>
+
+          {/* Badge Informativo Sutil Menta */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                backgroundColor: 'rgba(236, 253, 245, 0.82)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1.5px solid rgba(167, 243, 208, 0.95)',
+                color: '#059669',
+                padding: '4px 14px',
+                borderRadius: 999,
+                fontSize: 11.5,
+                fontWeight: 600,
+                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.12)',
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  backgroundColor: '#10b981',
+                  boxShadow: '0 0 6px #10b981',
+                }}
+              />
+              <span>Portal de Acceso Clínico</span>
             </div>
           </div>
 
@@ -235,19 +319,21 @@ export default function LoginPage() {
             <div style={{ marginBottom: 16 }}>
               <div className="vitelab-embedded-input">
                 <div
+                  className="vitelab-input-label"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    color: '#94a3b8',
+                    color: '#1e293b',
                     fontSize: 11,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     letterSpacing: 0.3,
                     marginBottom: 2,
                     userSelect: 'none',
+                    transition: 'color 0.2s ease',
                   }}
                 >
-                  <UserOutlined style={{ fontSize: 11 }} />
+                  <UserOutlined style={{ fontSize: 11.5 }} />
                   <span>Usuario</span>
                 </div>
                 <Form.Item
@@ -256,11 +342,11 @@ export default function LoginPage() {
                   style={{ margin: 0 }}
                 >
                   <Input
-                    placeholder="Usuario"
+                    placeholder="ej. admin"
                     bordered={false}
                     style={{
                       height: 26,
-                      color: '#ffffff',
+                      color: '#0f172a',
                     }}
                   />
                 </Form.Item>
@@ -268,22 +354,24 @@ export default function LoginPage() {
             </div>
 
             {/* Campo Contraseña con Título e Ícono adentro */}
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ marginBottom: 10 }}>
               <div className="vitelab-embedded-input">
                 <div
+                  className="vitelab-input-label"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    color: '#94a3b8',
+                    color: '#1e293b',
                     fontSize: 11,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     letterSpacing: 0.3,
                     marginBottom: 2,
                     userSelect: 'none',
+                    transition: 'color 0.2s ease',
                   }}
                 >
-                  <LockOutlined style={{ fontSize: 11 }} />
+                  <LockOutlined style={{ fontSize: 11.5 }} />
                   <span>Contraseña</span>
                 </div>
                 <Form.Item
@@ -292,86 +380,124 @@ export default function LoginPage() {
                   style={{ margin: 0 }}
                 >
                   <Input.Password
-                    placeholder="Contraseña"
+                    placeholder="••••••••••••"
                     bordered={false}
                     style={{
                       height: 26,
-                      color: '#ffffff',
+                      color: '#0f172a',
                     }}
                   />
                 </Form.Item>
               </div>
             </div>
 
-            {/* Enlace Olvidó su contraseña */}
-            <div style={{ textAlign: 'right', marginBottom: 20 }}>
-              <span
-                style={{
-                  color: '#94a3b8',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
-              >
-                Forgot Password?
-              </span>
+            <div style={{ textAlign: 'right', marginBottom: 22 }}>
             </div>
 
-            {/* Botón Iniciar Sesión */}
+            {/* Botón Iniciar Sesión con gradiente Azul-Menta */}
             <Button
               type="primary"
               htmlType="submit"
               loading={loginMutation.isPending}
               block
-              style={{
-                height: 48,
-                fontSize: 14,
-                borderRadius: 10,
-                fontWeight: 700,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                background: '#2563eb',
-                border: 'none',
-                boxShadow: '0 6px 20px rgba(37, 99, 235, 0.5)',
-                transition: 'all 0.2s ease',
-              }}
+              className="vitelab-btn-submit"
             >
               INICIAR SESIÓN
             </Button>
           </Form>
 
-          {/* Mensaje de Soporte */}
-          <p
+          {/* Mensaje de Soporte / Seguridad */}
+          <div
             style={{
+              marginTop: 22,
+              paddingTop: 16,
+              borderTop: '1.5px solid rgba(255, 255, 255, 0.75)',
               textAlign: 'center',
-              marginTop: 20,
-              marginBottom: 0,
-              fontSize: 12,
-              color: '#94a3b8',
-              lineHeight: 1.5,
             }}
           >
-            En caso que no pueda acceder, comuníquese con el Administrador.
-          </p>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                color: '#475569',
+                fontSize: 11,
+                fontWeight: 600,
+                marginBottom: 6,
+              }}
+            >
+              <SafetyCertificateOutlined style={{ color: '#059669', fontSize: 12.5 }} />
+              <span>Conexión segura cifrada TLS 256-bit</span>
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 11.5,
+                color: '#64748b',
+                lineHeight: 1.45,
+              }}
+            >
+              En caso de requerir asistencia técnica o recuperación de credenciales, comuníquese con el Administrador.
+            </p>
+          </div>
         </div>
 
         {/* PIE DE PÁGINA CENTRADO */}
         <div
           style={{
             position: 'absolute',
-            bottom: 20,
-            color: 'rgba(255, 255, 255, 0.45)',
-            fontSize: 13,
-            letterSpacing: 0.4,
+            bottom: 18,
+            color: '#64748b',
+            fontSize: 12.5,
+            fontWeight: 500,
+            letterSpacing: 0.3,
             textAlign: 'center',
             zIndex: 2,
+            textShadow: '0 1px 2px rgba(255, 255, 255, 0.9)',
           }}
         >
           © {new Date().getFullYear()} ViteLab Systems — Plataforma LIMS Profesional
         </div>
       </div>
+
+      {/* Popup Modal de Error de Credenciales */}
+      <Modal
+        open={errorModalOpen}
+        onCancel={() => setErrorModalOpen(false)}
+        footer={null}
+        centered
+        width={380}
+        destroyOnHidden
+        styles={{
+          content: {
+            borderRadius: 20,
+            padding: '28px 24px',
+            textAlign: 'center',
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.2)',
+          },
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              backgroundColor: '#fee2e2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ef4444',
+              fontSize: 28,
+            }}
+          >
+            <CloseCircleOutlined />
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>
+            Credenciales incorrectas
+          </div>
+        </div>
+      </Modal>
     </ConfigProvider>
   );
 }
