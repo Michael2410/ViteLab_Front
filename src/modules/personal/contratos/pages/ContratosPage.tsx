@@ -13,9 +13,7 @@ import {
   type TableProps,
 } from 'antd';
 import {
-  FileProtectOutlined,
   SearchOutlined,
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
@@ -25,7 +23,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useContratosList,
@@ -44,7 +42,6 @@ type ContratoTab = 'todos' | 'por_vencer' | 'vigentes' | 'vencidos';
 interface TabConfig {
   key: ContratoTab;
   label: string;
-  icon: React.ReactNode;
   description: string;
 }
 
@@ -52,25 +49,21 @@ const TABS_CONFIG: TabConfig[] = [
   {
     key: 'todos',
     label: 'Todos los Contratos',
-    icon: <FileProtectOutlined style={{ fontSize: 16 }} />,
     description: 'Padrón general y registro histórico de relaciones contractuales de todo el personal.',
   },
   {
     key: 'por_vencer',
     label: 'Por Vencer (<30 días)',
-    icon: <AlertOutlined style={{ fontSize: 16, color: '#f59e0b' }} />,
     description: 'Semáforo preventivo de contratos con fecha de término en los próximos 30 días para renovación o término.',
   },
   {
     key: 'vigentes',
     label: 'Contratos Vigentes',
-    icon: <CheckCircleOutlined style={{ fontSize: 16, color: '#10b981' }} />,
     description: 'Relaciones laborales activas con régimen indeterminado o plazo vigente.',
   },
   {
     key: 'vencidos',
     label: 'Contratos Vencidos',
-    icon: <CloseCircleOutlined style={{ fontSize: 16, color: '#ef4444' }} />,
     description: 'Contratos con fecha de fin caducada pendientes de renovación o regularización formal.',
   },
 ];
@@ -368,7 +361,7 @@ export default function ContratosPage() {
     <ModulePageLayout
       title={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <span>Gestión de Contratos & Alertas de Vencimiento</span>
+          <span>Contratos & Alertas de Vencimiento</span>
         </span>
       }
       subtitle={currentTabConfig.description}
@@ -406,7 +399,6 @@ export default function ContratosPage() {
                 key: t.key,
                 label: (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                    {t.icon}
                     <span style={{ fontWeight: 600 }}>{t.label}</span>
                     <Badge
                       count={count}

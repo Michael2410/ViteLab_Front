@@ -12,16 +12,18 @@ import {
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  TeamOutlined,
-  ApartmentOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  FileTextOutlined,
   LogoutOutlined,
   UserOutlined,
   ArrowLeftOutlined,
-  FileProtectOutlined,
 } from '@ant-design/icons';
+import { 
+  IconDirectorioPersonal, 
+  IconContratosAlertas, 
+  IconControlVacaciones, 
+  IconAsistenciaFaltas, 
+  IconDocumentosConstancias, 
+  IconCatalogos 
+} from '../../../../assets/icons/NavIcons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../../auth/hooks';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
@@ -100,7 +102,7 @@ export const PersonalLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('personal.directorio.read')) {
       items.push({
         key: 'directorio',
-        icon: <TeamOutlined style={{ fontSize: 18 }} />,
+        icon: <IconDirectorioPersonal width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Directorio de Personal</span>,
       });
     }
@@ -108,15 +110,15 @@ export const PersonalLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('personal.contratos.read')) {
       items.push({
         key: 'contratos',
-        icon: <FileProtectOutlined style={{ fontSize: 18 }} />,
-        label: <span style={{ marginLeft: 6 }}>Contratos & Alertas</span>,
+        icon: <IconContratosAlertas width={24} height={24} />,
+        label: <span style={{ marginLeft: 6 }}>Contratos</span>,
       });
     }
 
     if (isSuperAdmin || hasPermission('personal.vacaciones.read')) {
       items.push({
         key: 'vacaciones',
-        icon: <CalendarOutlined style={{ fontSize: 18 }} />,
+        icon: <IconControlVacaciones width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Control de Vacaciones</span>,
       });
     }
@@ -124,7 +126,7 @@ export const PersonalLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('personal.asistencia.read')) {
       items.push({
         key: 'asistencia',
-        icon: <ClockCircleOutlined style={{ fontSize: 18 }} />,
+        icon: <IconAsistenciaFaltas width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Asistencia & Faltas</span>,
       });
     }
@@ -132,15 +134,15 @@ export const PersonalLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('personal.documentos.read')) {
       items.push({
         key: 'documentos',
-        icon: <FileTextOutlined style={{ fontSize: 18 }} />,
-        label: <span style={{ marginLeft: 6 }}>Documentos & Constancias</span>,
+        icon: <IconDocumentosConstancias width={24} height={24} />,
+        label: <span style={{ marginLeft: 6 }}>Documentos</span>,
       });
     }
 
     if (isSuperAdmin || hasPermission('personal.catalogos.read')) {
       items.push({
         key: 'catalogos',
-        icon: <ApartmentOutlined style={{ fontSize: 18 }} />,
+        icon: <IconCatalogos width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Catálogos</span>,
       });
     }

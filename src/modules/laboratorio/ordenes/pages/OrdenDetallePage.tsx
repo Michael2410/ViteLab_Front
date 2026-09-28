@@ -43,7 +43,6 @@ import { useAuthStore } from '../../../auth/hooks';
 import {
   ESTADO_ORDEN_COLORS,
   ESTADO_ORDEN_LABELS,
-  SEXO_LABELS,
   type OrdenAnalisis,
 } from '../types';
 
@@ -322,7 +321,7 @@ export const OrdenDetallePage: React.FC = () => {
                     {orden.paciente.nombres.charAt(0)}
                 </Avatar>
                 <Title level={4} style={{ margin: 0 }}>
-                    {orden.paciente.nombres} {orden.paciente.apellido_paterno}
+                    {orden.paciente.nombres} {orden.paciente.apellido_paterno || (orden.paciente as any).apellidos || ''} {orden.paciente.apellido_materno || ''}
                 </Title>
                 <Text type="secondary">{orden.paciente.dni}</Text>
 
@@ -334,7 +333,11 @@ export const OrdenDetallePage: React.FC = () => {
                             <Statistic title="Edad" value={dayjs().diff(dayjs(orden.paciente.fecha_nacimiento), 'years')} suffix="años" valueStyle={{ fontSize: 16 }} />
                         </Col>
                         <Col span={12}>
-                            <Statistic title="Sexo" value={SEXO_LABELS[orden.paciente.genero]} valueStyle={{ fontSize: 16 }} />
+                            <Statistic 
+                                title="Sexo" 
+                                value={(orden.paciente.genero || (orden.paciente as any).sexo) === 'M' ? 'Masculino' : (orden.paciente.genero || (orden.paciente as any).sexo) === 'F' ? 'Femenino' : '-'} 
+                                valueStyle={{ fontSize: 16 }} 
+                            />
                         </Col>
                     </Row>
                     

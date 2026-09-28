@@ -19,11 +19,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  IdcardOutlined,
-  ApartmentOutlined,
-  FileDoneOutlined,
   TeamOutlined,
-  UserDeleteOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -40,7 +36,6 @@ interface TabConfig {
   key: CatalogoTipo;
   label: string;
   singular: string;
-  icon: React.ReactNode;
   description: string;
   placeholderName: string;
 }
@@ -50,7 +45,6 @@ const TABS_CONFIG: TabConfig[] = [
     key: 'cargos',
     label: 'Cargos Laborales',
     singular: 'Cargo',
-    icon: <IdcardOutlined style={{ fontSize: 16 }} />,
     description: 'Puestos y responsabilidades asignados a los colaboradores del laboratorio y clínica.',
     placeholderName: 'Ej. Bioquímico Clínico, Flebotomista, Coordinador...',
   },
@@ -58,7 +52,6 @@ const TABS_CONFIG: TabConfig[] = [
     key: 'areas',
     label: 'Áreas de Trabajo',
     singular: 'Área',
-    icon: <ApartmentOutlined style={{ fontSize: 16 }} />,
     description: 'Departamentos funcionales donde opera el personal de la institución.',
     placeholderName: 'Ej. Bioquímica, Hematología, Logística...',
   },
@@ -66,7 +59,6 @@ const TABS_CONFIG: TabConfig[] = [
     key: 'tipos-contrato',
     label: 'Tipos de Contrato',
     singular: 'Tipo de Contrato',
-    icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
     description: 'Modalidades de contratación y regímenes laborales aplicados a los empleados.',
     placeholderName: 'Ej. Planilla (Indefinido), Servicios No Personales...',
   },
@@ -74,7 +66,6 @@ const TABS_CONFIG: TabConfig[] = [
     key: 'motivos-cese',
     label: 'Motivos de Cese',
     singular: 'Motivo de Cese',
-    icon: <UserDeleteOutlined style={{ fontSize: 16 }} />,
     description: 'Causales de término laboral o desvinculación aplicadas en el retiro de personal.',
     placeholderName: 'Ej. Renuncia Voluntaria, Mutuo Disenso, Término de Contrato...',
   },
@@ -381,7 +372,6 @@ export const PersonalCatalogosPage: React.FC = () => {
               key: t.key,
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                  {t.icon}
                   <span style={{ fontWeight: 600 }}>{t.label}</span>
                 </span>
               ),
@@ -434,17 +424,6 @@ export const PersonalCatalogosPage: React.FC = () => {
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span
-              style={{
-                background: 'rgba(2, 132, 199, 0.1)',
-                color: '#0284c7',
-                padding: '6px 8px',
-                borderRadius: 8,
-                display: 'inline-flex',
-              }}
-            >
-              {currentTabConfig.icon}
-            </span>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>
               {editingItem
                 ? `Editar ${currentTabConfig.singular}`

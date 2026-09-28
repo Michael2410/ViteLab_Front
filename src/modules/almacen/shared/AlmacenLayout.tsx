@@ -12,20 +12,22 @@ import {
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  AppstoreOutlined,
-  TeamOutlined,
   DatabaseOutlined,
-  ImportOutlined,
-  ExportOutlined,
-  InboxOutlined,
-  FileTextOutlined,
-  HistoryOutlined,
   LogoutOutlined,
   UserOutlined,
   ArrowLeftOutlined,
   SwapOutlined,
-  SlidersOutlined,
 } from '@ant-design/icons';
+import { 
+  IconProductos, 
+  IconStockKardex, 
+  IconIngresos, 
+  IconDespachos, 
+  IconCustodia, 
+  IconPedidosInternos, 
+  IconAjustesBajas, 
+  IconProveedores 
+} from '../../../assets/icons/NavIcons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../auth/hooks';
 import { usePermissions } from '../../../shared/components/PermissionGuard';
@@ -99,7 +101,6 @@ export const AlmacenLayout: React.FC = () => {
     },
     {
       key: 'profile',
-      icon: <UserOutlined />,
       label: 'Mi Perfil',
       onClick: () => navigate('/perfil'),
     },
@@ -121,7 +122,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.productos.read')) {
       items.push({
         key: 'productos',
-        icon: <AppstoreOutlined style={{ fontSize: 18 }} />,
+        icon: <IconProductos width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Productos</span>,
       });
     }
@@ -130,7 +131,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.stock.read')) {
       items.push({
         key: 'stock',
-        icon: <HistoryOutlined style={{ fontSize: 18 }} />,
+        icon: <IconStockKardex width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Stock & Kardex</span>,
       });
     }
@@ -139,7 +140,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.ingresos.read')) {
       items.push({
         key: 'ingresos',
-        icon: <ImportOutlined style={{ fontSize: 18 }} />,
+        icon: <IconIngresos width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Ingresos</span>,
       });
     }
@@ -148,7 +149,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.despachos.read')) {
       items.push({
         key: 'despachos',
-        icon: <ExportOutlined style={{ fontSize: 18 }} />,
+        icon: <IconDespachos width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Despachos</span>,
       });
     }
@@ -157,7 +158,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.custodia.read')) {
       items.push({
         key: 'custodia',
-        icon: <InboxOutlined style={{ fontSize: 18 }} />,
+        icon: <IconCustodia width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Mi Custodia & Consumos</span>,
       });
     }
@@ -166,7 +167,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.pedidos.read')) {
       items.push({
         key: 'pedidos',
-        icon: <FileTextOutlined style={{ fontSize: 18 }} />,
+        icon: <IconPedidosInternos width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Pedidos Internos</span>,
       });
     }
@@ -175,7 +176,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.transferencias.read')) {
       items.push({
         key: 'transferencias',
-        icon: <SwapOutlined style={{ fontSize: 18 }} />,
+        icon: <SwapOutlined/>,
         label: <span style={{ marginLeft: 6 }}>Transferencias</span>,
       });
     }
@@ -184,7 +185,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.ajustes.read')) {
       items.push({
         key: 'ajustes',
-        icon: <SlidersOutlined style={{ fontSize: 18 }} />,
+        icon: <IconAjustesBajas width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Ajustes & Bajas</span>,
       });
     }
@@ -193,7 +194,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.proveedores.read')) {
       items.push({
         key: 'proveedores',
-        icon: <TeamOutlined style={{ fontSize: 18 }} />,
+        icon: <IconProveedores width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Proveedores</span>,
       });
     }
@@ -202,7 +203,7 @@ export const AlmacenLayout: React.FC = () => {
     if (isSuperAdmin || hasPermission('almacen.maestros.read')) {
       items.push({
         key: 'maestros',
-        icon: <DatabaseOutlined style={{ fontSize: 18 }} />,
+        icon: <DatabaseOutlined/>,
         label: <span style={{ marginLeft: 6 }}>Maestros</span>,
       });
     }

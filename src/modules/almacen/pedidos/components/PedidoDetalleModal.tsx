@@ -154,6 +154,12 @@ export default function PedidoDetalleModal({
         </Text>
       ),
     },
+    {
+      title: 'Motivo / Detalle',
+      dataIndex: 'observacion',
+      key: 'observacion',
+      render: (v) => v || '-',
+    },
   ];
 
   return (

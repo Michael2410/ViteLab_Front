@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Tabs,
   Table,
-  Button,
   Input,
   Select,
   Switch,
@@ -15,8 +14,6 @@ import {
 } from 'antd';
 import {
   SearchOutlined,
-  HistoryOutlined,
-  DatabaseOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -34,7 +31,6 @@ const { RangePicker } = DatePicker;
 interface TabConfig {
   key: 'stock' | 'kardex';
   label: string;
-  icon: React.ReactNode;
   description: string;
 }
 
@@ -42,13 +38,11 @@ const TABS_CONFIG: TabConfig[] = [
   {
     key: 'stock',
     label: 'Stock Actual & Existencias',
-    icon: <DatabaseOutlined style={{ fontSize: 16 }} />,
     description: 'Saldos disponibles en tiempo real, desglose por lotes y alertas de existencias en almacenes',
   },
   {
     key: 'kardex',
     label: 'Kardex de Movimientos',
-    icon: <HistoryOutlined style={{ fontSize: 16 }} />,
     description: 'Trazabilidad cronológica de ingresos, despachos, consumos, transferencias y ajustes de inventario',
   },
 ];
@@ -357,7 +351,6 @@ export default function StockListPage() {
               key: t.key,
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                  {t.icon}
                   <span style={{ fontWeight: 600 }}>{t.label}</span>
                 </span>
               ),

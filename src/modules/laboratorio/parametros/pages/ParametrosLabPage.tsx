@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { useSearchParams } from 'react-router-dom';
-import { ApartmentOutlined, ToolOutlined, MedicineBoxOutlined } from '@ant-design/icons';
 import ModulePageLayout, { BrandCreateButton } from '../../../../shared/components/ModulePageLayout';
 import { useAuthStore } from '../../../auth/hooks';
 import { AreasPage } from '../../areas/pages/AreasPage';
@@ -29,7 +28,6 @@ export const ParametrosLabPage: React.FC = () => {
         key: 'areas',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <ApartmentOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Áreas Técnicas</span>
           </span>
         ),
@@ -43,7 +41,6 @@ export const ParametrosLabPage: React.FC = () => {
         key: 'metodos',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <ToolOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Métodos y Técnicas</span>
           </span>
         ),
@@ -57,7 +54,6 @@ export const ParametrosLabPage: React.FC = () => {
         key: 'muestras',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <MedicineBoxOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Tipos de Muestra</span>
           </span>
         ),

@@ -610,9 +610,6 @@ export const AprobacionesPage: React.FC = () => {
                       Aprobar Orden
                     </Button>
                   </Space>
-                  <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-                    * Al aprobar, el estado de la orden cambiará a APROBADA y se podrá generar el informe final
-                  </Text>
                 </Card>
               )}
             </Form>

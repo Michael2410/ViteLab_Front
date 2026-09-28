@@ -111,15 +111,24 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
     if (open && orden && !datosCargados) {
       // 1. Paciente
       if (orden.paciente) {
+        const generoVal = orden.paciente.genero || (orden.paciente as any).sexo;
+        let apPaterno = orden.paciente.apellido_paterno;
+        let apMaterno = orden.paciente.apellido_materno;
+        if ((!apPaterno || !apMaterno) && (orden.paciente as any).apellidos) {
+          const parts = String((orden.paciente as any).apellidos || '').trim().split(' ');
+          if (!apPaterno) apPaterno = parts[0] || '';
+          if (!apMaterno) apMaterno = parts.slice(1).join(' ') || '';
+        }
+
         formPaciente.setFieldsValue({
           dni: orden.paciente.dni,
           nombres: orden.paciente.nombres,
-          apellido_paterno: orden.paciente.apellido_paterno,
-          apellido_materno: orden.paciente.apellido_materno,
+          apellido_paterno: apPaterno,
+          apellido_materno: apMaterno,
           fecha_nacimiento: orden.paciente.fecha_nacimiento
             ? dayjs(orden.paciente.fecha_nacimiento)
             : undefined,
-          genero: orden.paciente.genero,
+          genero: generoVal,
           telefono: orden.paciente.telefono || undefined,
           email: orden.paciente.email || undefined,
           direccion: orden.paciente.direccion || undefined,
@@ -127,9 +136,9 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
         setPacienteSummary({
           dni: orden.paciente.dni,
           nombres: orden.paciente.nombres,
-          apellido_paterno: orden.paciente.apellido_paterno,
-          apellido_materno: orden.paciente.apellido_materno,
-          genero: orden.paciente.genero,
+          apellido_paterno: apPaterno,
+          apellido_materno: apMaterno,
+          genero: generoVal,
           telefono: orden.paciente.telefono,
           email: orden.paciente.email,
           direccion: orden.paciente.direccion,

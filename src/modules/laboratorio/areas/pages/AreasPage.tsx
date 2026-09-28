@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -9,7 +9,6 @@ import {
   Switch,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -20,7 +19,7 @@ import { useAreas, useCrearArea, useActualizarArea, useEliminarArea } from '../h
 import { useAuthStore } from '../../../auth/hooks';
 import { AreaFormModal } from '../components/AreaFormModal';
 import type { Area, CreateAreaInput, UpdateAreaInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 

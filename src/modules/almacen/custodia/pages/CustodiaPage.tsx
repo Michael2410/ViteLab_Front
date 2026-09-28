@@ -20,7 +20,6 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
   CloseCircleOutlined,
-  InboxOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
@@ -38,7 +37,6 @@ const { Text } = Typography;
 interface TabConfig {
   key: 'custodia' | 'consumos' | 'devoluciones';
   label: string;
-  icon: React.ReactNode;
   description: string;
 }
 
@@ -46,19 +44,16 @@ const TABS_CONFIG: TabConfig[] = [
   {
     key: 'custodia',
     label: 'Mi Inventario en Custodia',
-    icon: <InboxOutlined style={{ fontSize: 16 }} />,
     description: 'Control de reactivos, insumos y materiales asignados en custodia física al colaborador',
   },
   {
     key: 'consumos',
     label: 'Historial de Consumos',
-    icon: <ShoppingOutlined style={{ fontSize: 16 }} />,
     description: 'Registro histórico de insumos consumidos en procedimientos y análisis clínicos',
   },
   {
     key: 'devoluciones',
     label: 'Historial de Devoluciones',
-    icon: <RollbackOutlined style={{ fontSize: 16 }} />,
     description: 'Registro de devoluciones de materiales y reactivos no utilizados al almacén central',
   },
 ];
@@ -356,7 +351,6 @@ export default function CustodiaPage() {
               key: t.key,
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                  {t.icon}
                   <span style={{ fontWeight: 600 }}>{t.label}</span>
                   {t.key === 'custodia' && totalCustodia > 0 && (
                     <Tag style={{ margin: 0, borderRadius: 10, fontSize: 11, backgroundColor: '#f1f5f9', color: '#475569' }}>

@@ -13,12 +13,15 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   UserOutlined,
-  SafetyCertificateOutlined,
-  ApartmentOutlined,
-  SettingOutlined,
   LogoutOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
+import { 
+  IconCuentaUsuario, 
+  IconRolesPermisos, 
+  IconSedesSucursales, 
+  IconConfiguracion
+} from '../../../assets/icons/NavIcons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../auth/hooks';
 import { usePermissions } from '../../../shared/components/PermissionGuard';
@@ -77,7 +80,6 @@ export const ConfiguracionLayout: React.FC = () => {
     },
     {
       key: 'profile',
-      icon: <UserOutlined />,
       label: 'Mi Perfil',
       onClick: () => navigate('/perfil'),
     },
@@ -95,34 +97,34 @@ export const ConfiguracionLayout: React.FC = () => {
     const items: MenuProps['items'] = [];
 
     if (isSuperAdmin || hasPermission('auth.users.read')) {
-      items.push({
-        key: 'usuarios',
-        icon: <UserOutlined style={{ fontSize: 18 }} />,
-        label: <span style={{ marginLeft: 6 }}>Cuentas de Usuario</span>,
+      items.push({ 
+        key: 'usuarios', 
+        icon: <IconCuentaUsuario width={24} height={24} />, 
+        label: <span style={{ marginLeft: 6 }}>Cuentas de Usuario</span> 
       });
     }
 
     if (isSuperAdmin || hasPermission('auth.roles.read')) {
-      items.push({
-        key: 'roles',
-        icon: <SafetyCertificateOutlined style={{ fontSize: 18 }} />,
-        label: <span style={{ marginLeft: 6 }}>Roles & Permisos</span>,
+      items.push({ 
+        key: 'roles', 
+        icon: <IconRolesPermisos width={24} height={24} />, 
+        label: <span style={{ marginLeft: 6 }}>Roles & Permisos</span> 
       });
     }
 
     if (isSuperAdmin || hasPermission('catalogs.sedes.read')) {
-      items.push({
-        key: 'sedes',
-        icon: <ApartmentOutlined style={{ fontSize: 18 }} />,
-        label: <span style={{ marginLeft: 6 }}>Sedes & Sucursales</span>,
+      items.push({ 
+        key: 'sedes', 
+        icon: <IconSedesSucursales width={24} height={24} />, 
+        label: <span style={{ marginLeft: 6 }}>Sedes & Sucursales</span> 
       });
     }
 
     if (isSuperAdmin || hasPermission('settings.read')) {
-      items.push({
-        key: 'sistema',
-        icon: <SettingOutlined style={{ fontSize: 18 }} />,
-        label: <span style={{ marginLeft: 6 }}>Parámetros del Sistema</span>,
+      items.push({ 
+        key: 'sistema', 
+        icon: <IconConfiguracion width={24} height={24} />, 
+        label: <span style={{ marginLeft: 6 }}>Parámetros del Sistema</span> 
       });
     }
 

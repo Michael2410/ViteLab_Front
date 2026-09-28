@@ -4,6 +4,7 @@ export interface ComponenteAnalisis {
   analisis_id: number;
   nombre: string;
   valor_referencial: string | null;
+  valores_referenciales?: string[] | null;
   unidad_medida: string | null;
   area_id: number | null;
   metodo_id: number | null;

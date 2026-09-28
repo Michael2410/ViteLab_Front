@@ -16,10 +16,6 @@ import {
 } from 'antd';
 import {
   EditOutlined,
-  InboxOutlined,
-  AppstoreOutlined,
-  ShopOutlined,
-  EnvironmentOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -47,7 +43,6 @@ interface TabConfig {
   label: string;
   singular: string;
   createLabel: string;
-  icon: React.ReactNode;
   description: string;
 }
 
@@ -57,7 +52,6 @@ const TABS_CONFIG: TabConfig[] = [
     label: 'Unidades de Medida',
     singular: 'Unidad',
     createLabel: 'Nueva Unidad',
-    icon: <InboxOutlined style={{ fontSize: 16 }} />,
     description: 'Gestión de magnitudes físicas, métricas de dispensación y decimales para inventario',
   },
   {
@@ -65,7 +59,6 @@ const TABS_CONFIG: TabConfig[] = [
     label: 'Categorías',
     singular: 'Categoría',
     createLabel: 'Nueva Categoría',
-    icon: <AppstoreOutlined style={{ fontSize: 16 }} />,
     description: 'Clasificación taxonómica y familias de productos químicos, reactivos y materiales',
   },
   {
@@ -73,7 +66,6 @@ const TABS_CONFIG: TabConfig[] = [
     label: 'Almacenes Físicos',
     singular: 'Almacén',
     createLabel: 'Nuevo Almacén',
-    icon: <ShopOutlined style={{ fontSize: 16 }} />,
     description: 'Espacios físicos de custodia, bodegas centrales y almacenes satélites por sede',
   },
   {
@@ -81,7 +73,6 @@ const TABS_CONFIG: TabConfig[] = [
     label: 'Ubicaciones',
     singular: 'Ubicación',
     createLabel: 'Nueva Ubicación',
-    icon: <EnvironmentOutlined style={{ fontSize: 16 }} />,
     description: 'Distribución espacial interna, estantes, gavetas y refrigeradores de almacenamiento',
   },
 ];
@@ -579,7 +570,6 @@ export default function MaestrosPage() {
               key: t.key,
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                  {t.icon}
                   <span style={{ fontWeight: 600 }}>{t.label}</span>
                 </span>
               ),

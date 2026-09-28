@@ -57,6 +57,8 @@ export default function PedidoDrawer({ open, onClose, onSuccess }: PedidoDrawerP
 
   useEffect(() => {
     if (open) {
+      form.resetFields();
+      setLineas([]);
       almacenApi
         .get<Almacen[]>('/maestros/almacenes', { sede_id: sedeId, activo: true })
         .then((data) => {
@@ -78,8 +80,6 @@ export default function PedidoDrawer({ open, onClose, onSuccess }: PedidoDrawerP
           .then((data) => setPersonalList(data || []))
           .catch(console.error);
       }
-
-      setLineas([]);
     }
   }, [open, sedeId, canApprove, form]);
 
@@ -163,15 +163,17 @@ export default function PedidoDrawer({ open, onClose, onSuccess }: PedidoDrawerP
       await pedidosApi.crear({
         almacen_id: values.almacen_id,
         solicitante_personal_id: values.solicitante_personal_id,
-        observaciones: values.observaciones,
+        observaciones: values.observaciones?.trim() || undefined,
         items: lineas.map((l) => ({
           producto_id: l.producto_id!,
           cantidad_solicitada: l.cantidad_solicitada,
-          observacion: l.observacion,
+          observacion: l.observacion?.trim() || undefined,
         })),
       });
 
       message.success('Pedido registrado exitosamente');
+      form.resetFields();
+      setLineas([]);
       onSuccess();
       onClose();
     } catch (err: any) {

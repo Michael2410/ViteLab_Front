@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { useSearchParams } from 'react-router-dom';
-import { ExperimentOutlined, AppstoreOutlined } from '@ant-design/icons';
 import ModulePageLayout, { BrandCreateButton } from '../../../../shared/components/ModulePageLayout';
 import { useAuthStore } from '../../../auth/hooks';
 import { AnalisisPage } from './AnalisisPage';
@@ -28,7 +27,6 @@ export const AnalisisCatalogoPage: React.FC = () => {
         key: 'analisis',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <ExperimentOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Análisis Clínicos</span>
           </span>
         ),
@@ -42,7 +40,6 @@ export const AnalisisCatalogoPage: React.FC = () => {
         key: 'componentes',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <AppstoreOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Componentes / Analitos</span>
           </span>
         ),

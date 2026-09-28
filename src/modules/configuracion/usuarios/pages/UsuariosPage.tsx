@@ -12,11 +12,9 @@ import {
   Tabs,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  UserOutlined,
   MailOutlined,
   ApartmentOutlined,
   TeamOutlined,
@@ -39,7 +37,6 @@ const { Text } = Typography;
 interface TabConfig {
   key: 'usuarios' | 'sin_cuenta';
   label: string;
-  icon: React.ReactNode;
   description: string;
 }
 
@@ -47,13 +44,11 @@ const TABS_CONFIG: TabConfig[] = [
   {
     key: 'usuarios',
     label: 'Cuentas de Usuarios',
-    icon: <UserOutlined style={{ fontSize: 16 }} />,
     description: 'Administración de credenciales de acceso, asignación de roles y permisos por sede',
   },
   {
     key: 'sin_cuenta',
     label: 'Colaboradores sin Cuenta',
-    icon: <TeamOutlined style={{ fontSize: 16 }} />,
     description: 'Personal activo registrado en Recursos Humanos pendiente de asignación de credenciales',
   },
 ];
@@ -483,7 +478,6 @@ export const UsuariosPage: React.FC = () => {
               key: t.key,
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                  {t.icon}
                   <span style={{ fontWeight: 600 }}>{t.label}</span>
                   {t.key === 'usuarios' && (
                     <Tag style={{ margin: 0, borderRadius: 10, fontSize: 11, backgroundColor: '#f1f5f9', color: '#475569' }}>

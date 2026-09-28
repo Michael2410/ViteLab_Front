@@ -6,7 +6,6 @@ import {
   Dropdown,
   Typography,
   Breadcrumb,
-  theme,
   Space,
   Tag,
   Grid,
@@ -28,7 +27,6 @@ import {
   IconOrdenes,
   IconResultados,
   IconAprobaciones,
-  IconCatalogos,
   IconReportes,
   IconAnalisisClinicos,
   IconParametrosLab,
@@ -54,7 +52,6 @@ export default function LaboratorioLayout() {
   const location = useLocation();
   const isDashboard = location.pathname === '/dashboard' || location.pathname === '/';
   const { user, clearAuth } = useAuthStore();
-  const { token } = theme.useToken();
   const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
   const { data: whatsappStatus } = useWhatsAppStatus();
 
@@ -72,54 +69,74 @@ export default function LaboratorioLayout() {
 
     // Dashboard - siempre visible (o permiso dashboard.read)
     if (isSuperAdmin || hasPermission('dashboard.read')) {
-      items.push({ key: 'dashboard', icon: <IconDashboard width={22} height={22} />, label: <span>Dashboard</span> });
+      items.push({ 
+        key: 'dashboard', 
+        icon: <IconDashboard width={22} height={22} />, 
+        label: <span>Dashboard</span> 
+      });
     }
 
     // Órdenes
     if (isSuperAdmin || hasAnyPermission(['orders.read', 'orders.create'])) {
-      items.push({ key: 'ordenes', icon: <IconOrdenes width={22} height={22} />, label: <span>Órdenes</span> });
+      items.push({ 
+        key: 'ordenes', 
+        icon: <IconOrdenes width={22} height={22} />, 
+        label: <span>Órdenes</span> 
+      });
     }
 
     // Resultados
     if (isSuperAdmin || hasAnyPermission(['results.read', 'results.create', 'results.update'])) {
-      items.push({ key: 'resultados', icon: <IconResultados width={22} height={22} />, label: <span>Resultados</span> });
+      items.push({ 
+        key: 'resultados', 
+        icon: <IconResultados width={22} height={22} />, 
+        label: <span>Resultados</span> 
+      });
     }
 
     // Aprobaciones
     if (isSuperAdmin || hasPermission('results.approve')) {
-      items.push({ key: 'aprobaciones', icon: <IconAprobaciones width={22} height={22} />, label: <span>Aprobaciones</span> });
+      items.push({ 
+        key: 'aprobaciones', 
+        icon: <IconAprobaciones width={22} height={22} />, 
+        label: <span>Aprobaciones</span> 
+      });
     }
 
     // Análisis Clínicos (Análisis + Componentes)
     if (isSuperAdmin || hasAnyPermission(['catalogs.analysis.read', 'catalogs.components.read'])) {
-      items.push({
-        key: 'analisis-clinicos',
-        icon: <IconAnalisisClinicos width={22} height={22} />,
-        label: <span>Análisis Clínicos</span>,
+      items.push({ 
+        key: 'analisis-clinicos', 
+        icon: <IconAnalisisClinicos width={22} height={22} />, 
+        label: <span>Análisis Clínicos</span> 
       });
     }
 
     // Parámetros del Lab (Áreas + Métodos + Muestras)
     if (isSuperAdmin || hasAnyPermission(['catalogs.areas.read', 'catalogs.methods.read', 'catalogs.muestras.read'])) {
-      items.push({
-        key: 'parametros-lab',
-        icon: <IconParametrosLab width={22} height={22} />,
-        label: <span>Parámetros</span>,
+      items.push({ 
+        key: 'parametros-lab', 
+        icon: <IconParametrosLab width={22} height={22} />, 
+        label: <span>Parámetros</span> 
       });
     }
 
     // Tarifas & Convenios (Tarifarios + Convenios + Tipos de Cliente)
     if (isSuperAdmin || hasAnyPermission(['tariffs.read', 'catalogs.convenios.read', 'catalogs.tipos-cliente.read'])) {
-      items.push({
-        key: 'tarifas-convenios',
-        icon: <IconTarifasConvenios width={22} height={22} />,
-        label: <span>Tarifas & Convenios</span>,
+      items.push({ 
+        key: 'tarifas-convenios', 
+        icon: <IconTarifasConvenios width={22} height={22} />, 
+        label: <span>Tarifas & Convenios</span> 
       });
     }
 
     // Reportes
     if (isSuperAdmin || hasPermission('reports.read')) {
-      items.push({ key: 'reportes', icon: <IconReportes width={22} height={22} />, label: <span>Reportes</span> });
+      items.push({ 
+        key: 'reportes', 
+        icon: <IconReportes width={22} height={22} />, 
+        label: <span>Reportes</span> 
+      });
     }
 
     return items;

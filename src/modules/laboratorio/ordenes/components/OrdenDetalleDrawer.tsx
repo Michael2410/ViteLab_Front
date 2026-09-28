@@ -302,7 +302,7 @@ export const OrdenDetalleDrawer: React.FC<OrdenDetalleDrawerProps> = ({
                     <Descriptions column={{ xs: 1, sm: 2 }} size="middle">
                       <Descriptions.Item label="Nombre Completo">
                         <Text strong>
-                          {orden.paciente?.nombres} {orden.paciente?.apellido_paterno} {orden.paciente?.apellido_materno}
+                          {orden.paciente?.nombres} {orden.paciente?.apellido_paterno || (orden.paciente as any)?.apellidos || ''} {orden.paciente?.apellido_materno || ''}
                         </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="DNI / Documento">
@@ -312,7 +312,7 @@ export const OrdenDetalleDrawer: React.FC<OrdenDetalleDrawerProps> = ({
                       </Descriptions.Item>
                       <Descriptions.Item label="Sexo">
                         <Tag color="cyan" style={{ borderRadius: 4 }}>
-                          {orden.paciente?.genero === 'M' ? 'Masculino' : orden.paciente?.genero === 'F' ? 'Femenino' : '-'}
+                          {(orden.paciente?.genero || (orden.paciente as any)?.sexo) === 'M' ? 'Masculino' : (orden.paciente?.genero || (orden.paciente as any)?.sexo) === 'F' ? 'Femenino' : '-'}
                         </Tag>
                       </Descriptions.Item>
                       <Descriptions.Item label="Fecha de Nacimiento">

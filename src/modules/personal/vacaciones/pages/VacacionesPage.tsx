@@ -26,8 +26,6 @@ import {
   LeftOutlined,
   RightOutlined,
   UserOutlined,
-  TeamOutlined,
-  FileDoneOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -50,7 +48,6 @@ type VacacionTab = 'saldos' | 'solicitudes' | 'calendario';
 interface TabConfig {
   key: VacacionTab;
   label: string;
-  icon: React.ReactNode;
   description: string;
 }
 
@@ -58,19 +55,16 @@ const TABS_CONFIG: TabConfig[] = [
   {
     key: 'saldos',
     label: 'Saldos Vacacionales',
-    icon: <TeamOutlined style={{ fontSize: 16 }} />,
     description: 'Cálculo automatizado de días acumulados por ley, descansos gozados y saldos disponibles por colaborador.',
   },
   {
     key: 'solicitudes',
     label: 'Solicitudes & Aprobaciones',
-    icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
     description: 'Bandeja de solicitudes vacacionales, estados de tramitación y evaluación de directores.',
   },
   {
     key: 'calendario',
     label: 'Calendario de Ausencias',
-    icon: <CalendarOutlined style={{ fontSize: 16 }} />,
     description: 'Planificación visual mensual de descansos remunerados, distribución de turnos y cobertura de servicio.',
   },
 ];
@@ -716,7 +710,6 @@ export default function VacacionesPage() {
               key: t.key,
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-                  {t.icon}
                   <span style={{ fontWeight: 600 }}>{t.label}</span>
                   {t.key === 'solicitudes' && (
                     <Badge

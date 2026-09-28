@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { useSearchParams } from 'react-router-dom';
-import { DollarCircleOutlined, BankOutlined, TeamOutlined } from '@ant-design/icons';
 import ModulePageLayout, { BrandCreateButton } from '../../../../shared/components/ModulePageLayout';
 import { useAuthStore } from '../../../auth/hooks';
 import { TarifariosPage } from './TarifariosPage';
@@ -29,7 +28,6 @@ export const TarifasConveniosPage: React.FC = () => {
         key: 'tarifarios',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <DollarCircleOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Tarifarios y Precios</span>
           </span>
         ),
@@ -43,7 +41,6 @@ export const TarifasConveniosPage: React.FC = () => {
         key: 'convenios',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <BankOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Convenios Empresariales</span>
           </span>
         ),
@@ -57,7 +54,6 @@ export const TarifasConveniosPage: React.FC = () => {
         key: 'tipos-cliente',
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
-            <TeamOutlined style={{ fontSize: 16 }} />
             <span style={{ fontWeight: 600 }}>Tipos de Cliente</span>
           </span>
         ),
