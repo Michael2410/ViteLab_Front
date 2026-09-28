@@ -32,9 +32,31 @@ import type { Personal } from '../../../personal/types';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { UsuarioFormModal } from '../components/UsuarioFormModal';
 import type { Usuario, CreateUsuarioInput, UpdateUsuarioInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
+
+interface TabConfig {
+  key: 'usuarios' | 'sin_cuenta';
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}
+
+const TABS_CONFIG: TabConfig[] = [
+  {
+    key: 'usuarios',
+    label: 'Cuentas de Usuarios',
+    icon: <UserOutlined style={{ fontSize: 16 }} />,
+    description: 'Administración de credenciales de acceso, asignación de roles y permisos por sede',
+  },
+  {
+    key: 'sin_cuenta',
+    label: 'Colaboradores sin Cuenta',
+    icon: <TeamOutlined style={{ fontSize: 16 }} />,
+    description: 'Personal activo registrado en Recursos Humanos pendiente de asignación de credenciales',
+  },
+];
 
 export const UsuariosPage: React.FC = () => {
   const { modal } = App.useApp();
@@ -439,138 +461,121 @@ export const UsuariosPage: React.FC = () => {
     },
   ];
 
+  const currentTabConfig = TABS_CONFIG.find((t) => t.key === activeTab) || TABS_CONFIG[0];
+
   return (
     <ModulePageLayout
       title="Usuarios del Sistema"
-      subtitle="Administración de credenciales de acceso, vinculación con personal y permisos por sede"
+      subtitle={currentTabConfig.description}
       actionButton={
-        canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
+        canCreate && activeTab === 'usuarios' ? (
+          <BrandCreateButton onClick={handleNuevo}>
             Nuevo Usuario
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
+      extraHeader={
+        <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={(key) => setActiveTab(key as 'usuarios' | 'sin_cuenta')}
+            items={TABS_CONFIG.map((t) => ({
+              key: t.key,
+              label: (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 6px' }}>
+                  {t.icon}
+                  <span style={{ fontWeight: 600 }}>{t.label}</span>
+                  {t.key === 'usuarios' && (
+                    <Tag style={{ margin: 0, borderRadius: 10, fontSize: 11, backgroundColor: '#f1f5f9', color: '#475569' }}>
+                      {usuarios?.length ?? 0}
+                    </Tag>
+                  )}
+                  {t.key === 'sin_cuenta' && personalSinCuenta.length > 0 && (
+                    <Tag color="warning" style={{ margin: 0, borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                      {personalSinCuenta.length}
+                    </Tag>
+                  )}
+                </span>
+              ),
+            }))}
+          />
+        </div>
+      }
+      filters={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          {activeTab === 'usuarios' ? (
+            <>
+              <Input
+                placeholder="Buscar por usuario, nombre o email..."
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                allowClear
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 280, ...brandSearchStyle }}
+              />
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Total registros: <strong style={{ color: '#0f172a' }}>{usuariosFiltrados?.length ?? 0}</strong>
+              </Text>
+            </>
+          ) : (
+            <>
+              <Input
+                placeholder="Buscar por nombre, documento, cargo o área..."
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                allowClear
+                value={searchPersonalText}
+                onChange={(e) => setSearchPersonalText(e.target.value)}
+                style={{ width: 320, ...brandSearchStyle }}
+              />
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Pendientes sin cuenta: <strong style={{ color: '#b45309' }}>{personalSinCuentaFiltrados.length}</strong>
+              </Text>
+            </>
+          )}
+        </div>
+      }
     >
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as 'usuarios' | 'sin_cuenta')}
-        items={[
-          {
-            key: 'usuarios',
-            label: (
-              <Space>
-                <UserOutlined />
-                <span>Cuentas de Usuarios</span>
-                <Tag style={{ margin: 0, borderRadius: 10, fontSize: 11, backgroundColor: '#f1f5f9', color: '#475569' }}>
-                  {usuarios?.length ?? 0}
-                </Tag>
-              </Space>
-            ),
-            children: (
-              <>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                    flexWrap: 'wrap',
-                    gap: 12,
-                    marginBottom: 16,
-                  }}
-                >
-                  <Input
-                    placeholder="Buscar por usuario, nombre o email..."
-                    prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                    allowClear
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    style={{ width: 280, ...brandSearchStyle }}
-                  />
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Total registros: <strong style={{ color: '#0f172a' }}>{usuariosFiltrados?.length ?? 0}</strong>
-                  </Text>
-                </div>
+      {activeTab === 'usuarios' && (
+        <Table
+          columns={columns}
+          dataSource={usuariosFiltrados || []}
+          rowKey="id"
+          loading={isLoading}
+          scroll={{ x: 1200 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total: number) => `Total ${total} usuarios`,
+          }}
+        />
+      )}
 
-                <Table
-                  columns={columns}
-                  dataSource={usuariosFiltrados || []}
-                  rowKey="id"
-                  loading={isLoading}
-                  scroll={{ x: 1200 }}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showTotal: (total: number) => `Total ${total} usuarios`,
-                  }}
-                />
-              </>
-            ),
-          },
-          {
-            key: 'sin_cuenta',
-            label: (
-              <Space>
-                <TeamOutlined />
-                <span>Colaboradores sin Cuenta</span>
-                {personalSinCuenta.length > 0 && (
-                  <Tag color="warning" style={{ margin: 0, borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
-                    {personalSinCuenta.length}
-                  </Tag>
-                )}
-              </Space>
-            ),
-            children: (
-              <>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%',
-                    flexWrap: 'wrap',
-                    gap: 12,
-                    marginBottom: 16,
-                  }}
-                >
-                  <Input
-                    placeholder="Buscar por nombre, documento, cargo o área..."
-                    prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                    allowClear
-                    value={searchPersonalText}
-                    onChange={(e) => setSearchPersonalText(e.target.value)}
-                    style={{ width: 320, ...brandSearchStyle }}
-                  />
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Pendientes sin cuenta: <strong style={{ color: '#b45309' }}>{personalSinCuentaFiltrados.length}</strong>
-                  </Text>
-                </div>
-
-                <Table
-                  columns={columnsPersonalSinCuenta}
-                  dataSource={personalSinCuentaFiltrados}
-                  rowKey="id"
-                  loading={isLoadingPersonal}
-                  scroll={{ x: 1000 }}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showTotal: (total: number) => `Total ${total} colaboradores sin cuenta`,
-                  }}
-                  locale={{
-                    emptyText: '¡Excelente! Todos los colaboradores activos de RRHH ya cuentan con acceso al sistema.',
-                  }}
-                />
-              </>
-            ),
-          },
-        ]}
-      />
+      {activeTab === 'sin_cuenta' && (
+        <Table
+          columns={columnsPersonalSinCuenta}
+          dataSource={personalSinCuentaFiltrados}
+          rowKey="id"
+          loading={isLoadingPersonal}
+          scroll={{ x: 1000 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total: number) => `Total ${total} colaboradores sin cuenta`,
+          }}
+          locale={{
+            emptyText: '¡Excelente! Todos los colaboradores activos de RRHH ya cuentan con acceso al sistema.',
+          }}
+        />
+      )}
 
       {/* Modal */}
       <UsuarioFormModal

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -9,7 +9,6 @@ import {
   Switch,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -25,14 +24,27 @@ import {
 import { useAuthStore } from '../../../auth/hooks';
 import { TipoClienteFormModal } from '../components/TipoClienteFormModal';
 import type { TipoCliente, CreateTipoClienteInput, UpdateTipoClienteInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const TiposClientePage: React.FC = () => {
+interface TiposClientePageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const TiposClientePage = ({ isTab = false, createTrigger }: TiposClientePageProps) => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [tipoClienteSeleccionado, setTipoClienteSeleccionado] = useState<TipoCliente | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: tiposCliente, isLoading } = useTiposCliente({});
@@ -153,20 +165,73 @@ export const TiposClientePage: React.FC = () => {
     },
   ];
 
+  if (isTab) {
+    return (
+      <div style={{ paddingTop: 8 }}>
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+            flexWrap: 'wrap',
+            gap: 12,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
+          }}
+        >
+          <Input
+            placeholder="Buscar por tipo de cliente..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{tiposClienteFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+
+        <Table
+          columns={columns}
+          dataSource={tiposClienteFiltrados || []}
+          rowKey="id"
+          loading={isLoading}
+          scroll={{ x: 800 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} tipos de cliente`,
+          }}
+        />
+
+        <TipoClienteFormModal
+          open={modalOpen}
+          tipoCliente={tipoClienteSeleccionado}
+          onCancel={() => {
+            setModalOpen(false);
+            setTipoClienteSeleccionado(null);
+          }}
+          onSubmit={handleSubmitForm}
+          loading={crearTipoClienteMutation.isPending || actualizarTipoClienteMutation.isPending}
+        />
+      </div>
+    );
+  }
+
   return (
     <ModulePageLayout
       title="Tipos de Cliente"
       subtitle="Clasificación comercial y tarifaria de clientes (Particular, Convenios, Empresas)"
       actionButton={
         hasPermission('catalogs.tipos-cliente.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleNuevo}>
             Nuevo Tipo
-          </Button>
+          </BrandCreateButton>
         )
       }
       filters={

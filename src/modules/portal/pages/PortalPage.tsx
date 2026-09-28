@@ -34,6 +34,15 @@ export default function PortalPage() {
     'personal.documentos.read',
   ]);
 
+  const canAccessAlmacen = isSuperAdmin || hasAnyPermission([
+    'almacen.dashboard.read',
+    'almacen.productos.read',
+    'almacen.proveedores.read',
+    'almacen.maestros.read',
+    'almacen.stock.read',
+    'almacen.ingresos.read',
+  ]);
+
   const handleLogout = () => {
     clearAuth();
     localStorage.removeItem('accessToken');
@@ -88,16 +97,16 @@ export default function PortalPage() {
       id: 'almacen',
       title: 'Almacén & Logística',
       subtitle: 'Reactivos & Stock',
-      badge: 'Próximamente',
+      badge: 'Activo',
       path: '/almacen',
       icon: <IconAlmacen />,
-      iconColor: '#0284c7', // Azul cian
-      hoverBg: 'rgba(240, 249, 255, 0.75)',
-      badgeBg: '#f0f9ff',
-      badgeColor: '#0284c7',
-      badgeBorder: '#bae6fd',
-      active: false,
-      visible: true,
+      iconColor: '#f59e0b',
+      hoverBg: 'rgba(254, 243, 199, 0.75)',
+      badgeBg: '#fef3c7',
+      badgeColor: '#b45309',
+      badgeBorder: '#fde68a',
+      active: true,
+      visible: canAccessAlmacen,
     },
     {
       id: 'personal',
@@ -107,10 +116,10 @@ export default function PortalPage() {
       path: '/personal',
       icon: <IconPersonal />,
       iconColor: '#2563eb', // Azul médico
-      hoverBg: 'rgba(239, 246, 255, 0.75)',
-      badgeBg: '#ecfdf5',
-      badgeColor: '#059669',
-      badgeBorder: '#a7f3d0',
+      hoverBg: 'rgba(239, 246, 255, 0.85)',
+      badgeBg: '#eff6ff',
+      badgeColor: '#1d4ed8',
+      badgeBorder: '#bfdbfe',
       active: true,
       visible: canAccessPersonal,
     },
@@ -121,11 +130,11 @@ export default function PortalPage() {
       badge: 'Activo',
       path: '/configuracion',
       icon: <IconConfiguracion />,
-      iconColor: '#6366f1', // Índigo moderno
-      hoverBg: 'rgba(238, 242, 255, 0.75)',
-      badgeBg: '#eef2ff',
-      badgeColor: '#4f46e5',
-      badgeBorder: '#c7d2fe',
+      iconColor: '#7c3aed', // Púrpura / Violeta
+      hoverBg: 'rgba(245, 243, 255, 0.85)',
+      badgeBg: '#f5f3ff',
+      badgeColor: '#6d28d9',
+      badgeBorder: '#ddd6fe',
       active: true,
       visible: canAccessConfig,
     },

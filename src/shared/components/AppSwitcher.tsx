@@ -29,26 +29,59 @@ export const AppSwitcher: React.FC = () => {
     'personal.documentos.read',
   ]);
 
-  const allModules = [
+  const canAccessAlmacen = isSuperAdmin || hasAnyPermission([
+    'almacen.dashboard.read',
+    'almacen.productos.read',
+    'almacen.proveedores.read',
+    'almacen.maestros.read',
+    'almacen.stock.read',
+    'almacen.ingresos.read',
+  ]);
+
+  interface ModuleItem {
+    id: string;
+    title: string;
+    desc: string;
+    path: string;
+    icon: React.ReactNode;
+    color: string;
+    bg: string;
+    visible: boolean;
+    active: boolean;
+    tag?: string;
+  }
+
+  const allModules: ModuleItem[] = [
     {
       id: 'laboratorio',
       title: 'Laboratorio Clínico',
       desc: 'Órdenes, resultados, validación',
       path: '/dashboard',
       icon: <IconResultados />,
-      color: '#06b6d4',
-      bg: 'rgba(6, 182, 212, 0.1)',
+      color: '#059669',
+      bg: 'rgba(5, 150, 105, 0.1)',
       visible: true,
       active: currentPath.startsWith('/dashboard') || currentPath.startsWith('/ordenes') || currentPath.startsWith('/resultados') || currentPath.startsWith('/aprobaciones') || currentPath.startsWith('/catalogos') || currentPath.startsWith('/reportes'),
     },
     {
+      id: 'almacen',
+      title: 'Almacén & Logística',
+      desc: 'Reactivos, insumos y catálogo',
+      path: '/almacen',
+      icon: <IconAlmacen />,
+      color: '#f59e0b',
+      bg: 'rgba(245, 158, 11, 0.1)',
+      visible: canAccessAlmacen,
+      active: currentPath.startsWith('/almacen'),
+    },
+    {
       id: 'personal',
       title: 'Personal & RRHH',
-      desc: 'Directorio, cargos y áreas',
+      desc: 'Directorio, cargos y contratos',
       path: '/personal',
       icon: <IconPersonal />,
-      color: '#8b5cf6',
-      bg: 'rgba(139, 92, 246, 0.1)',
+      color: '#2563eb',
+      bg: 'rgba(37, 99, 235, 0.1)',
       visible: canAccessPersonal,
       active: currentPath.startsWith('/personal'),
     },
@@ -58,22 +91,10 @@ export const AppSwitcher: React.FC = () => {
       desc: 'Usuarios, roles, sedes y sistema',
       path: '/configuracion',
       icon: <IconConfiguracion />,
-      color: '#6366f1',
-      bg: 'rgba(99, 102, 241, 0.1)',
+      color: '#7c3aed',
+      bg: 'rgba(124, 58, 237, 0.1)',
       visible: canAccessConfig,
       active: currentPath.startsWith('/configuracion'),
-    },
-    {
-      id: 'almacen',
-      title: 'Almacén & Logística',
-      desc: 'Reactivos, lotes y stock',
-      path: '/almacen',
-      icon: <IconAlmacen />,
-      color: '#f59e0b',
-      bg: 'rgba(245, 158, 11, 0.1)',
-      tag: 'Próx.',
-      visible: true,
-      active: currentPath.startsWith('/almacen'),
     },
   ];
 

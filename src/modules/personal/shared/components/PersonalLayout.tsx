@@ -158,6 +158,23 @@ export const PersonalLayout: React.FC = () => {
     return 'directorio';
   }, [location.pathname]);
 
+  const sectionTitle = useMemo(() => {
+    switch (selectedKey) {
+      case 'contratos':
+        return 'Contratos Laborales';
+      case 'vacaciones':
+        return 'Control de Vacaciones';
+      case 'asistencia':
+        return 'Asistencia & Faltas';
+      case 'documentos':
+        return 'Documentos & Constancias';
+      case 'catalogos':
+        return 'Cargos & Áreas';
+      default:
+        return 'Directorio de Personal';
+    }
+  }, [selectedKey]);
+
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     if (key === 'directorio') navigate('/personal');
     if (key === 'contratos') navigate('/personal/contratos');
@@ -188,8 +205,8 @@ export const PersonalLayout: React.FC = () => {
           justify-content: center !important;
         }
         .vitelab-personal-sider-menu .ant-menu-item-selected {
-          background: linear-gradient(90deg, rgba(16, 185, 129, 0.25) 0%, rgba(2, 132, 199, 0.1) 100%) !important;
-          border-left: 3px solid #10b981 !important;
+          background: linear-gradient(90deg, rgba(37, 99, 235, 0.22) 0%, rgba(2, 132, 199, 0.08) 100%) !important;
+          border-left: 3px solid #2563eb !important;
           color: #ffffff !important;
           font-weight: 600 !important;
         }
@@ -259,7 +276,7 @@ export const PersonalLayout: React.FC = () => {
               </div>
               <div style={{
                 fontSize: 10,
-                color: '#10b981',
+                color: '#3b82f6',
                 fontWeight: 700,
                 letterSpacing: '1.2px',
                 textTransform: 'uppercase',
@@ -365,8 +382,8 @@ export const PersonalLayout: React.FC = () => {
                 Módulo de Personal & Talento Humano
               </span>
               <span style={{ color: '#94a3b8', margin: '0 8px' }}>•</span>
-              <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>
-                {selectedKey === 'catalogos' ? 'Cargos & Áreas' : 'Directorio General'}
+              <span style={{ fontSize: 12, color: '#2563eb', fontWeight: 600 }}>
+                {sectionTitle}
               </span>
             </div>
           </div>
@@ -395,7 +412,7 @@ export const PersonalLayout: React.FC = () => {
                   size={30}
                   icon={<UserOutlined />}
                   style={{
-                    background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                     color: '#ffffff',
                     fontWeight: 600,
                   }}
@@ -412,9 +429,9 @@ export const PersonalLayout: React.FC = () => {
                         lineHeight: '13px',
                         padding: '0 4px',
                         borderRadius: 3,
-                        border: '1px solid #a7f3d0',
-                        backgroundColor: '#ecfdf5',
-                        color: '#059669',
+                        border: '1px solid #bfdbfe',
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
                         fontWeight: 600,
                       }}
                     >

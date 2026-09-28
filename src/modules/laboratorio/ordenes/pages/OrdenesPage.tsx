@@ -39,7 +39,7 @@ import {
   type Orden,
   type OrdenFilters,
 } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
 import { WhatsAppSendModal, useWhatsAppStatus } from '../../whatsapp';
 import { CondicionesPreanaliticasModal } from '../components/CondicionesPreanaliticasModal';
 import { NuevaOrdenDrawer } from '../components/NuevaOrdenDrawer';
@@ -370,14 +370,9 @@ export const OrdenesPage: React.FC = () => {
       subtitle="Recepción, trazabilidad preanalítica y gestión integral de órdenes de laboratorio"
       actionButton={
         hasPermission('orders.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setNuevaOrdenOpen(true)}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={() => setNuevaOrdenOpen(true)}>
             Nueva Orden
-          </Button>
+          </BrandCreateButton>
         )
       }
       extraHeader={
@@ -395,7 +390,7 @@ export const OrdenesPage: React.FC = () => {
               <Col xs={24} sm={12} md={6}>
                 <Select
                   placeholder="Estado"
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', ...brandControlStyle }}
                   allowClear
                   value={filtros.estado}
                   onChange={(value) => handleFiltroChange('estado', value)}
@@ -409,7 +404,7 @@ export const OrdenesPage: React.FC = () => {
               <Col xs={24} sm={12} md={6}>
                 <Select
                   placeholder="Sede"
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', ...brandControlStyle }}
                   allowClear
                   value={filtros.sede_id}
                   onChange={(value) => handleFiltroChange('sede_id', value)}
@@ -422,7 +417,7 @@ export const OrdenesPage: React.FC = () => {
 
               <Col xs={24} md={12}>
                 <RangePicker
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', ...brandControlStyle }}
                   format="DD/MM/YYYY"
                   placeholder={['Fecha desde', 'Fecha hasta']}
                   value={

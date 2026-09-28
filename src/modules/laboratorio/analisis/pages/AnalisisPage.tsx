@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -11,7 +11,6 @@ import {
   Tooltip,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -29,14 +28,27 @@ import { useAuthStore } from '../../../auth/hooks';
 import { obtenerAnalisisPorId } from '../api';
 import { AnalisisFormModal } from '../components/AnalisisFormModal';
 import type { Analisis, CreateAnalisisInput, UpdateAnalisisInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const AnalisisPage: React.FC = () => {
+interface AnalisisPageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const AnalisisPage = ({ isTab = false, createTrigger }: AnalisisPageProps) => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [analisisSeleccionado, setAnalisisSeleccionado] = useState<Analisis | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: analisis, isLoading } = useAnalisis({});
@@ -209,31 +221,22 @@ export const AnalisisPage: React.FC = () => {
     },
   ];
 
-  return (
-    <ModulePageLayout
-      title="Análisis Clínicos"
-      subtitle="Gestión de pruebas, catálogo maestro de exámenes y componentes asociados"
-      actionButton={
-        hasPermission('catalogs.analysis.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
-            Nuevo Análisis
-          </Button>
-        )
-      }
-      filters={
+  const content = (
+    <>
+      {isTab && (
         <div
           style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            width: '100%',
             flexWrap: 'wrap',
             gap: 12,
+            marginBottom: 16,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
           }}
         >
           <Input
@@ -248,8 +251,8 @@ export const AnalisisPage: React.FC = () => {
             Total registros: <strong style={{ color: '#0f172a' }}>{analisisFiltrados?.length ?? 0}</strong>
           </Text>
         </div>
-      }
-    >
+      )}
+
       <Table
         columns={columns}
         dataSource={analisisFiltrados || []}
@@ -277,6 +280,50 @@ export const AnalisisPage: React.FC = () => {
           actualizarAnalisisMutation.isPending
         }
       />
+    </>
+  );
+
+  if (isTab) {
+    return <div style={{ paddingTop: 8 }}>{content}</div>;
+  }
+
+  return (
+    <ModulePageLayout
+      title="Análisis Clínicos"
+      subtitle="Gestión de pruebas, catálogo maestro de exámenes y componentes asociados"
+      actionButton={
+        hasPermission('catalogs.analysis.create') && (
+          <BrandCreateButton onClick={handleNuevo}>
+            Nuevo Análisis
+          </BrandCreateButton>
+        )
+      }
+      filters={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <Input
+            placeholder="Buscar por nombre o sinónimos..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 320, ...brandSearchStyle }}
+          />
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{analisisFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+      }
+    >
+      {content}
     </ModulePageLayout>
   );
 };

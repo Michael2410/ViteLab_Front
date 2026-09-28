@@ -173,8 +173,8 @@ export const ConfiguracionLayout: React.FC = () => {
           justify-content: center !important;
         }
         .vitelab-config-sider-menu .ant-menu-item-selected {
-          background: linear-gradient(90deg, rgba(16, 185, 129, 0.25) 0%, rgba(2, 132, 199, 0.1) 100%) !important;
-          border-left: 3px solid #10b981 !important;
+          background: linear-gradient(90deg, rgba(124, 58, 237, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%) !important;
+          border-left: 3px solid #7c3aed !important;
           color: #ffffff !important;
           font-weight: 600 !important;
         }
@@ -244,13 +244,13 @@ export const ConfiguracionLayout: React.FC = () => {
               </div>
               <div style={{
                 fontSize: 10,
-                color: '#38bdf8',
+                color: '#a78bfa',
                 fontWeight: 700,
                 letterSpacing: '1.2px',
                 textTransform: 'uppercase',
                 marginTop: 2,
               }}>
-                Configuración
+                Configuración & Seguridad
               </div>
             </div>
           )}
@@ -350,7 +350,7 @@ export const ConfiguracionLayout: React.FC = () => {
                 Configuración & Seguridad del Sistema
               </span>
               <span style={{ color: '#94a3b8', margin: '0 8px' }}>•</span>
-              <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: '#7c3aed', fontWeight: 600 }}>
                 {sectionTitle}
               </span>
             </div>
@@ -381,7 +381,7 @@ export const ConfiguracionLayout: React.FC = () => {
                   size={30}
                   icon={<UserOutlined />}
                   style={{
-                    background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
                     color: '#ffffff',
                     fontWeight: 600,
                   }}
@@ -398,9 +398,9 @@ export const ConfiguracionLayout: React.FC = () => {
                         lineHeight: '13px',
                         padding: '0 4px',
                         borderRadius: 3,
-                        border: '1px solid #a7f3d0',
-                        backgroundColor: '#ecfdf5',
-                        color: '#059669',
+                        border: '1px solid #ddd6fe',
+                        backgroundColor: '#f5f3ff',
+                        color: '#6d28d9',
                         fontWeight: 600,
                       }}
                     >

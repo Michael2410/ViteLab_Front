@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -11,7 +11,6 @@ import {
   Select,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -28,16 +27,29 @@ import { useAreasActivas } from '../../areas/hooks';
 import { useMetodosActivos } from '../../metodos/hooks';
 import { ComponenteFormModal } from '../components/ComponenteFormModal';
 import type { Componente, CreateComponenteInput, UpdateComponenteInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const ComponentesPage: React.FC = () => {
+interface ComponentesPageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPageProps) => {
   const [searchText, setSearchText] = useState('');
   const [areaIdFilter, setAreaIdFilter] = useState<number | undefined>(undefined);
   const [metodoIdFilter, setMetodoIdFilter] = useState<number | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [componenteSeleccionado, setComponenteSeleccionado] = useState<Componente | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: componentes, isLoading } = useComponentes({});
@@ -206,31 +218,22 @@ export const ComponentesPage: React.FC = () => {
     },
   ];
 
-  return (
-    <ModulePageLayout
-      title="Componentes de Análisis"
-      subtitle="Gestión de analitos, parámetros técnicos y rangos de referencia para análisis clínicos"
-      actionButton={
-        hasPermission('catalogs.components.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
-            Nuevo Componente
-          </Button>
-        )
-      }
-      filters={
+  const content = (
+    <>
+      {isTab && (
         <div
           style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            width: '100%',
             flexWrap: 'wrap',
             gap: 12,
+            marginBottom: 16,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -246,7 +249,7 @@ export const ComponentesPage: React.FC = () => {
             <Select
               placeholder="Filtrar por área"
               allowClear
-              style={{ width: 200, height: 38 }}
+              style={{ width: 200, ...brandControlStyle }}
               value={areaIdFilter}
               onChange={(value) => setAreaIdFilter(value)}
               options={areasList?.map((a) => ({
@@ -258,7 +261,7 @@ export const ComponentesPage: React.FC = () => {
             <Select
               placeholder="Filtrar por método"
               allowClear
-              style={{ width: 200, height: 38 }}
+              style={{ width: 200, ...brandControlStyle }}
               value={metodoIdFilter}
               onChange={(value) => setMetodoIdFilter(value)}
               options={metodosList?.map((m) => ({
@@ -272,8 +275,8 @@ export const ComponentesPage: React.FC = () => {
             Total registros: <strong style={{ color: '#0f172a' }}>{componentesFiltrados?.length ?? 0}</strong>
           </Text>
         </div>
-      }
-    >
+      )}
+
       <Table
         columns={columns}
         dataSource={componentesFiltrados || []}
@@ -301,6 +304,77 @@ export const ComponentesPage: React.FC = () => {
           actualizarComponenteMutation.isPending
         }
       />
+    </>
+  );
+
+  if (isTab) {
+    return <div style={{ paddingTop: 8 }}>{content}</div>;
+  }
+
+  return (
+    <ModulePageLayout
+      title="Componentes de Análisis"
+      subtitle="Gestión de analitos, parámetros técnicos y rangos de referencia para análisis clínicos"
+      actionButton={
+        hasPermission('catalogs.components.create') && (
+          <BrandCreateButton onClick={handleNuevo}>
+            Nuevo Componente
+          </BrandCreateButton>
+        )
+      }
+      filters={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <Input
+              placeholder="Buscar por nombre de componente..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 280, ...brandSearchStyle }}
+            />
+
+            <Select
+              placeholder="Filtrar por área"
+              allowClear
+              style={{ width: 200, ...brandControlStyle }}
+              value={areaIdFilter}
+              onChange={(value) => setAreaIdFilter(value)}
+              options={areasList?.map((a) => ({
+                label: a.nombre,
+                value: a.id,
+              }))}
+            />
+
+            <Select
+              placeholder="Filtrar por método"
+              allowClear
+              style={{ width: 200, ...brandControlStyle }}
+              value={metodoIdFilter}
+              onChange={(value) => setMetodoIdFilter(value)}
+              options={metodosList?.map((m) => ({
+                label: m.nombre,
+                value: m.id,
+              }))}
+            />
+          </div>
+
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{componentesFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+      }
+    >
+      {content}
     </ModulePageLayout>
   );
 };

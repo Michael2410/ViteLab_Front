@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -11,7 +11,6 @@ import {
   Avatar,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -27,14 +26,27 @@ import { useConvenios, useCrearConvenio, useActualizarConvenio, useEliminarConve
 import { useAuthStore } from '../../../auth/hooks';
 import { ConvenioFormModal } from '../components/ConvenioFormModal';
 import type { Convenio, CreateConvenioInput, UpdateConvenioInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const ConveniosPage: React.FC = () => {
+interface ConveniosPageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const ConveniosPage = ({ isTab = false, createTrigger }: ConveniosPageProps) => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [convenioSeleccionado, setConvenioSeleccionado] = useState<Convenio | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: convenios, isLoading } = useConvenios({});
@@ -228,31 +240,22 @@ export const ConveniosPage: React.FC = () => {
     },
   ];
 
-  return (
-    <ModulePageLayout
-      title="Convenios Empresariales"
-      subtitle="Gestión de acuerdos institucionales, tarifas corporativas y condiciones contractuales"
-      actionButton={
-        hasPermission('catalogs.convenios.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
-            Nuevo Convenio
-          </Button>
-        )
-      }
-      filters={
+  const content = (
+    <>
+      {isTab && (
         <div
           style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            width: '100%',
             flexWrap: 'wrap',
             gap: 12,
+            marginBottom: 16,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
           }}
         >
           <Input
@@ -267,8 +270,8 @@ export const ConveniosPage: React.FC = () => {
             Total registros: <strong style={{ color: '#0f172a' }}>{conveniosFiltrados?.length ?? 0}</strong>
           </Text>
         </div>
-      }
-    >
+      )}
+
       <Table
         columns={columns}
         dataSource={conveniosFiltrados || []}
@@ -296,6 +299,50 @@ export const ConveniosPage: React.FC = () => {
           actualizarConvenioMutation.isPending
         }
       />
+    </>
+  );
+
+  if (isTab) {
+    return <div style={{ paddingTop: 8 }}>{content}</div>;
+  }
+
+  return (
+    <ModulePageLayout
+      title="Convenios Empresariales"
+      subtitle="Gestión de acuerdos institucionales, tarifas corporativas y condiciones contractuales"
+      actionButton={
+        hasPermission('catalogs.convenios.create') && (
+          <BrandCreateButton onClick={handleNuevo}>
+            Nuevo Convenio
+          </BrandCreateButton>
+        )
+      }
+      filters={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <Input
+            placeholder="Buscar por empresa o RUC..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{conveniosFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+      }
+    >
+      {content}
     </ModulePageLayout>
   );
 };

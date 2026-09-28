@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -9,7 +9,6 @@ import {
   Switch,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -20,14 +19,27 @@ import { useMetodos, useCrearMetodo, useActualizarMetodo, useEliminarMetodo } fr
 import { useAuthStore } from '../../../auth/hooks';
 import { MetodoFormModal } from '../components/MetodoFormModal';
 import type { Metodo, CreateMetodoInput, UpdateMetodoInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const MetodosPage: React.FC = () => {
+interface MetodosPageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const MetodosPage = ({ isTab = false, createTrigger }: MetodosPageProps) => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [metodoSeleccionado, setMetodoSeleccionado] = useState<Metodo | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: metodos, isLoading } = useMetodos({});
@@ -158,20 +170,78 @@ export const MetodosPage: React.FC = () => {
     },
   ];
 
+  const content = (
+    <>
+      {isTab && (
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginBottom: 16,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
+          }}
+        >
+          <Input
+            placeholder="Buscar por método o técnica..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{metodosFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+      )}
+
+      <Table
+        columns={columns}
+        dataSource={metodosFiltrados || []}
+        rowKey="id"
+        loading={isLoading}
+        scroll={{ x: 900 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} métodos`,
+        }}
+      />
+
+      {/* Modal */}
+      <MetodoFormModal
+        open={modalOpen}
+        metodo={metodoSeleccionado}
+        onCancel={() => {
+          setModalOpen(false);
+          setMetodoSeleccionado(null);
+        }}
+        onSubmit={handleSubmitForm}
+        loading={crearMetodoMutation.isPending || actualizarMetodoMutation.isPending}
+      />
+    </>
+  );
+
+  if (isTab) {
+    return <div style={{ paddingTop: 8 }}>{content}</div>;
+  }
+
   return (
     <ModulePageLayout
       title="Métodos de Análisis"
       subtitle="Gestión y estandarización de técnicas y metodologías analíticas"
       actionButton={
         hasPermission('catalogs.methods.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleNuevo}>
             Nuevo Método
-          </Button>
+          </BrandCreateButton>
         )
       }
       filters={
@@ -199,30 +269,7 @@ export const MetodosPage: React.FC = () => {
         </div>
       }
     >
-      <Table
-        columns={columns}
-        dataSource={metodosFiltrados || []}
-        rowKey="id"
-        loading={isLoading}
-        scroll={{ x: 900 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} métodos`,
-        }}
-      />
-
-      {/* Modal */}
-      <MetodoFormModal
-        open={modalOpen}
-        metodo={metodoSeleccionado}
-        onCancel={() => {
-          setModalOpen(false);
-          setMetodoSeleccionado(null);
-        }}
-        onSubmit={handleSubmitForm}
-        loading={crearMetodoMutation.isPending || actualizarMetodoMutation.isPending}
-      />
+      {content}
     </ModulePageLayout>
   );
 };

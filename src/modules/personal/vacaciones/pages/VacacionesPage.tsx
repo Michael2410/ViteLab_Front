@@ -33,7 +33,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 
-import ModulePageLayout, { brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useVacacionesSolicitudes,
@@ -692,7 +692,6 @@ export default function VacacionesPage() {
     <ModulePageLayout
       title={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <CalendarOutlined style={{ color: '#0d9488' }} />
           <span>Control & Programación de Vacaciones</span>
         </span>
       }
@@ -700,23 +699,9 @@ export default function VacacionesPage() {
       wrapInTableCard={false}
       actionButton={
         canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleOpenGlobal}
-            style={{
-              background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
-              border: 'none',
-              borderRadius: 10,
-              fontWeight: 600,
-              height: 40,
-              padding: '0 20px',
-              boxShadow: '0 4px 14px rgba(13, 148, 136, 0.35)',
-              color: '#ffffff',
-            }}
-          >
+          <BrandCreateButton onClick={handleOpenGlobal}>
             Programar Vacaciones
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
       extraHeader={

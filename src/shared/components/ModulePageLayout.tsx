@@ -1,4 +1,5 @@
 import React, { type ReactNode } from 'react';
+export { BrandCreateButton, type BrandCreateButtonProps } from './BrandCreateButton';
 
 export const brandButtonStyle: React.CSSProperties = {
   background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
@@ -14,9 +15,13 @@ export const brandButtonStyle: React.CSSProperties = {
   gap: 8,
 };
 
+export const brandControlStyle: React.CSSProperties = {
+  borderRadius: 12,
+  height: 32,
+};
+
 export const brandSearchStyle: React.CSSProperties = {
-  borderRadius: 8,
-  height: 38,
+  ...brandControlStyle,
   borderColor: '#cbd5e1',
 };
 

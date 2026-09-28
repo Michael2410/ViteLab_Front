@@ -1,1 +1,15 @@
-export { default as AlmacenComingSoonPage } from './pages/AlmacenComingSoonPage';
+export { default as AlmacenLayout } from './shared/AlmacenLayout';
+export { default as AlmacenIndexRedirect } from './shared/AlmacenIndexRedirect';
+export * from './productos';
+export * from './proveedores';
+export * from './maestros';
+export * from './ingresos';
+export * from './stock';
+export * from './despachos';
+export * from './custodia';
+export * from './pedidos';
+export * from './transferencias';
+export * from './ajustes';
+export * from './shared/sede.store';
+export * from './shared/types';
+export * from './shared/almacen.api';

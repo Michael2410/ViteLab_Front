@@ -23,7 +23,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { ModulePageLayout } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useAsistenciaList,
@@ -324,7 +324,6 @@ export default function AsistenciaPage() {
     <ModulePageLayout
       title={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <ClockCircleOutlined style={{ color: '#0d9488' }} />
           <span>Control de Asistencia & Faltas</span>
         </span>
       }
@@ -332,23 +331,9 @@ export default function AsistenciaPage() {
       wrapInTableCard={false}
       actionButton={
         canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={{
-              background: 'linear-gradient(135deg, #0d9488 0%, #0284c7 100%)',
-              border: 'none',
-              borderRadius: 10,
-              fontWeight: 600,
-              height: 40,
-              padding: '0 20px',
-              boxShadow: '0 4px 14px rgba(13, 148, 136, 0.35)',
-              color: '#ffffff',
-            }}
-          >
+          <BrandCreateButton onClick={handleNuevo}>
             Registrar Asistencia
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
     >
@@ -568,7 +553,7 @@ export default function AsistenciaPage() {
             onChange={(d) => setFechaFiltro(d ? d.format('YYYY-MM-DD') : undefined)}
             format="DD/MM/YYYY"
             placeholder="Seleccionar fecha..."
-            style={{ width: 150, borderRadius: 8 }}
+            style={{ width: 150, ...brandControlStyle }}
           />
 
           <Button
@@ -605,7 +590,7 @@ export default function AsistenciaPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           allowClear
-          style={{ width: 280, borderRadius: 8 }}
+          style={{ width: 280, ...brandSearchStyle }}
         />
       </div>
 

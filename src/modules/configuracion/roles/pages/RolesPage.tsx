@@ -23,7 +23,7 @@ import { useRoles, useEliminarRol } from '../hooks';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { RolFormModal } from '../components/RolFormModal';
 import type { Rol } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
@@ -194,14 +194,9 @@ export function RolesPage() {
       subtitle="Administración de perfiles de usuario, niveles de acceso y permisos del sistema"
       actionButton={
         canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleCrear}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleCrear}>
             Nuevo Rol
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
       filters={

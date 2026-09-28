@@ -13,7 +13,20 @@ import NotFoundPage from './shared/pages/NotFoundPage';
 
 // Portal & Suites
 import { PortalPage } from './modules/portal';
-import { AlmacenComingSoonPage } from './modules/almacen';
+import {
+  AlmacenLayout,
+  AlmacenIndexRedirect,
+  ProductosListPage as AlmacenProductosPage,
+  ProveedoresListPage as AlmacenProveedoresPage,
+  MaestrosPage as AlmacenMaestrosPage,
+  IngresosListPage as AlmacenIngresosPage,
+  StockListPage as AlmacenStockPage,
+  DespachosListPage as AlmacenDespachosPage,
+  CustodiaPage as AlmacenCustodiaPage,
+  PedidosListPage as AlmacenPedidosPage,
+  TransferenciasListPage as AlmacenTransferenciasPage,
+  AjustesListPage as AlmacenAjustesPage,
+} from './modules/almacen';
 import {
   PersonalPage,
   PersonalCatalogosPage,
@@ -58,6 +71,11 @@ import { TarifariosPage } from './modules/laboratorio/tarifarios/pages/Tarifario
 
 // Módulo Muestras (Laboratorio - Catálogo)
 import { MuestrasPage } from './modules/laboratorio/muestras/pages/MuestrasPage';
+
+// Módulos Agrupados por Pestañas (Laboratorio)
+import { AnalisisCatalogoPage } from './modules/laboratorio/analisis/pages/AnalisisCatalogoPage';
+import { ParametrosLabPage } from './modules/laboratorio/parametros/pages/ParametrosLabPage';
+import { TarifasConveniosPage } from './modules/laboratorio/tarifarios/pages/TarifasConveniosPage';
 
 // Módulo Configuración & Seguridad (Suite independiente)
 import {
@@ -184,15 +202,111 @@ function App() {
                 }
               />
 
-              {/* Módulo Almacén (Próximamente) */}
+              {/* Módulo Almacén & Logística (Layout propio) */}
               <Route
                 path="/almacen"
                 element={
-                  <ProtectedRoute>
-                    <AlmacenComingSoonPage />
+                  <ProtectedRoute
+                    requiredPermissions={[
+                      'almacen.dashboard.read',
+                      'almacen.maestros.read',
+                      'almacen.productos.read',
+                      'almacen.proveedores.read',
+                      'almacen.stock.read',
+                      'almacen.ingresos.read',
+                      'almacen.despachos.read',
+                      'almacen.custodia.read',
+                      'almacen.pedidos.read',
+                      'almacen.transferencias.read',
+                      'almacen.ajustes.read',
+                    ]}
+                  >
+                    <AlmacenLayout />
                   </ProtectedRoute>
                 }
-              />
+              >
+                <Route index element={<AlmacenIndexRedirect />} />
+                <Route
+                  path="productos"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.productos.read">
+                      <AlmacenProductosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="stock"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.stock.read">
+                      <AlmacenStockPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="ingresos"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.ingresos.read">
+                      <AlmacenIngresosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="despachos"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.despachos.read">
+                      <AlmacenDespachosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="custodia"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.custodia.read">
+                      <AlmacenCustodiaPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="pedidos"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.pedidos.read">
+                      <AlmacenPedidosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="transferencias"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.transferencias.read">
+                      <AlmacenTransferenciasPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="ajustes"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.ajustes.read">
+                      <AlmacenAjustesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="proveedores"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.proveedores.read">
+                      <AlmacenProveedoresPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="maestros"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.maestros.read">
+                      <AlmacenMaestrosPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
 
               {/* Módulo Personal & RRHH (Layout propio) */}
               <Route
@@ -369,48 +483,37 @@ function App() {
                   </ProtectedRoute>
                 } />
 
-                {/* Módulo de Catálogos */}
-                <Route path="catalogos/areas" element={
-                  <ProtectedRoute requiredPermission="catalogs.areas.read">
-                    <AreasPage />
+                {/* 1. Catálogo de Análisis Clínicos (Análisis + Componentes) */}
+                <Route path="analisis" element={
+                  <ProtectedRoute requiredPermissions={['catalogs.analysis.read', 'catalogs.components.read']}>
+                    <AnalisisCatalogoPage />
                   </ProtectedRoute>
                 } />
-                <Route path="catalogos/metodos" element={
-                  <ProtectedRoute requiredPermission="catalogs.methods.read">
-                    <MetodosPage />
+
+                {/* 2. Parámetros del Laboratorio (Áreas + Métodos + Muestras) */}
+                <Route path="parametros" element={
+                  <ProtectedRoute requiredPermissions={['catalogs.areas.read', 'catalogs.methods.read', 'catalogs.muestras.read']}>
+                    <ParametrosLabPage />
                   </ProtectedRoute>
                 } />
+
+                {/* 3. Tarifas y Convenios (Tarifarios + Convenios + Tipos de Cliente) */}
+                <Route path="tarifas-convenios" element={
+                  <ProtectedRoute requiredPermissions={['tariffs.read', 'catalogs.convenios.read', 'catalogs.tipos-cliente.read']}>
+                    <TarifasConveniosPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Redirecciones de compatibilidad hacia las vistas agrupadas con pestaña activa */}
+                <Route path="catalogos/analisis" element={<Navigate to="/analisis?tab=analisis" replace />} />
+                <Route path="catalogos/componentes" element={<Navigate to="/analisis?tab=componentes" replace />} />
+                <Route path="catalogos/areas" element={<Navigate to="/parametros?tab=areas" replace />} />
+                <Route path="catalogos/metodos" element={<Navigate to="/parametros?tab=metodos" replace />} />
+                <Route path="catalogos/muestras" element={<Navigate to="/parametros?tab=muestras" replace />} />
+                <Route path="catalogos/tarifarios" element={<Navigate to="/tarifas-convenios?tab=tarifarios" replace />} />
+                <Route path="catalogos/convenios" element={<Navigate to="/tarifas-convenios?tab=convenios" replace />} />
+                <Route path="catalogos/tipos-cliente" element={<Navigate to="/tarifas-convenios?tab=tipos-cliente" replace />} />
                 <Route path="catalogos/sedes" element={<Navigate to="/configuracion/sedes" replace />} />
-                <Route path="catalogos/tipos-cliente" element={
-                  <ProtectedRoute requiredPermission="catalogs.tipos-cliente.read">
-                    <TiposClientePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/convenios" element={
-                  <ProtectedRoute requiredPermission="catalogs.convenios.read">
-                    <ConveniosPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/analisis" element={
-                  <ProtectedRoute requiredPermission="catalogs.analysis.read">
-                    <AnalisisPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/componentes" element={
-                  <ProtectedRoute requiredPermission="catalogs.components.read">
-                    <ComponentesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/tarifarios" element={
-                  <ProtectedRoute requiredPermission="tariffs.read">
-                    <TarifariosPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="catalogos/muestras" element={
-                  <ProtectedRoute requiredPermission="catalogs.muestras.read">
-                    <MuestrasPage />
-                  </ProtectedRoute>
-                } />
 
                 {/* Redirecciones de compatibilidad hacia Suite Configuración */}
                 <Route path="usuarios" element={<Navigate to="/configuracion/usuarios" replace />} />

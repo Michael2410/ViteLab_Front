@@ -46,6 +46,8 @@ import { DarDeBajaModal } from '../components/DarDeBajaModal';
 import { HistorialLaboralDrawer } from '../components/HistorialLaboralDrawer';
 import { ExpedienteColaboradorDrawer } from '../components/ExpedienteColaboradorDrawer';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
+import { BrandCreateButton } from '../../../../shared/components/BrandCreateButton';
+import { brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
 
 export default function PersonalPage() {
   const { modal } = App.useApp();
@@ -504,23 +506,12 @@ export default function PersonalPage() {
 
         {canCreate && (
           <Space size="middle">
-            <Button
-              type="primary"
+            <BrandCreateButton
               icon={<UserAddOutlined />}
               onClick={handleOpenCreate}
-              style={{
-                background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
-                border: 'none',
-                borderRadius: 10,
-                fontWeight: 600,
-                height: 40,
-                padding: '0 20px',
-                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
-                color: '#ffffff',
-              }}
             >
               Nuevo Colaborador
-            </Button>
+            </BrandCreateButton>
           </Space>
         )}
       </div>
@@ -682,7 +673,7 @@ export default function PersonalPage() {
           allowClear
           value={filters.search}
           onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-          style={{ width: 280, borderRadius: 8 }}
+          style={{ width: 280, ...brandSearchStyle }}
         />
 
         <Select
@@ -694,7 +685,7 @@ export default function PersonalPage() {
             { label: 'Solo Activos', value: true },
             { label: 'Cesados / Inactivos', value: false },
           ]}
-          style={{ width: 160, borderRadius: 8 }}
+          style={{ width: 160, ...brandControlStyle }}
         />
 
         <Select
@@ -705,7 +696,7 @@ export default function PersonalPage() {
           onChange={(val) => setFilters((prev) => ({ ...prev, cargo: val }))}
           options={cargoFilterOptions}
           optionFilterProp="label"
-          style={{ width: 180, borderRadius: 8 }}
+          style={{ width: 180, ...brandControlStyle }}
         />
 
         <Select
@@ -716,7 +707,7 @@ export default function PersonalPage() {
           onChange={(val) => setFilters((prev) => ({ ...prev, area: val }))}
           options={areaFilterOptions}
           optionFilterProp="label"
-          style={{ width: 180, borderRadius: 8 }}
+          style={{ width: 180, ...brandControlStyle }}
         />
 
         {(filters.search || filters.cargo || filters.area || filters.activo !== undefined) && (

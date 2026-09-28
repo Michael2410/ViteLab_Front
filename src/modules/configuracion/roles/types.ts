@@ -53,6 +53,7 @@ export const MODULO_NOMBRES: Record<string, string> = {
   'reports': 'Reportes',
   'dashboard': 'Dashboard',
   'personal': 'Personal / RRHH',
+  'almacen': 'Almacén & Logística',
 };
 
 // Mapeo de nombres amigables para submódulos
@@ -78,6 +79,17 @@ export const SUBMODULO_NOMBRES: Record<string, string> = {
   'ordenes': 'Órdenes',
   'ingresos': 'Ingresos',
   'productividad': 'Productividad',
+  'productos': 'Catálogo de Productos',
+  'proveedores': 'Proveedores',
+  'maestros': 'Maestros y Catálogos',
+  'stock': 'Stock y Existencias',
+  'kardex': 'Kardex de Movimientos',
+  'despachos': 'Despachos',
+  'custodia': 'Custodia de Personal',
+  'consumos': 'Consumos y Devoluciones',
+  'pedidos': 'Pedidos Internos',
+  'transferencias': 'Transferencias entre Sedes',
+  'ajustes': 'Ajustes e Inventario',
 };
 
 // Mapeo de nombres amigables para acciones

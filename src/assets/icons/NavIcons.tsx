@@ -139,3 +139,40 @@ export const IconApps = (props?: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// ─── 12. Análisis Clínicos — Tubo de ensayo con graduación y reactivo ───────
+export const IconAnalisisClinicos = (props?: SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps} {...props}>
+    <path d="M14.5 2v17.5a2.5 2.5 0 0 1-5 0V2" />
+    <path d="M8.5 2h7" />
+    <path d="M9.5 12h5" />
+    <path d="M9.5 8h3" />
+    <path d="M9.5 15h4" />
+    <circle cx="12" cy="17.5" r="0.8" fill="currentColor" />
+  </svg>
+);
+
+// ─── 13. Parámetros del Lab — Sliders técnicos de calibración ────────────────
+export const IconParametrosLab = (props?: SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps} {...props}>
+    <line x1="4" y1="21" x2="4" y2="14" />
+    <line x1="4" y1="10" x2="4" y2="3" />
+    <circle cx="4" cy="12" r="2" />
+    <line x1="12" y1="21" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12" y2="3" />
+    <circle cx="12" cy="10" r="2" />
+    <line x1="20" y1="21" x2="20" y2="16" />
+    <line x1="20" y1="12" x2="20" y2="3" />
+    <circle cx="20" cy="14" r="2" />
+  </svg>
+);
+
+// ─── 14. Tarifas & Convenios — Esquema comercial y convenios ─────────────────
+export const IconTarifasConvenios = (props?: SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps} {...props}>
+    <rect x="2" y="6" width="20" height="13" rx="2" />
+    <circle cx="12" cy="12.5" r="2.8" strokeWidth={1.2} />
+    <path d="M12 11v3M10.8 11.8h2.4" />
+    <line x1="2" y1="10" x2="22" y2="10" strokeDasharray="1.5 1.5" opacity={0.6} />
+  </svg>
+);
+

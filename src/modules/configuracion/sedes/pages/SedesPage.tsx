@@ -22,7 +22,7 @@ import { useSedes, useCrearSede, useActualizarSede, useEliminarSede } from '../h
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { SedeFormModal } from '../components/SedeFormModal';
 import type { Sede, CreateSedeInput, UpdateSedeInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
@@ -197,14 +197,9 @@ export const SedesPage: React.FC = () => {
       subtitle="Gestión de locales, centros de toma de muestras y sucursales operativas"
       actionButton={
         canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleNuevo}>
             Nueva Sede
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
       filters={

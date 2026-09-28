@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -6,18 +6,17 @@ import {
   Space,
   Input,
   Select,
+  Typography,
   type TableProps,
 } from 'antd';
 import {
-  FileTextOutlined,
   PlusOutlined,
   SearchOutlined,
   PrinterOutlined,
   EyeOutlined,
-  FileDoneOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { ModulePageLayout } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useDocumentosLaboralesList,
@@ -27,6 +26,8 @@ import {
 import type { DocumentoLaboralItem } from '../../types';
 import { GenerarDocumentoModal } from '../components/GenerarDocumentoModal';
 import { VistaPreviaDocumentoModal } from '../components/VistaPreviaDocumentoModal';
+
+const { Text } = Typography;
 
 export default function DocumentosPage() {
   const { hasPermission } = usePermissions();
@@ -161,7 +162,6 @@ export default function DocumentosPage() {
     <ModulePageLayout
       title={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <FileTextOutlined style={{ color: '#0d9488' }} />
           <span>Documentos & Constancias Laborales</span>
         </span>
       }
@@ -169,54 +169,51 @@ export default function DocumentosPage() {
       wrapInTableCard={false}
       actionButton={
         canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModalGenerarOpen(true)}
-            style={{
-              backgroundColor: '#0d9488',
-              borderColor: '#0d9488',
-              borderRadius: 8,
-              fontWeight: 600,
-            }}
-          >
+          <BrandCreateButton onClick={() => setModalGenerarOpen(true)}>
             Generar Documento
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
-    >
-      {/* Filtros */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
-          marginBottom: 16,
-        }}
-      >
-        <Select
-          value={tipoFilter}
-          onChange={(v) => setTipoFilter(v)}
-          style={{ width: 220 }}
-          options={[
-            { label: 'Todos los tipos', value: 'TODOS' },
-            { label: 'Constancias de Trabajo', value: 'CONSTANCIA_TRABAJO' },
-            { label: 'Certificados Laborales', value: 'CERTIFICADO_LABORAL' },
-            { label: 'Cartas de Presentación', value: 'CARTA_PRESENTACION' },
-          ]}
-        />
+      filters={
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Input
+              placeholder="Buscar por código o colaborador..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              allowClear
+              style={{ width: 280, ...brandSearchStyle }}
+            />
 
-        <Input
-          placeholder="Buscar por código o colaborador..."
-          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          allowClear
-          style={{ width: 280, borderRadius: 8 }}
-        />
-      </div>
+            <Select
+              value={tipoFilter}
+              onChange={(v) => setTipoFilter(v)}
+              style={{ width: 220, ...brandControlStyle }}
+              options={[
+                { label: 'Todos los tipos', value: 'TODOS' },
+                { label: 'Constancias de Trabajo', value: 'CONSTANCIA_TRABAJO' },
+                { label: 'Certificados Laborales', value: 'CERTIFICADO_LABORAL' },
+                { label: 'Cartas de Presentación', value: 'CARTA_PRESENTACION' },
+              ]}
+            />
+          </div>
+
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{documentosFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+      }
+    >
 
       {/* Tabla Libre */}
       <Table

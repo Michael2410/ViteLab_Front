@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -10,7 +10,6 @@ import {
   Tooltip,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -23,15 +22,28 @@ import { useTarifarios, useCrearTarifario, useActualizarTarifario, useEliminarTa
 import { useAuthStore } from '../../../auth/hooks';
 import { TarifarioFormModal, TarifarioPreciosModal } from '../components';
 import type { Tarifario, CreateTarifarioInput, UpdateTarifarioInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const TarifariosPage: React.FC = () => {
+interface TarifariosPageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const TarifariosPage = ({ isTab = false, createTrigger }: TarifariosPageProps) => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [preciosModalOpen, setPreciosModalOpen] = useState(false);
   const [tarifarioSeleccionado, setTarifarioSeleccionado] = useState<Tarifario | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: tarifarios, isLoading } = useTarifarios({});
@@ -187,20 +199,89 @@ export const TarifariosPage: React.FC = () => {
     },
   ];
 
+  if (isTab) {
+    return (
+      <div style={{ paddingTop: 8 }}>
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+            flexWrap: 'wrap',
+            gap: 12,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
+          }}
+        >
+          <Input
+            placeholder="Buscar tarifario..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{tarifariosFiltrados?.length ?? 0}</strong>
+          </Text>
+        </div>
+
+        <Table
+          columns={columns}
+          dataSource={tarifariosFiltrados || []}
+          rowKey="id"
+          loading={isLoading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} tarifarios`,
+          }}
+        />
+
+        {/* Modal de formulario */}
+        <TarifarioFormModal
+          open={modalOpen}
+          tarifario={tarifarioSeleccionado}
+          onCancel={() => {
+            setModalOpen(false);
+            setTarifarioSeleccionado(null);
+          }}
+          onSubmit={handleSubmitForm}
+          loading={
+            crearTarifarioMutation.isPending ||
+            actualizarTarifarioMutation.isPending
+          }
+        />
+
+        {/* Modal de Precios */}
+        {hasPermission('tariffs.update') && (
+          <TarifarioPreciosModal
+            open={preciosModalOpen}
+            tarifarioId={tarifarioSeleccionado?.id || null}
+            tarifarioNombre={tarifarioSeleccionado?.nombre || ''}
+            onClose={() => {
+              setPreciosModalOpen(false);
+              setTarifarioSeleccionado(null);
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <ModulePageLayout
       title="Tarifarios"
       subtitle="Gestión de listas de precios, asignación de tarifas y costos por análisis"
       actionButton={
         hasPermission('tariffs.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleNuevo}>
             Nuevo Tarifario
-          </Button>
+          </BrandCreateButton>
         )
       }
       filters={

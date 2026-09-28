@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -20,14 +20,27 @@ import { useAreas, useCrearArea, useActualizarArea, useEliminarArea } from '../h
 import { useAuthStore } from '../../../auth/hooks';
 import { AreaFormModal } from '../components/AreaFormModal';
 import type { Area, CreateAreaInput, UpdateAreaInput } from '../types';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 
 const { Text } = Typography;
 
-export const AreasPage: React.FC = () => {
+interface AreasPageProps {
+  isTab?: boolean;
+  createTrigger?: number;
+}
+
+export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
   const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [areaSeleccionada, setAreaSeleccionada] = useState<Area | null>(null);
+
+  const lastTriggerRef = useRef(createTrigger || 0);
+  useEffect(() => {
+    if (createTrigger && createTrigger > lastTriggerRef.current) {
+      lastTriggerRef.current = createTrigger;
+      handleNuevo();
+    }
+  }, [createTrigger]);
 
   const { hasPermission } = useAuthStore();
   const { data: areas, isLoading } = useAreas({});
@@ -158,20 +171,77 @@ export const AreasPage: React.FC = () => {
     },
   ];
 
+  const content = (
+    <>
+      {isTab && (
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginBottom: 16,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
+          }}
+        >
+          <Input
+            placeholder="Buscar por código o nombre de área..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Total registros: <strong style={{ color: '#0f172a' }}>{areasFiltradas?.length ?? 0}</strong>
+          </Text>
+        </div>
+      )}
+
+      <Table
+        columns={columns}
+        dataSource={areasFiltradas || []}
+        rowKey="id"
+        loading={isLoading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} áreas`,
+        }}
+      />
+
+      {/* Modal */}
+      <AreaFormModal
+        open={modalOpen}
+        area={areaSeleccionada}
+        onCancel={() => {
+          setModalOpen(false);
+          setAreaSeleccionada(null);
+        }}
+        onSubmit={handleSubmitForm}
+        loading={crearAreaMutation.isPending || actualizarAreaMutation.isPending}
+      />
+    </>
+  );
+
+  if (isTab) {
+    return <div style={{ paddingTop: 8 }}>{content}</div>;
+  }
+
   return (
     <ModulePageLayout
       title="Áreas de Laboratorio"
       subtitle="Gestión y clasificación de áreas técnicas para análisis clínicos"
       actionButton={
         hasPermission('catalogs.areas.create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNuevo}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleNuevo}>
             Nueva Área
-          </Button>
+          </BrandCreateButton>
         )
       }
       filters={
@@ -199,29 +269,7 @@ export const AreasPage: React.FC = () => {
         </div>
       }
     >
-      <Table
-        columns={columns}
-        dataSource={areasFiltradas || []}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} áreas`,
-        }}
-      />
-
-      {/* Modal */}
-      <AreaFormModal
-        open={modalOpen}
-        area={areaSeleccionada}
-        onCancel={() => {
-          setModalOpen(false);
-          setAreaSeleccionada(null);
-        }}
-        onSubmit={handleSubmitForm}
-        loading={crearAreaMutation.isPending || actualizarAreaMutation.isPending}
-      />
+      {content}
     </ModulePageLayout>
   );
 };

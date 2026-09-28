@@ -30,6 +30,9 @@ import {
   IconAprobaciones,
   IconCatalogos,
   IconReportes,
+  IconAnalisisClinicos,
+  IconParametrosLab,
+  IconTarifasConvenios,
 } from '../../../assets/icons/NavIcons';
 import { useState, useMemo, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
@@ -87,40 +90,31 @@ export default function LaboratorioLayout() {
       items.push({ key: 'aprobaciones', icon: <IconAprobaciones width={22} height={22} />, label: <span>Aprobaciones</span> });
     }
 
-    // Catálogos
-    if (isSuperAdmin || hasAnyPermission([
-      'catalogs.areas.read', 'catalogs.methods.read',
-      'catalogs.tipos-cliente.read', 'catalogs.components.read', 'catalogs.analysis.read',
-      'catalogs.convenios.read', 'tariffs.read', 'catalogs.muestras.read'
-    ])) {
-      const catalogosChildren = [];
-      if (isSuperAdmin || hasPermission('catalogs.areas.read')) {
-        catalogosChildren.push({ key: 'catalogos-areas', label: <span style={{ marginLeft: 8 }}>Áreas</span> });
-      }
-      if (isSuperAdmin || hasPermission('catalogs.methods.read')) {
-        catalogosChildren.push({ key: 'catalogos-metodos', label: <span style={{ marginLeft: 8 }}>Métodos</span> });
-      }
-      if (isSuperAdmin || hasPermission('catalogs.tipos-cliente.read')) {
-        catalogosChildren.push({ key: 'catalogos-tipos-cliente', label: <span style={{ marginLeft: 8 }}>Tipos de Cliente</span> });
-      }
-      if (isSuperAdmin || hasPermission('catalogs.components.read')) {
-        catalogosChildren.push({ key: 'catalogos-componentes', label: <span style={{ marginLeft: 8 }}>Componentes</span> });
-      }
-      if (isSuperAdmin || hasPermission('catalogs.analysis.read')) {
-        catalogosChildren.push({ key: 'catalogos-analisis', label: <span style={{ marginLeft: 8 }}>Análisis</span> });
-      }
-      if (isSuperAdmin || hasPermission('catalogs.convenios.read')) {
-        catalogosChildren.push({ key: 'catalogos-convenios', label: <span style={{ marginLeft: 8 }}>Convenios</span> });
-      }
-      if (isSuperAdmin || hasPermission('tariffs.read')) {
-        catalogosChildren.push({ key: 'catalogos-tarifarios', label: <span style={{ marginLeft: 8 }}>Tarifarios</span> });
-      }
-      if (isSuperAdmin || hasPermission('catalogs.muestras.read')) {
-        catalogosChildren.push({ key: 'catalogos-muestras', label: <span style={{ marginLeft: 8 }}>Muestras</span> });
-      }
-      if (catalogosChildren.length > 0) {
-        items.push({ key: 'catalogos', icon: <IconCatalogos width={22} height={22} />, label: <span>Catálogos</span>, children: catalogosChildren });
-      }
+    // Análisis Clínicos (Análisis + Componentes)
+    if (isSuperAdmin || hasAnyPermission(['catalogs.analysis.read', 'catalogs.components.read'])) {
+      items.push({
+        key: 'analisis-clinicos',
+        icon: <IconAnalisisClinicos width={22} height={22} />,
+        label: <span>Análisis Clínicos</span>,
+      });
+    }
+
+    // Parámetros del Lab (Áreas + Métodos + Muestras)
+    if (isSuperAdmin || hasAnyPermission(['catalogs.areas.read', 'catalogs.methods.read', 'catalogs.muestras.read'])) {
+      items.push({
+        key: 'parametros-lab',
+        icon: <IconParametrosLab width={22} height={22} />,
+        label: <span>Parámetros</span>,
+      });
+    }
+
+    // Tarifas & Convenios (Tarifarios + Convenios + Tipos de Cliente)
+    if (isSuperAdmin || hasAnyPermission(['tariffs.read', 'catalogs.convenios.read', 'catalogs.tipos-cliente.read'])) {
+      items.push({
+        key: 'tarifas-convenios',
+        icon: <IconTarifasConvenios width={22} height={22} />,
+        label: <span>Tarifas & Convenios</span>,
+      });
     }
 
     // Reportes
@@ -136,14 +130,9 @@ export default function LaboratorioLayout() {
     'ordenes': '/ordenes',
     'resultados': '/resultados',
     'aprobaciones': '/aprobaciones',
-    'catalogos-areas': '/catalogos/areas',
-    'catalogos-metodos': '/catalogos/metodos',
-    'catalogos-tipos-cliente': '/catalogos/tipos-cliente',
-    'catalogos-componentes': '/catalogos/componentes',
-    'catalogos-analisis': '/catalogos/analisis',
-    'catalogos-convenios': '/catalogos/convenios',
-    'catalogos-tarifarios': '/catalogos/tarifarios',
-    'catalogos-muestras': '/catalogos/muestras',
+    'analisis-clinicos': '/analisis',
+    'parametros-lab': '/parametros',
+    'tarifas-convenios': '/tarifas-convenios',
     'reportes': '/reportes',
   };
 
@@ -151,6 +140,30 @@ export default function LaboratorioLayout() {
     const currentPath = location.pathname;
 
     if (currentPath === '/') return 'dashboard';
+
+    if (
+      currentPath.startsWith('/analisis') ||
+      currentPath.startsWith('/catalogos/analisis') ||
+      currentPath.startsWith('/catalogos/componentes')
+    ) {
+      return 'analisis-clinicos';
+    }
+    if (
+      currentPath.startsWith('/parametros') ||
+      currentPath.startsWith('/catalogos/areas') ||
+      currentPath.startsWith('/catalogos/metodos') ||
+      currentPath.startsWith('/catalogos/muestras')
+    ) {
+      return 'parametros-lab';
+    }
+    if (
+      currentPath.startsWith('/tarifas-convenios') ||
+      currentPath.startsWith('/catalogos/tarifarios') ||
+      currentPath.startsWith('/catalogos/convenios') ||
+      currentPath.startsWith('/catalogos/tipos-cliente')
+    ) {
+      return 'tarifas-convenios';
+    }
 
     // Ordenar entradas por longitud de ruta descendente para que las más específicas (/ordenes/nueva) se evalúen antes que las genéricas (/ordenes)
     const sortedEntries = Object.entries(routeMap).sort((a, b) => b[1].length - a[1].length);
@@ -358,8 +371,8 @@ export default function LaboratorioLayout() {
               <div style={{ fontSize: 17, fontWeight: 800, color: '#ffffff', letterSpacing: '0.4px' }}>
                 ViteLab
               </div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#38bdf8', letterSpacing: '1.2px', textTransform: 'uppercase', marginTop: 2 }}>
-                Clinical LIMS
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#34d399', letterSpacing: '1.2px', textTransform: 'uppercase', marginTop: 2 }}>
+                Laboratorio Clínico
               </div>
             </div>
           )}

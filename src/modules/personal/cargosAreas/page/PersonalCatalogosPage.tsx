@@ -13,10 +13,9 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -24,7 +23,6 @@ import {
   ApartmentOutlined,
   FileDoneOutlined,
   TeamOutlined,
-  ReloadOutlined,
   UserDeleteOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -298,15 +296,14 @@ export const PersonalCatalogosPage: React.FC = () => {
       title: 'Estado',
       dataIndex: 'activo',
       key: 'activo',
-      width: 110,
+      width: 140,
       align: 'center',
       render: (activo: boolean, record) => (
         <Switch
           checked={activo}
-          size="small"
           disabled={!canManage}
           checkedChildren="Activo"
-          unCheckedChildren="Off"
+          unCheckedChildren="Inactivo"
           onChange={(checked) => handleToggleStatus(record, checked)}
           loading={actualizarMutation.isPending}
         />
@@ -367,14 +364,9 @@ export const PersonalCatalogosPage: React.FC = () => {
       subtitle={currentTabConfig.description}
       actionButton={
         canManage ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleOpenAdd}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleOpenAdd}>
             Nuevo {currentTabConfig.singular}
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
       extraHeader={
@@ -417,9 +409,6 @@ export const PersonalCatalogosPage: React.FC = () => {
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 280, ...brandSearchStyle }}
             />
-            <Tooltip title="Actualizar lista">
-              <Button icon={<ReloadOutlined />} onClick={handleRefreshCurrent} style={{ borderRadius: 8, height: 38 }} />
-            </Tooltip>
           </div>
           <Text type="secondary" style={{ fontSize: 13 }}>
             Total registros: <strong style={{ color: '#0f172a' }}>{currentData?.length ?? 0}</strong>

@@ -25,7 +25,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import ModulePageLayout, { brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useContratosList,
@@ -368,7 +368,6 @@ export default function ContratosPage() {
     <ModulePageLayout
       title={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <FileProtectOutlined style={{ color: '#0d9488' }} />
           <span>Gestión de Contratos & Alertas de Vencimiento</span>
         </span>
       }
@@ -376,14 +375,9 @@ export default function ContratosPage() {
       wrapInTableCard={false}
       actionButton={
         canCreate ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleOpenCreate}
-            style={brandButtonStyle}
-          >
+          <BrandCreateButton onClick={handleOpenCreate}>
             Nuevo Contrato
-          </Button>
+          </BrandCreateButton>
         ) : undefined
       }
       extraHeader={
