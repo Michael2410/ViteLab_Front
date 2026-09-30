@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
   Typography,
@@ -19,17 +18,21 @@ import { useAreas, useCrearArea, useActualizarArea, useEliminarArea } from '../h
 import { useAuthStore } from '../../../auth/hooks';
 import { AreaFormModal } from '../components/AreaFormModal';
 import type { Area, CreateAreaInput, UpdateAreaInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
 interface AreasPageProps {
   isTab?: boolean;
   createTrigger?: number;
+  externalSearch?: string;
 }
 
-export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
-  const [searchText, setSearchText] = useState('');
+export const AreasPage = ({ isTab = false, createTrigger, externalSearch }: AreasPageProps) => {
+  const [internalSearchText, setInternalSearchText] = useState('');
+  const searchText = isTab && externalSearch !== undefined ? externalSearch : internalSearchText;
+  const setSearchText = setInternalSearchText;
   const [modalOpen, setModalOpen] = useState(false);
   const [areaSeleccionada, setAreaSeleccionada] = useState<Area | null>(null);
 
@@ -122,6 +125,12 @@ export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
       key: 'activo',
       width: 120,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record: Area) => record.activo === value,
       render: (activo: boolean, record: Area) => (
         <Switch
           checked={activo}
@@ -171,47 +180,12 @@ export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
   ];
 
   const content = (
-    <>
-      {isTab && (
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12,
-            marginBottom: 16,
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-          }}
-        >
-          <Input
-            placeholder="Buscar por código o nombre de área..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280, ...brandSearchStyle }}
-          />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{areasFiltradas?.length ?? 0}</strong>
-          </Text>
-        </div>
-      )}
-
-      <Table
+    <div style={{ paddingTop: isTab ? 4 : 0 }}>
+      <GlobalTable
         columns={columns}
         dataSource={areasFiltradas || []}
-        rowKey="id"
         loading={isLoading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} áreas`,
-        }}
+        resourceName="áreas"
       />
 
       {/* Modal */}
@@ -225,11 +199,11 @@ export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
         onSubmit={handleSubmitForm}
         loading={crearAreaMutation.isPending || actualizarAreaMutation.isPending}
       />
-    </>
+    </div>
   );
 
   if (isTab) {
-    return <div style={{ paddingTop: 8 }}>{content}</div>;
+    return content;
   }
 
   return (
@@ -237,23 +211,7 @@ export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
       title="Áreas de Laboratorio"
       subtitle="Gestión y clasificación de áreas técnicas para análisis clínicos"
       actionButton={
-        hasPermission('catalogs.areas.create') && (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nueva Área
-          </BrandCreateButton>
-        )
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Input
             placeholder="Buscar por código o nombre de área..."
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
@@ -262,9 +220,11 @@ export const AreasPage = ({ isTab = false, createTrigger }: AreasPageProps) => {
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 280, ...brandSearchStyle }}
           />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{areasFiltradas?.length ?? 0}</strong>
-          </Text>
+          {hasPermission('catalogs.areas.create') && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Nueva Área
+            </BrandCreateButton>
+          )}
         </div>
       }
     >

@@ -15,6 +15,7 @@ import {
   StopOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { ingresosApi } from '../ingresos.api';
 import type { Ingreso, IngresoItemDetalle } from '../ingresos.types';
@@ -222,7 +223,7 @@ export default function IngresoDetalleModal({
             <div style={{ fontWeight: 600, marginBottom: 8, color: '#0f172a' }}>
               Materiales e Insumos Ingresados:
             </div>
-            <Table<IngresoItemDetalle>
+            <GlobalTable<IngresoItemDetalle>
               rowKey={(r, i) => `${r.producto_id}-${i}`}
               columns={columns}
               dataSource={ingreso.items || []}

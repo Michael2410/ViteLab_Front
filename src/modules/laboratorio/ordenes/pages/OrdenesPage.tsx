@@ -5,21 +5,15 @@ import {
   Typography,
   Tag,
   Input,
-  Select,
   DatePicker,
-  Row,
-  Col,
   Tooltip,
   App,
-  Table,
 } from 'antd';
 import {
-  PlusOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  FilterOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   WhatsAppOutlined,
@@ -39,7 +33,8 @@ import {
   type Orden,
   type OrdenFilters,
 } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { WhatsAppSendModal, useWhatsAppStatus } from '../../whatsapp';
 import { CondicionesPreanaliticasModal } from '../components/CondicionesPreanaliticasModal';
 import { NuevaOrdenDrawer } from '../components/NuevaOrdenDrawer';
@@ -57,9 +52,8 @@ export const OrdenesPage: React.FC = () => {
   const { hasPermission } = useAuthStore();
   const [filtros, setFiltros] = useState<OrdenFilters>({
     page: 1,
-    limit: 20,
+    limit: 10,
   });
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
   
   // Estado para Nueva Orden Drawer
   const [nuevaOrdenOpen, setNuevaOrdenOpen] = useState(false);
@@ -150,7 +144,7 @@ export const OrdenesPage: React.FC = () => {
   const handleLimpiarFiltros = () => {
     setFiltros({
       page: 1,
-      limit: 20,
+      limit: 10,
     });
   };
 
@@ -190,11 +184,13 @@ export const OrdenesPage: React.FC = () => {
     });
   };
 
-  const handlePaginationChange = (page: number, pageSize?: number) => {
+  const handleTableChange = (pagination: any, tableFilters: any) => {
     setFiltros((prev) => ({
       ...prev,
-      page,
-      limit: pageSize || prev.limit,
+      page: pagination.current || 1,
+      limit: pagination.pageSize || prev.limit,
+      estado: (tableFilters.estado?.[0] as EstadoOrden) || undefined,
+      sede_id: tableFilters.sede?.[0] ? Number(tableFilters.sede[0]) : undefined,
     }));
   };
 
@@ -210,7 +206,54 @@ export const OrdenesPage: React.FC = () => {
       title: 'Fecha Registro',
       dataIndex: 'fecha_registro',
       key: 'fecha_registro',
-      width: 120,
+      width: 140,
+      filterDropdown: ({ confirm, clearFilters }) => (
+        <div style={{ padding: 12, width: 290, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <RangePicker
+            style={{ width: '100%', ...brandControlStyle }}
+            format="DD/MM/YYYY"
+            placeholder={['Desde', 'Hasta']}
+            value={
+              filtros.fecha_desde && filtros.fecha_hasta
+                ? [dayjs(filtros.fecha_desde), dayjs(filtros.fecha_hasta)]
+                : null
+            }
+            onChange={(dates) => {
+              if (dates && dates[0] && dates[1]) {
+                handleFiltroChange('fecha_desde', dates[0].format('YYYY-MM-DD'));
+                handleFiltroChange('fecha_hasta', dates[1].format('YYYY-MM-DD'));
+              } else {
+                handleFiltroChange('fecha_desde', undefined);
+                handleFiltroChange('fecha_hasta', undefined);
+              }
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {(filtros.fecha_desde || filtros.fecha_hasta) && (
+              <Button
+                size="small"
+                onClick={() => {
+                  handleFiltroChange('fecha_desde', undefined);
+                  handleFiltroChange('fecha_hasta', undefined);
+                  if (clearFilters) clearFilters();
+                  confirm();
+                }}
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => confirm()}
+              style={{ backgroundColor: '#0284c7' }}
+            >
+              Aplicar
+            </Button>
+          </div>
+        </div>
+      ),
+      filterIcon: () => renderTableFilterIcon(Boolean(filtros.fecha_desde || filtros.fecha_hasta)),
       render: (fecha: string) => dayjs(fecha).format('DD/MM/YYYY'),
     },
     {
@@ -230,8 +273,14 @@ export const OrdenesPage: React.FC = () => {
       title: 'Tipo',
       dataIndex: 'tipo_paciente',
       key: 'tipo_paciente',
-      width: 100,
-      render: (tipo: string ) => (
+      width: 120,
+      filters: [
+        { text: 'Particular', value: 'PARTICULAR' },
+        { text: 'Convenio', value: 'CONVENIO' },
+      ],
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record: Orden) => record.tipo_paciente === value,
+      render: (tipo: string) => (
         <Tag color={tipo === 'CONVENIO' ? 'blue' : 'green'}>
           {tipo === 'CONVENIO' ? 'Convenio' : 'Particular'}
         </Tag>
@@ -249,15 +298,27 @@ export const OrdenesPage: React.FC = () => {
       dataIndex: 'estado',
       key: 'estado',
       width: 140,
+      filters: Object.values(EstadoOrden).map((estado) => ({
+        text: ESTADO_ORDEN_LABELS[estado],
+        value: estado,
+      })),
+      filterMultiple: false,
+      filteredValue: filtros.estado ? [filtros.estado] : null,
+      filterIcon: renderTableFilterIcon,
       render: (estado: EstadoOrden) => (
         <Tag color={ESTADO_ORDEN_COLORS[estado]}>{ESTADO_ORDEN_LABELS[estado]}</Tag>
       ),
     },
     {
       title: 'Sede',
-      dataIndex: 'sede_nombre',
-      key: 'sede_nombre',
+      dataIndex: 'sede_id',
+      key: 'sede',
       width: 150,
+      filters: sedes?.map((s) => ({ text: s.nombre, value: s.id })),
+      filterMultiple: false,
+      filteredValue: filtros.sede_id ? [filtros.sede_id] : null,
+      filterIcon: renderTableFilterIcon,
+      render: (_, record: Orden) => record.sede_nombre || '-',
     },
     {
       title: 'Total',
@@ -369,150 +430,45 @@ export const OrdenesPage: React.FC = () => {
       title="Órdenes de Atención"
       subtitle="Recepción, trazabilidad preanalítica y gestión integral de órdenes de laboratorio"
       actionButton={
-        hasPermission('orders.create') && (
-          <BrandCreateButton onClick={() => setNuevaOrdenOpen(true)}>
-            Nueva Orden
-          </BrandCreateButton>
-        )
-      }
-      extraHeader={
-        mostrarFiltros && (
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: '16px',
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
-            }}
-          >
-            <Row gutter={[16, 12]}>
-              <Col xs={24} sm={12} md={6}>
-                <Select
-                  placeholder="Estado"
-                  style={{ width: '100%', ...brandControlStyle }}
-                  allowClear
-                  value={filtros.estado}
-                  onChange={(value) => handleFiltroChange('estado', value)}
-                  options={Object.values(EstadoOrden).map((estado) => ({
-                    label: ESTADO_ORDEN_LABELS[estado],
-                    value: estado,
-                  }))}
-                />
-              </Col>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Buscar por nombre */}
+          <Input
+            placeholder="Buscar por paciente..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={filtros.paciente_nombre}
+            onChange={(e) => handleFiltroChange('paciente_nombre', e.target.value)}
+            style={{ width: 230, ...brandSearchStyle }}
+          />
 
-              <Col xs={24} sm={12} md={6}>
-                <Select
-                  placeholder="Sede"
-                  style={{ width: '100%', ...brandControlStyle }}
-                  allowClear
-                  value={filtros.sede_id}
-                  onChange={(value) => handleFiltroChange('sede_id', value)}
-                  options={sedes?.map((sede) => ({
-                    label: sede.nombre,
-                    value: sede.id,
-                  }))}
-                />
-              </Col>
-
-              <Col xs={24} md={12}>
-                <RangePicker
-                  style={{ width: '100%', ...brandControlStyle }}
-                  format="DD/MM/YYYY"
-                  placeholder={['Fecha desde', 'Fecha hasta']}
-                  value={
-                    filtros.fecha_desde && filtros.fecha_hasta
-                      ? [dayjs(filtros.fecha_desde), dayjs(filtros.fecha_hasta)]
-                      : null
-                  }
-                  onChange={(dates) => {
-                    if (dates) {
-                      handleFiltroChange('fecha_desde', dates[0]?.format('YYYY-MM-DD'));
-                      handleFiltroChange('fecha_hasta', dates[1]?.format('YYYY-MM-DD'));
-                    } else {
-                      handleFiltroChange('fecha_desde', undefined);
-                      handleFiltroChange('fecha_hasta', undefined);
-                    }
-                  }}
-                />
-              </Col>
-            </Row>
-          </div>
-        )
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Buscar por nombre */}
-            <Input
-              placeholder="Buscar por nombre del paciente..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              allowClear
-              value={filtros.paciente_nombre}
-              onChange={(e) => handleFiltroChange('paciente_nombre', e.target.value)}
-              style={{ width: 250, ...brandSearchStyle }}
-            />
-
-            {/* Buscar por DNI */}
-            <Input
-              placeholder="Buscar por DNI..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              allowClear
-              maxLength={8}
-              value={filtros.paciente_dni}
-              onChange={(e) => handleFiltroChange('paciente_dni', e.target.value)}
-              style={{ width: 170, ...brandSearchStyle }}
-            />
-
-            {/* Filtros avanzados */}
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => setMostrarFiltros(!mostrarFiltros)}
-              style={{
-                height: 38,
-                borderRadius: 8,
-                borderColor: mostrarFiltros ? '#0284c7' : '#cbd5e1',
-                color: mostrarFiltros ? '#0284c7' : undefined,
-              }}
-            >
-              Filtros {filtrosActivos > 0 && `(${filtrosActivos})`}
-            </Button>
-
-            {filtrosActivos > 0 && (
-              <Button type="link" onClick={handleLimpiarFiltros} style={{ height: 38 }}>
-                Limpiar
-              </Button>
-            )}
-          </div>
-
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total órdenes: <strong style={{ color: '#0f172a' }}>{ordenes?.total || 0}</strong>
-          </Text>
+          {/* Buscar por DNI */}
+          <Input
+            placeholder="DNI..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            maxLength={8}
+            value={filtros.paciente_dni}
+            onChange={(e) => handleFiltroChange('paciente_dni', e.target.value)}
+            style={{ width: 130, ...brandSearchStyle }}
+          />
+          {hasPermission('orders.create') && (
+            <BrandCreateButton onClick={() => setNuevaOrdenOpen(true)}>
+              Nueva Orden
+            </BrandCreateButton>
+          )}
         </div>
       }
     >
-      <Table
+      <GlobalTable<Orden>
         columns={columns}
         dataSource={ordenes?.items || []}
-        rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1200 }}
+        resourceName="órdenes"
+        onChange={handleTableChange}
         pagination={{
           current: filtros.page,
           pageSize: filtros.limit,
           total: ordenes?.total || 0,
-          showSizeChanger: true,
-          showTotal: (total: number) => `Total ${total} órdenes`,
-          onChange: handlePaginationChange,
         }}
       />
 

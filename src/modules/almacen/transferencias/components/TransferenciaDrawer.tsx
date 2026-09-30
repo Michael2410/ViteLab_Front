@@ -4,7 +4,6 @@ import {
   Form,
   Select,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -16,6 +15,7 @@ import {
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { transferenciasApi } from '../transferencias.api';
 import { stockApi } from '../../stock/stock.api';
 import { almacenApi } from '../../shared/almacen.api';
@@ -328,7 +328,7 @@ export default function TransferenciaDrawer({
           </Button>
         </div>
 
-        <Table
+        <GlobalTable<LineaEnvio>
           dataSource={lineas}
           columns={columns}
           pagination={false}

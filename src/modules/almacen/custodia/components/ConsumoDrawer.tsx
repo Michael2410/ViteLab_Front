@@ -5,7 +5,6 @@ import {
   Select,
   DatePicker,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -18,6 +17,7 @@ import {
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { custodiaApi } from '../custodia.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
 import type { ItemCustodia } from '../custodia.types';
@@ -312,7 +312,8 @@ export default function ConsumoDrawer({
           </Button>
         </div>
 
-        <Table
+        <GlobalTable<LineaConsumo>
+          rowKey="key"
           dataSource={lineas}
           columns={columns}
           pagination={false}

@@ -1,6 +1,7 @@
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Input, InputNumber, message } from 'antd';
+import { Modal, Descriptions, Tag, Typography, Button, Space, Input, InputNumber, message } from 'antd';
 import { useState, useEffect } from 'react';
 import type { ColumnsType } from 'antd/es/table';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import type { Transferencia, ItemTransferenciaDetalle } from '../transferencias.types';
 import { transferenciasApi } from '../transferencias.api';
 
@@ -341,7 +342,7 @@ export default function TransferenciaRecepcionModal({
           {modoRecepcion ? 'Conteo de Recepción de Mercadería' : 'Ítems Transferidos'}
         </Text>
         {modoRecepcion ? (
-          <Table
+          <GlobalTable<ItemRecepcionForm>
             dataSource={itemsRecepcion}
             columns={columnsEdicion}
             rowKey="detalle_id"
@@ -349,7 +350,7 @@ export default function TransferenciaRecepcionModal({
             size="small"
           />
         ) : (
-          <Table
+          <GlobalTable<ItemTransferenciaDetalle>
             dataSource={transferencia.items || []}
             columns={columnsLectura}
             rowKey="id"

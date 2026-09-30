@@ -4,7 +4,6 @@ import {
   Form,
   Select,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -17,14 +16,13 @@ import {
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { ajustesApi } from '../ajustes.api';
 import { stockApi } from '../../stock/stock.api';
-import { productosApi } from '../../productos/productos.api';
 import { almacenApi } from '../../shared/almacen.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
 import type { Almacen } from '../../maestros/maestros.types';
 import type { StockItem } from '../../stock/stock.types';
-import type { Producto } from '../../productos/productos.types';
 
 const { Text } = Typography;
 
@@ -390,7 +388,7 @@ export default function AjusteDrawer({ open, onClose, onSuccess }: AjusteDrawerP
           </Button>
         </div>
 
-        <Table
+        <GlobalTable<LineaAjuste>
           dataSource={lineas}
           columns={columns}
           pagination={false}

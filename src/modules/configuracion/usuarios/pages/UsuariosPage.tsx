@@ -7,7 +7,6 @@ import {
   Switch,
   Tag,
   App,
-  Table,
   Tooltip,
   Tabs,
 } from 'antd';
@@ -30,7 +29,8 @@ import type { Personal } from '../../../personal/types';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { UsuarioFormModal } from '../components/UsuarioFormModal';
 import type { Usuario, CreateUsuarioInput, UpdateUsuarioInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
@@ -238,6 +238,12 @@ export const UsuariosPage: React.FC = () => {
       dataIndex: 'rol_nombre',
       key: 'rol_nombre',
       width: 130,
+      filters: Array.from(new Set(usuarios?.map((u) => u.rol_nombre).filter(Boolean) || [])).map((rol) => ({
+        text: rol,
+        value: rol,
+      })),
+      onFilter: (value, record) => record.rol_nombre === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (rol_nombre: string) => (
         <Tag
           style={{
@@ -288,6 +294,12 @@ export const UsuariosPage: React.FC = () => {
       key: 'activo',
       width: 110,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (activo: boolean, record: Usuario) => (
         <Switch
           checked={activo}
@@ -369,6 +381,12 @@ export const UsuariosPage: React.FC = () => {
       title: 'Cargo y Área',
       key: 'cargo_area',
       width: 200,
+      filters: Array.from(new Set(personalSinCuenta.map((p) => p.area).filter(Boolean) as string[])).map((area) => ({
+        text: area,
+        value: area,
+      })),
+      onFilter: (value, record) => record.area === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, record: Personal) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontWeight: 600, color: '#334155', fontSize: 13 }}>
@@ -463,11 +481,34 @@ export const UsuariosPage: React.FC = () => {
       title="Usuarios del Sistema"
       subtitle={currentTabConfig.description}
       actionButton={
-        canCreate && activeTab === 'usuarios' ? (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nuevo Usuario
-          </BrandCreateButton>
-        ) : undefined
+        <Space size="middle" wrap>
+          {activeTab === 'usuarios' ? (
+            <>
+              <Input
+                placeholder="Buscar usuario, nombre o email..."
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                allowClear
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 280, ...brandSearchStyle }}
+              />
+              {canCreate && (
+                <BrandCreateButton onClick={handleNuevo}>
+                  Nuevo Usuario
+                </BrandCreateButton>
+              )}
+            </>
+          ) : (
+            <Input
+              placeholder="Buscar colaborador, documento o área..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              allowClear
+              value={searchPersonalText}
+              onChange={(e) => setSearchPersonalText(e.target.value)}
+              style={{ width: 320, ...brandSearchStyle }}
+            />
+          )}
+        </Space>
       }
       extraHeader={
         <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
@@ -495,51 +536,10 @@ export const UsuariosPage: React.FC = () => {
           />
         </div>
       }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          {activeTab === 'usuarios' ? (
-            <>
-              <Input
-                placeholder="Buscar por usuario, nombre o email..."
-                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                allowClear
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 280, ...brandSearchStyle }}
-              />
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                Total registros: <strong style={{ color: '#0f172a' }}>{usuariosFiltrados?.length ?? 0}</strong>
-              </Text>
-            </>
-          ) : (
-            <>
-              <Input
-                placeholder="Buscar por nombre, documento, cargo o área..."
-                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                allowClear
-                value={searchPersonalText}
-                onChange={(e) => setSearchPersonalText(e.target.value)}
-                style={{ width: 320, ...brandSearchStyle }}
-              />
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                Pendientes sin cuenta: <strong style={{ color: '#b45309' }}>{personalSinCuentaFiltrados.length}</strong>
-              </Text>
-            </>
-          )}
-        </div>
-      }
     >
       {activeTab === 'usuarios' && (
-        <Table
+        <GlobalTable<Usuario>
+          resourceName="configuracion-usuarios"
           columns={columns}
           dataSource={usuariosFiltrados || []}
           rowKey="id"
@@ -554,7 +554,8 @@ export const UsuariosPage: React.FC = () => {
       )}
 
       {activeTab === 'sin_cuenta' && (
-        <Table
+        <GlobalTable<Personal>
+          resourceName="configuracion-usuarios-pendientes"
           columns={columnsPersonalSinCuenta}
           dataSource={personalSinCuentaFiltrados}
           rowKey="id"

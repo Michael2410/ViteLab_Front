@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
   Typography,
@@ -8,7 +7,6 @@ import {
   Modal,
   Switch,
   Tag,
-  Select,
 } from 'antd';
 import {
   EditOutlined,
@@ -27,19 +25,21 @@ import { useAreasActivas } from '../../areas/hooks';
 import { useMetodosActivos } from '../../metodos/hooks';
 import { ComponenteFormModal } from '../components/ComponenteFormModal';
 import type { Componente, CreateComponenteInput, UpdateComponenteInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
 interface ComponentesPageProps {
   isTab?: boolean;
   createTrigger?: number;
+  externalSearch?: string;
 }
 
-export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPageProps) => {
-  const [searchText, setSearchText] = useState('');
-  const [areaIdFilter, setAreaIdFilter] = useState<number | undefined>(undefined);
-  const [metodoIdFilter, setMetodoIdFilter] = useState<number | undefined>(undefined);
+export const ComponentesPage = ({ isTab = false, createTrigger, externalSearch }: ComponentesPageProps) => {
+  const [internalSearchText, setInternalSearchText] = useState('');
+  const searchText = isTab && externalSearch !== undefined ? externalSearch : internalSearchText;
+  const setSearchText = setInternalSearchText;
   const [modalOpen, setModalOpen] = useState(false);
   const [componenteSeleccionado, setComponenteSeleccionado] = useState<Componente | null>(null);
 
@@ -60,18 +60,10 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
   const actualizarComponenteMutation = useActualizarComponente();
   const eliminarComponenteMutation = useEliminarComponente();
 
-  // Filtrado local
+  // Filtrado local por texto (área, método y estado se filtran nativamente en la tabla)
   const componentesFiltrados = componentes?.filter((comp) => {
-    // Filtro de texto
-    if (searchText) {
-      const search = searchText.toLowerCase();
-      if (!comp.nombre.toLowerCase().includes(search)) return false;
-    }
-    // Filtro por área
-    if (areaIdFilter && comp.area_id !== areaIdFilter) return false;
-    // Filtro por método
-    if (metodoIdFilter && comp.metodo_id !== metodoIdFilter) return false;
-    return true;
+    if (!searchText) return true;
+    return comp.nombre.toLowerCase().includes(searchText.toLowerCase());
   });
 
   const handleNuevo = () => {
@@ -159,7 +151,10 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
       title: 'Área',
       dataIndex: 'area',
       key: 'area',
-      width: 100,
+      width: 120,
+      filters: areasList?.map((a) => ({ text: a.nombre, value: a.id })),
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record: Componente) => record.area_id === value,
       render: (area: Componente['area']) =>
         area ? <Tag color="cyan">{area.nombre}</Tag> : <Text type="secondary">-</Text>,
     },
@@ -168,6 +163,9 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
       dataIndex: 'metodo',
       key: 'metodo',
       width: 150,
+      filters: metodosList?.map((m) => ({ text: m.nombre, value: m.id })),
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record: Componente) => record.metodo_id === value,
       render: (metodo: Componente['metodo']) =>
         metodo ? <Tag color="green">{metodo.nombre}</Tag> : <Text type="secondary">-</Text>,
     },
@@ -177,6 +175,12 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
       key: 'activo',
       width: 120,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record: Componente) => record.activo === value,
       render: (activo: boolean, record: Componente) => (
         <Switch
           checked={activo}
@@ -219,75 +223,12 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
   ];
 
   const content = (
-    <>
-      {isTab && (
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12,
-            marginBottom: 16,
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <Input
-              placeholder="Buscar por nombre de componente..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 280, ...brandSearchStyle }}
-            />
-
-            <Select
-              placeholder="Filtrar por área"
-              allowClear
-              style={{ width: 200, ...brandControlStyle }}
-              value={areaIdFilter}
-              onChange={(value) => setAreaIdFilter(value)}
-              options={areasList?.map((a) => ({
-                label: a.nombre,
-                value: a.id,
-              }))}
-            />
-
-            <Select
-              placeholder="Filtrar por método"
-              allowClear
-              style={{ width: 200, ...brandControlStyle }}
-              value={metodoIdFilter}
-              onChange={(value) => setMetodoIdFilter(value)}
-              options={metodosList?.map((m) => ({
-                label: m.nombre,
-                value: m.id,
-              }))}
-            />
-          </div>
-
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{componentesFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
-      )}
-
-      <Table
+    <div style={{ paddingTop: isTab ? 4 : 0 }}>
+      <GlobalTable
         columns={columns}
         dataSource={componentesFiltrados || []}
-        rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1600 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} componentes`,
-        }}
+        resourceName="componentes"
       />
 
       {/* Modal */}
@@ -304,11 +245,11 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
           actualizarComponenteMutation.isPending
         }
       />
-    </>
+    </div>
   );
 
   if (isTab) {
-    return <div style={{ paddingTop: 8 }}>{content}</div>;
+    return content;
   }
 
   return (
@@ -316,61 +257,20 @@ export const ComponentesPage = ({ isTab = false, createTrigger }: ComponentesPag
       title="Componentes de Análisis"
       subtitle="Gestión de analitos, parámetros técnicos y rangos de referencia para análisis clínicos"
       actionButton={
-        hasPermission('catalogs.components.create') && (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nuevo Componente
-          </BrandCreateButton>
-        )
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <Input
-              placeholder="Buscar por nombre de componente..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 280, ...brandSearchStyle }}
-            />
-
-            <Select
-              placeholder="Filtrar por área"
-              allowClear
-              style={{ width: 200, ...brandControlStyle }}
-              value={areaIdFilter}
-              onChange={(value) => setAreaIdFilter(value)}
-              options={areasList?.map((a) => ({
-                label: a.nombre,
-                value: a.id,
-              }))}
-            />
-
-            <Select
-              placeholder="Filtrar por método"
-              allowClear
-              style={{ width: 200, ...brandControlStyle }}
-              value={metodoIdFilter}
-              onChange={(value) => setMetodoIdFilter(value)}
-              options={metodosList?.map((m) => ({
-                label: m.nombre,
-                value: m.id,
-              }))}
-            />
-          </div>
-
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{componentesFiltrados?.length ?? 0}</strong>
-          </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Buscar por nombre de componente..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          {hasPermission('catalogs.components.create') && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Nuevo Componente
+            </BrandCreateButton>
+          )}
         </div>
       }
     >

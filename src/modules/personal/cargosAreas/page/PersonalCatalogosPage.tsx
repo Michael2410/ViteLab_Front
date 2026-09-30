@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
   Tabs,
-  Table,
   Button,
   Input,
   Tag,
@@ -13,7 +12,8 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   EditOutlined,
@@ -30,7 +30,7 @@ import {
 } from '../../hooks';
 import type { PersonalCatalogoItem, CatalogoTipo } from '../../types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 interface TabConfig {
   key: CatalogoTipo;
@@ -289,6 +289,12 @@ export const PersonalCatalogosPage: React.FC = () => {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (activo: boolean, record) => (
         <Switch
           checked={activo}
@@ -354,11 +360,21 @@ export const PersonalCatalogosPage: React.FC = () => {
       title="Catálogos de Personal"
       subtitle={currentTabConfig.description}
       actionButton={
-        canManage ? (
-          <BrandCreateButton onClick={handleOpenAdd}>
-            Nuevo {currentTabConfig.singular}
-          </BrandCreateButton>
-        ) : undefined
+        <Space size="middle" wrap>
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder={`Buscar ${currentTabConfig.singular.toLowerCase()}...`}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          {canManage && (
+            <BrandCreateButton onClick={handleOpenAdd}>
+              Nuevo {currentTabConfig.singular}
+            </BrandCreateButton>
+          )}
+        </Space>
       }
       extraHeader={
         <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
@@ -379,35 +395,10 @@ export const PersonalCatalogosPage: React.FC = () => {
           />
         </div>
       }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Input
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              placeholder={`Buscar ${currentTabConfig.singular.toLowerCase()}...`}
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 280, ...brandSearchStyle }}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{currentData?.length ?? 0}</strong>
-          </Text>
-        </div>
-      }
     >
       {/* Tabla de Elementos */}
-      <Table<PersonalCatalogoItem>
+      <GlobalTable<PersonalCatalogoItem>
+        resourceName={`personal-catalogos-${activeTab}`}
         columns={columns}
         dataSource={currentData}
         rowKey="id"
@@ -416,7 +407,7 @@ export const PersonalCatalogosPage: React.FC = () => {
           pageSize: 10,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total) => `Total ${total} registros`,
+          showTotal: (total) => `Total: ${total} registros`,
         }}
       />
 

@@ -32,6 +32,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../auth/hooks';
 import { usePermissions } from '../../../shared/components/PermissionGuard';
 import { AppSwitcher } from '../../../shared/components/AppSwitcher';
+import { getUserInitials } from '../../../shared/utils/user.utils';
 import viteLogo from '../../../assets/logo/logo.png';
 
 const { Header, Sider, Content } = Layout;
@@ -101,6 +102,7 @@ export const AlmacenLayout: React.FC = () => {
     },
     {
       key: 'profile',
+      icon: <UserOutlined />,
       label: 'Mi Perfil',
       onClick: () => navigate('/perfil'),
     },
@@ -501,14 +503,14 @@ export const AlmacenLayout: React.FC = () => {
               >
                 <Avatar
                   size={30}
-                  icon={<UserOutlined />}
                   style={{
                     background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                     color: '#ffffff',
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    fontSize: 12,
                   }}
                 >
-                  {(user?.nombres || user?.username || 'U').charAt(0).toUpperCase()}
+                  {getUserInitials(user)}
                 </Avatar>
                 {screens.sm && (
                   <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
@@ -549,10 +551,6 @@ export const AlmacenLayout: React.FC = () => {
         >
           <Outlet />
         </Content>
-
-        <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 12, padding: '16px 24px' }}>
-          ViteLab © {new Date().getFullYear()} — Módulo de Almacén & Logística v1.0
-        </div>
       </Layout>
     </Layout>
   );

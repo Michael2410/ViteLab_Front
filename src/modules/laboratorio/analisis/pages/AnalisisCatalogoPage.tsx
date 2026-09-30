@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Tabs } from 'antd';
+import { Tabs, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
-import ModulePageLayout, { BrandCreateButton } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { useAuthStore } from '../../../auth/hooks';
 import { AnalisisPage } from './AnalisisPage';
 import { ComponentesPage } from '../../componentes/pages/ComponentesPage';
@@ -10,6 +11,7 @@ export const AnalisisCatalogoPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = useAuthStore();
   const [createTrigger, setCreateTrigger] = useState(0);
+  const [searchText, setSearchText] = useState('');
 
   const activeKey = useMemo(() => {
     const requestedTab = searchParams.get('tab');
@@ -18,6 +20,17 @@ export const AnalisisCatalogoPage: React.FC = () => {
     }
     return 'analisis';
   }, [searchParams]);
+
+  const searchPlaceholder = useMemo(() => {
+    switch (activeKey) {
+      case 'analisis':
+        return 'Buscar por nombre o sinónimos...';
+      case 'componentes':
+        return 'Buscar por nombre de componente...';
+      default:
+        return 'Buscar...';
+    }
+  }, [activeKey]);
 
   const tabItems = useMemo(() => {
     const items = [];
@@ -31,7 +44,7 @@ export const AnalisisCatalogoPage: React.FC = () => {
           </span>
         ),
         description: 'Catálogo oficial de pruebas analíticas, perfiles diagnósticos y valores de referencia',
-        children: <AnalisisPage isTab createTrigger={createTrigger} />,
+        children: <AnalisisPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
@@ -44,36 +57,53 @@ export const AnalisisCatalogoPage: React.FC = () => {
           </span>
         ),
         description: 'Parámetros individuales, analitos y variables medibles en pruebas analíticas',
-        children: <ComponentesPage isTab createTrigger={createTrigger} />,
+        children: <ComponentesPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
     return items;
-  }, [hasPermission, createTrigger]);
+  }, [hasPermission, createTrigger, searchText]);
 
   const currentTab = useMemo(() => tabItems.find((i) => i.key === activeKey) || tabItems[0], [activeKey, tabItems]);
 
   const handleTabChange = (key: string) => {
+    setSearchText('');
     setSearchParams({ tab: key });
   };
 
   const actionButton = useMemo(() => {
-    if (activeKey === 'analisis' && hasPermission('catalogs.analysis.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nuevo Análisis
-        </BrandCreateButton>
-      );
-    }
-    if (activeKey === 'componentes' && hasPermission('catalogs.components.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nuevo Componente
-        </BrandCreateButton>
-      );
-    }
-    return undefined;
-  }, [activeKey, hasPermission]);
+    const createBtn = (() => {
+      if (activeKey === 'analisis' && hasPermission('catalogs.analysis.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nuevo Análisis
+          </BrandCreateButton>
+        );
+      }
+      if (activeKey === 'componentes' && hasPermission('catalogs.components.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nuevo Componente
+          </BrandCreateButton>
+        );
+      }
+      return null;
+    })();
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <Input
+          placeholder={searchPlaceholder}
+          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 280, ...brandSearchStyle }}
+        />
+        {createBtn}
+      </div>
+    );
+  }, [activeKey, hasPermission, searchPlaceholder, searchText]);
 
   return (
     <ModulePageLayout

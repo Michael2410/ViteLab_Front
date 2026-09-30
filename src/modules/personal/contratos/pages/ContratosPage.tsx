@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  Table,
   Button,
   Input,
   Tag,
@@ -23,7 +22,8 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useContratosList,
@@ -261,6 +261,14 @@ export default function ContratosPage() {
       title: 'Estado / Alerta',
       key: 'estado',
       align: 'center',
+      filters: [
+        { text: 'Vigente', value: 'VIGENTE' },
+        { text: 'Por Vencer', value: 'POR_VENCER' },
+        { text: 'Vencido', value: 'VENCIDO' },
+        { text: 'Renovado', value: 'RENOVADO' },
+      ],
+      onFilter: (value, record) => record.estado === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, r) => getEstadoBadge(r),
     },
     ...(canUpdate || canDelete
@@ -367,11 +375,21 @@ export default function ContratosPage() {
       subtitle={currentTabConfig.description}
       wrapInTableCard={false}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleOpenCreate}>
-            Nuevo Contrato
-          </BrandCreateButton>
-        ) : undefined
+        <Space size="middle" wrap>
+          <Input
+            placeholder="Buscar por colaborador, código o cargo..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          {canCreate && (
+            <BrandCreateButton onClick={handleOpenCreate}>
+              Nuevo Contrato
+            </BrandCreateButton>
+          )}
+        </Space>
       }
       extraHeader={
         <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
@@ -416,33 +434,10 @@ export default function ContratosPage() {
           />
         </div>
       }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <Input
-            placeholder="Buscar por colaborador, código o cargo..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            allowClear
-            style={{ width: 320, ...brandSearchStyle }}
-          />
-          <span style={{ fontSize: 13, color: '#64748b' }}>
-            Total contratos: <strong style={{ color: '#0f172a' }}>{contratosFiltrados.length}</strong>
-          </span>
-        </div>
-      }
     >
       {/* Tabla Libre y Limpia */}
-      <Table
+      <GlobalTable<ContratoItem>
+        resourceName="personal-contratos"
         columns={columns}
         dataSource={contratosFiltrados}
         rowKey="id"
@@ -451,7 +446,7 @@ export default function ContratosPage() {
           pageSize: 10,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total) => `Total ${total} contratos`,
+          showTotal: (total) => `Total: ${total} contratos`,
         }}
         locale={{ emptyText: 'No se encontraron contratos con los filtros seleccionados' }}
       />

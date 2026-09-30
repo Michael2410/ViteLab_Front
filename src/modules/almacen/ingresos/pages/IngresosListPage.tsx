@@ -1,23 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   DatePicker,
-  Space,
   Tag,
   Typography,
   message,
 } from 'antd';
 import {
-  PlusOutlined,
   SearchOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { ingresosApi } from '../ingresos.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -98,6 +95,17 @@ export default function IngresosListPage() {
     }
   };
 
+  const handleTableChange = (pagination: any, tableFilters: any) => {
+    setPage(pagination.current || 1);
+    setLimit(pagination.pageSize || limit);
+
+    const almVal = tableFilters.almacen_nombre?.[0];
+    setAlmacenId(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+
+    const estVal = tableFilters.estado?.[0];
+    setEstadoFilter(estVal ? String(estVal) : undefined);
+  };
+
   const columns: ColumnsType<Ingreso> = [
     {
       title: 'Correlativo',
@@ -114,14 +122,56 @@ export default function IngresosListPage() {
       title: 'Fecha',
       dataIndex: 'fecha_ingreso',
       key: 'fecha_ingreso',
-      width: 110,
+      width: 140,
       render: (f: string) => (f ? dayjs(f).format('DD/MM/YYYY') : '—'),
+      filterDropdown: ({ confirm, clearFilters }) => (
+        <div style={{ padding: 12, width: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <RangePicker
+            style={{ width: '100%', ...brandControlStyle }}
+            format="YYYY-MM-DD"
+            placeholder={['Desde', 'Hasta']}
+            value={rangoFechas}
+            onChange={(dates) => {
+              setRangoFechas(dates ? [dates[0]!, dates[1]!] : null);
+              setPage(1);
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {rangoFechas && (
+              <Button
+                size="small"
+                onClick={() => {
+                  setRangoFechas(null);
+                  setPage(1);
+                  if (clearFilters) clearFilters();
+                  confirm();
+                }}
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => confirm()}
+              style={{ background: '#0284c7', borderColor: '#0284c7' }}
+            >
+              Filtrar
+            </Button>
+          </div>
+        </div>
+      ),
+      filterIcon: () => renderTableFilterIcon(Boolean(rangoFechas)),
     },
     {
       title: 'Almacén Destino',
       dataIndex: 'almacen_nombre',
       key: 'almacen_nombre',
-      width: 160,
+      width: 170,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filterMultiple: false,
+      filteredValue: almacenId !== undefined ? [almacenId] : null,
+      filterIcon: renderTableFilterIcon,
       render: (a: string) => <span style={{ fontWeight: 600 }}>{a}</span>,
     },
     {
@@ -176,8 +226,15 @@ export default function IngresosListPage() {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 110,
+      width: 130,
       align: 'center',
+      filters: [
+        { text: 'Registrado', value: 'REGISTRADO' },
+        { text: 'Anulado', value: 'ANULADO' },
+      ],
+      filterMultiple: false,
+      filteredValue: estadoFilter ? [estadoFilter] : null,
+      filterIcon: renderTableFilterIcon,
       render: (st: string) => {
         if (st === 'REGISTRADO') return <Tag color="success">REGISTRADO</Tag>;
         if (st === 'ANULADO') return <Tag color="error">ANULADO</Tag>;
@@ -196,7 +253,6 @@ export default function IngresosListPage() {
           icon={<EyeOutlined style={{ color: '#0284c7' }} />}
           onClick={() => verDetalle(record)}
         >
-          Ver
         </Button>
       ),
     },
@@ -207,97 +263,43 @@ export default function IngresosListPage() {
       title="Ingresos de Almacén"
       subtitle={`Entrada de mercadería por compras, facturas, guías e inventario inicial (${total} registros)`}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={() => setModalNuevoOpen(true)}>
-            Nuevo Ingreso
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por correlativo o factura..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onPressEnter={() => {
-                setPage(1);
-                cargarIngresos();
-              }}
-              style={{ width: 260, ...brandSearchStyle }}
-              allowClear
-            />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Buscar por correlativo o factura..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onPressEnter={() => {
+              setPage(1);
+              cargarIngresos();
+            }}
+            style={{ width: 260, ...brandSearchStyle }}
+            allowClear
+          />
 
-            <Select
-              placeholder="Todos los almacenes"
-              allowClear
-              value={almacenId}
-              onChange={(val) => {
-                setAlmacenId(val);
-                setPage(1);
-              }}
-              style={{ width: 200, ...brandControlStyle }}
-              options={almacenes.map((a) => ({ value: a.id, label: a.nombre }))}
-            />
-
-            <Select
-              placeholder="Estado"
-              allowClear
-              value={estadoFilter}
-              onChange={(val) => {
-                setEstadoFilter(val);
-                setPage(1);
-              }}
-              style={{ width: 140, ...brandControlStyle }}
-              options={[
-                { value: 'REGISTRADO', label: 'Registrados' },
-                { value: 'ANULADO', label: 'Anulados' },
-              ]}
-            />
-
-            <RangePicker
-              style={{ width: 240, ...brandControlStyle }}
-              format="YYYY-MM-DD"
-              value={rangoFechas}
-              onChange={(dates) => {
-                setRangoFechas(dates ? [dates[0]!, dates[1]!] : null);
-                setPage(1);
-              }}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total ingresos: <strong style={{ color: '#0f172a' }}>{total}</strong>
-          </Text>
+          {canCreate && (
+            <BrandCreateButton onClick={() => setModalNuevoOpen(true)}>
+              Nuevo Ingreso
+            </BrandCreateButton>
+          )}
         </div>
       }
     >
-      <Table<Ingreso>
+      <GlobalTable<Ingreso>
+        resourceName="ingresos"
         rowKey="id"
         columns={columns}
         dataSource={ingresos}
         loading={loading}
-        scroll={{ x: 'max-content' }}
+        onChange={handleTableChange}
         pagination={{
           current: page,
           pageSize: limit,
           total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
           onChange: (p, l) => {
             setPage(p);
             setLimit(l);
           },
-          showTotal: (tot) => `Total: ${tot} ingresos`,
         }}
       />
 

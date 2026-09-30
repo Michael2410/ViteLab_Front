@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Tabs,
-  Table,
   Input,
-  Select,
+  Button,
   Switch,
   DatePicker,
-  Space,
   Tag,
   Tooltip,
   Typography,
@@ -18,7 +16,8 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { stockApi } from '../stock.api';
 import { almacenApi } from '../../shared/almacen.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -138,6 +137,28 @@ export default function StockListPage() {
     if (activeTab === 'kardex') cargarKardex();
   }, [activeTab, cargarStock, cargarKardex]);
 
+  const handleTableChangeStock = (pagination: any, tableFilters: any) => {
+    setPageStock(pagination.current || 1);
+    setLimitStock(pagination.pageSize || limitStock);
+
+    const almVal = tableFilters.almacen_nombre?.[0];
+    setAlmacenIdStock(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+
+    const catVal = tableFilters.categoria_nombre?.[0];
+    setCategoriaIdStock(catVal !== undefined && catVal !== null ? Number(catVal) : undefined);
+  };
+
+  const handleTableChangeKardex = (pagination: any, tableFilters: any) => {
+    setPageKardex(pagination.current || 1);
+    setLimitKardex(pagination.pageSize || limitKardex);
+
+    const movVal = tableFilters.tipo?.[0];
+    setTipoMovimiento(movVal ? String(movVal) : undefined);
+
+    const almVal = tableFilters.almacen_nombre?.[0];
+    setAlmacenIdKardex(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+  };
+
   // Columnas Stock
   const columnsStock: ColumnsType<StockItem> = [
     {
@@ -159,8 +180,12 @@ export default function StockListPage() {
     {
       title: 'Almacén',
       dataIndex: 'almacen_nombre',
-      key: 'alm',
+      key: 'almacen_nombre',
       width: 170,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filterMultiple: false,
+      filteredValue: almacenIdStock !== undefined ? [almacenIdStock] : null,
+      filterIcon: renderTableFilterIcon,
       render: (alm, r) => (
         <div>
           <span>{alm}</span>
@@ -171,9 +196,13 @@ export default function StockListPage() {
     {
       title: 'Categoría',
       dataIndex: 'categoria_nombre',
-      key: 'cat',
+      key: 'categoria_nombre',
       width: 150,
-      render: (c) => c ? <Tag color="blue">{c}</Tag> : <Text type="secondary">—</Text>,
+      filters: categorias.map((c) => ({ text: c.nombre, value: c.id })),
+      filterMultiple: false,
+      filteredValue: categoriaIdStock !== undefined ? [categoriaIdStock] : null,
+      filterIcon: renderTableFilterIcon,
+      render: (c) => (c ? <Tag color="blue">{c}</Tag> : <Text type="secondary">—</Text>),
     },
     ...(desglosarLote
       ? [
@@ -192,7 +221,7 @@ export default function StockListPage() {
             title: 'Vencimiento',
             dataIndex: 'fecha_vencimiento',
             key: 'venc',
-            width: 130,
+            width: 180,
             render: (v: string | null) => {
               if (!v) return <Text type="secondary">—</Text>;
               const dias = dayjs(v).diff(dayjs(), 'day');
@@ -210,11 +239,11 @@ export default function StockListPage() {
             title: 'Lotes Registrados',
             dataIndex: 'total_lotes',
             key: 'lotes_count',
-            width: 140,
+            width: 160,
             render: (t: number) => <Tag color="cyan">{t || 1} lotes</Tag>,
           },
           {
-            title: 'Próximo Vencimiento',
+            title: 'Vencimiento',
             dataIndex: 'proximo_vencimiento',
             key: 'prox_venc',
             width: 180,
@@ -263,14 +292,66 @@ export default function StockListPage() {
       title: 'Fecha / Hora',
       dataIndex: 'fecha',
       key: 'fecha',
-      width: 160,
+      width: 170,
       render: (f: string) => dayjs(f).format('YYYY-MM-DD HH:mm'),
+      filterDropdown: ({ confirm, clearFilters }) => (
+        <div style={{ padding: 12, width: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <RangePicker
+            style={{ width: '100%', ...brandControlStyle }}
+            format="YYYY-MM-DD"
+            placeholder={['Desde', 'Hasta']}
+            value={rangoKardex}
+            onChange={(dates) => {
+              setRangoKardex(dates ? [dates[0]!, dates[1]!] : null);
+              setPageKardex(1);
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {rangoKardex && (
+              <Button
+                size="small"
+                onClick={() => {
+                  setRangoKardex(null);
+                  setPageKardex(1);
+                  if (clearFilters) clearFilters();
+                  confirm();
+                }}
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => confirm()}
+              style={{ background: '#0284c7', borderColor: '#0284c7' }}
+            >
+              Filtrar
+            </Button>
+          </div>
+        </div>
+      ),
+      filterIcon: () => renderTableFilterIcon(Boolean(rangoKardex)),
     },
     {
       title: 'Operación',
       dataIndex: 'tipo',
       key: 'tipo',
-      width: 140,
+      width: 150,
+      filters: [
+        { value: 'INGRESO', text: 'Ingreso' },
+        { value: 'DESPACHO', text: 'Despacho' },
+        { value: 'CONSUMO', text: 'Consumo' },
+        { value: 'DEVOLUCION', text: 'Devolución' },
+        { value: 'TRANSFERENCIA_SALIDA', text: 'Transf. Salida' },
+        { value: 'TRANSFERENCIA_ENTRADA', text: 'Transf. Entrada' },
+        { value: 'AJUSTE_ENTRADA', text: 'Ajuste Entrada' },
+        { value: 'AJUSTE_SALIDA', text: 'Ajuste Salida' },
+        { value: 'ANULACION', text: 'Anulación' },
+      ],
+      filterMultiple: false,
+      filteredValue: tipoMovimiento ? [tipoMovimiento] : null,
+      filterIcon: renderTableFilterIcon,
       render: (t: string) => {
         const color =
           t === 'INGRESO'
@@ -284,6 +365,17 @@ export default function StockListPage() {
             : 'default';
         return <Tag color={color}>{t}</Tag>;
       },
+    },
+    {
+      title: 'Almacén',
+      dataIndex: 'almacen_nombre',
+      key: 'almacen_nombre',
+      width: 160,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filterMultiple: false,
+      filteredValue: almacenIdKardex !== undefined ? [almacenIdKardex] : null,
+      filterIcon: renderTableFilterIcon,
+      render: (alm) => alm || <Text type="secondary">—</Text>,
     },
     {
       title: 'Producto',
@@ -302,12 +394,12 @@ export default function StockListPage() {
       dataIndex: 'numero_lote',
       key: 'lote',
       width: 120,
-      render: (l) => l ? <Tag color="geekblue">{l}</Tag> : <Text type="secondary">—</Text>,
+      render: (l) => (l ? <Tag color="geekblue">{l}</Tag> : <Text type="secondary">—</Text>),
     },
     {
       title: 'Cantidad',
       key: 'cant',
-      width: 200,
+      width: 160,
       align: 'right',
       render: (_, r) => {
         const esSalida = ['DESPACHO', 'CONSUMO', 'TRANSFERENCIA_SALIDA', 'AJUSTE_SALIDA'].includes(r.tipo);
@@ -342,6 +434,49 @@ export default function StockListPage() {
     <ModulePageLayout
       title="Stock & Kardex de Almacén"
       subtitle={currentTabConfig.description}
+      actionButton={
+        activeTab === 'stock' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Input
+              placeholder="Buscar por producto o lote..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              value={searchStock}
+              onChange={(e) => setSearchStock(e.target.value)}
+              onPressEnter={() => {
+                setPageStock(1);
+                cargarStock();
+              }}
+              style={{ width: 240, ...brandSearchStyle }}
+              allowClear
+            />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 14, color: '#475569', fontWeight: 500 }}>Desglosar lote:</span>
+              <Switch size="default" checked={desglosarLote} onChange={(checked) => setDesglosarLote(checked)} />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 14, color: '#475569', fontWeight: 500 }}>Solo saldo:</span>
+              <Switch size="default" checked={soloConSaldo} onChange={(checked) => setSoloConSaldo(checked)} />
+            </div>
+          </div>
+        ) : (
+          (Boolean(tipoMovimiento) || almacenIdKardex !== undefined || Boolean(rangoKardex)) ? (
+            <Button
+              type="link"
+              onClick={() => {
+                setTipoMovimiento(undefined);
+                setAlmacenIdKardex(undefined);
+                setRangoKardex(null);
+                setPageKardex(1);
+              }}
+              style={{ height: 38, padding: '0 8px', color: '#ef4444' }}
+            >
+              Limpiar filtros
+            </Button>
+          ) : undefined
+        )
+      }
       extraHeader={
         <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
           <Tabs
@@ -360,170 +495,43 @@ export default function StockListPage() {
       }
     >
       {activeTab === 'stock' && (
-        <div>
-          {/* FILTROS DE STOCK */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: '12px 16px',
-              marginBottom: 16,
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-            }}
-          >
-            <Space wrap size="middle" style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Space wrap size="middle">
-                <Input
-                  placeholder="Buscar por producto o lote..."
-                  prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                  value={searchStock}
-                  onChange={(e) => setSearchStock(e.target.value)}
-                  onPressEnter={() => {
-                    setPageStock(1);
-                    cargarStock();
-                  }}
-                  style={{ width: 260, ...brandSearchStyle }}
-                  allowClear
-                />
-
-                <Select
-                  placeholder="Todos los almacenes"
-                  allowClear
-                  value={almacenIdStock}
-                  onChange={(v) => {
-                    setAlmacenIdStock(v);
-                    setPageStock(1);
-                  }}
-                  style={{ width: 200, ...brandControlStyle }}
-                  options={almacenes.map((a) => ({ value: a.id, label: a.nombre }))}
-                />
-
-                <Select
-                  placeholder="Categoría"
-                  allowClear
-                  value={categoriaIdStock}
-                  onChange={(v) => {
-                    setCategoriaIdStock(v);
-                    setPageStock(1);
-                  }}
-                  style={{ width: 180, ...brandControlStyle }}
-                  options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
-                />
-              </Space>
-
-              <Space wrap size="middle">
-                <span style={{ fontSize: 12, color: '#475569' }}>Desglosar por lote:</span>
-                <Switch checked={desglosarLote} onChange={(checked) => setDesglosarLote(checked)} />
-
-                <span style={{ fontSize: 12, color: '#475569', marginLeft: 8 }}>Solo con saldo:</span>
-                <Switch checked={soloConSaldo} onChange={(checked) => setSoloConSaldo(checked)} />
-              </Space>
-            </Space>
-          </div>
-
-          <Table<StockItem>
-            rowKey={(r, i) => `${r.almacen_id}-${r.producto_id}-${r.lote_id || i}`}
-            columns={columnsStock}
-            dataSource={stockItems}
-            loading={loadingStock}
-            scroll={{ x: 'max-content' }}
-            pagination={{
-              current: pageStock,
-              pageSize: limitStock,
-              total: totalStock,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-              onChange: (p, l) => {
-                setPageStock(p);
-                setLimitStock(l);
-              },
-              showTotal: (tot) => `Total: ${tot} registros de stock`,
-            }}
-          />
-        </div>
+        <GlobalTable<StockItem>
+          resourceName="registros de stock"
+          rowKey={(r, i) => `${r.almacen_id}-${r.producto_id}-${r.lote_id || i}`}
+          columns={columnsStock}
+          dataSource={stockItems}
+          loading={loadingStock}
+          onChange={handleTableChangeStock}
+          pagination={{
+            current: pageStock,
+            pageSize: limitStock,
+            total: totalStock,
+            onChange: (p, l) => {
+              setPageStock(p);
+              setLimitStock(l);
+            },
+          }}
+        />
       )}
 
       {activeTab === 'kardex' && (
-        <div>
-          {/* FILTROS DE KARDEX */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: '12px 16px',
-              marginBottom: 16,
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-            }}
-          >
-            <Space wrap size="middle">
-              <Select
-                placeholder="Tipo de Operación"
-                allowClear
-                value={tipoMovimiento}
-                onChange={(v) => {
-                  setTipoMovimiento(v);
-                  setPageKardex(1);
-                }}
-                style={{ width: 180, ...brandControlStyle }}
-                options={[
-                  { value: 'INGRESO', label: 'Ingreso' },
-                  { value: 'DESPACHO', label: 'Despacho' },
-                  { value: 'CONSUMO', label: 'Consumo' },
-                  { value: 'DEVOLUCION', label: 'Devolución' },
-                  { value: 'TRANSFERENCIA_SALIDA', label: 'Transf. Salida' },
-                  { value: 'TRANSFERENCIA_ENTRADA', label: 'Transf. Entrada' },
-                  { value: 'AJUSTE_ENTRADA', label: 'Ajuste Entrada' },
-                  { value: 'AJUSTE_SALIDA', label: 'Ajuste Salida' },
-                  { value: 'ANULACION', label: 'Anulación' },
-                ]}
-              />
-
-              <Select
-                placeholder="Almacén"
-                allowClear
-                value={almacenIdKardex}
-                onChange={(v) => {
-                  setAlmacenIdKardex(v);
-                  setPageKardex(1);
-                }}
-                style={{ width: 200, ...brandControlStyle }}
-                options={almacenes.map((a) => ({ value: a.id, label: a.nombre }))}
-              />
-
-              <RangePicker
-                style={{ width: 240, ...brandControlStyle }}
-                format="YYYY-MM-DD"
-                value={rangoKardex}
-                onChange={(dates) => {
-                  setRangoKardex(dates ? [dates[0]!, dates[1]!] : null);
-                  setPageKardex(1);
-                }}
-              />
-            </Space>
-          </div>
-
-          <Table<KardexItem>
-            rowKey="id"
-            columns={columnsKardex}
-            dataSource={kardexItems}
-            loading={loadingKardex}
-            scroll={{ x: 'max-content' }}
-            pagination={{
-              current: pageKardex,
-              pageSize: limitKardex,
-              total: totalKardex,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-              onChange: (p, l) => {
-                setPageKardex(p);
-                setLimitKardex(l);
-              },
-              showTotal: (tot) => `Total: ${tot} movimientos registrados`,
-            }}
-          />
-        </div>
+        <GlobalTable<KardexItem>
+          resourceName="movimientos"
+          rowKey="id"
+          columns={columnsKardex}
+          dataSource={kardexItems}
+          loading={loadingKardex}
+          onChange={handleTableChangeKardex}
+          pagination={{
+            current: pageKardex,
+            pageSize: limitKardex,
+            total: totalKardex,
+            onChange: (p, l) => {
+              setPageKardex(p);
+              setLimitKardex(l);
+            },
+          }}
+        />
       )}
     </ModulePageLayout>
   );

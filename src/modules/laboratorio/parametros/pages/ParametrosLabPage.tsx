@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Tabs } from 'antd';
+import { Tabs, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
-import ModulePageLayout, { BrandCreateButton } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { useAuthStore } from '../../../auth/hooks';
 import { AreasPage } from '../../areas/pages/AreasPage';
 import { MetodosPage } from '../../metodos/pages/MetodosPage';
@@ -11,6 +12,7 @@ export const ParametrosLabPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = useAuthStore();
   const [createTrigger, setCreateTrigger] = useState(0);
+  const [searchText, setSearchText] = useState('');
 
   const activeKey = useMemo(() => {
     const requestedTab = searchParams.get('tab');
@@ -19,6 +21,19 @@ export const ParametrosLabPage: React.FC = () => {
     }
     return 'areas';
   }, [searchParams]);
+
+  const searchPlaceholder = useMemo(() => {
+    switch (activeKey) {
+      case 'areas':
+        return 'Buscar por código o nombre de área...';
+      case 'metodos':
+        return 'Buscar por método o técnica...';
+      case 'muestras':
+        return 'Buscar por nombre de muestra...';
+      default:
+        return 'Buscar...';
+    }
+  }, [activeKey]);
 
   const tabItems = useMemo(() => {
     const items = [];
@@ -32,7 +47,7 @@ export const ParametrosLabPage: React.FC = () => {
           </span>
         ),
         description: 'Configuración y control de áreas de procesamiento analítico y departamentos de laboratorio',
-        children: <AreasPage isTab createTrigger={createTrigger} />,
+        children: <AreasPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
@@ -45,7 +60,7 @@ export const ParametrosLabPage: React.FC = () => {
           </span>
         ),
         description: 'Técnicas de análisis, metodologías instrumentales y principios analíticos aplicados',
-        children: <MetodosPage isTab createTrigger={createTrigger} />,
+        children: <MetodosPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
@@ -58,43 +73,60 @@ export const ParametrosLabPage: React.FC = () => {
           </span>
         ),
         description: 'Tipos biológicos de especímenes, condiciones de conservación y recipientes de recolección',
-        children: <MuestrasPage isTab createTrigger={createTrigger} />,
+        children: <MuestrasPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
     return items;
-  }, [hasPermission, createTrigger]);
+  }, [hasPermission, createTrigger, searchText]);
 
   const currentTab = useMemo(() => tabItems.find((i) => i.key === activeKey) || tabItems[0], [activeKey, tabItems]);
 
   const handleTabChange = (key: string) => {
+    setSearchText('');
     setSearchParams({ tab: key });
   };
 
   const actionButton = useMemo(() => {
-    if (activeKey === 'areas' && hasPermission('catalogs.areas.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nueva Área
-        </BrandCreateButton>
-      );
-    }
-    if (activeKey === 'metodos' && hasPermission('catalogs.methods.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nuevo Método
-        </BrandCreateButton>
-      );
-    }
-    if (activeKey === 'muestras' && hasPermission('catalogs.muestras.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nueva Muestra
-        </BrandCreateButton>
-      );
-    }
-    return undefined;
-  }, [activeKey, hasPermission]);
+    const createBtn = (() => {
+      if (activeKey === 'areas' && hasPermission('catalogs.areas.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nueva Área
+          </BrandCreateButton>
+        );
+      }
+      if (activeKey === 'metodos' && hasPermission('catalogs.methods.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nuevo Método
+          </BrandCreateButton>
+        );
+      }
+      if (activeKey === 'muestras' && hasPermission('catalogs.muestras.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nueva Muestra
+          </BrandCreateButton>
+        );
+      }
+      return null;
+    })();
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <Input
+          placeholder={searchPlaceholder}
+          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 280, ...brandSearchStyle }}
+        />
+        {createBtn}
+      </div>
+    );
+  }, [activeKey, hasPermission, searchPlaceholder, searchText]);
 
   return (
     <ModulePageLayout
@@ -120,3 +152,4 @@ export const ParametrosLabPage: React.FC = () => {
 };
 
 export default ParametrosLabPage;
+

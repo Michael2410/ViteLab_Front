@@ -14,7 +14,6 @@ import {
   message as antMessage,
   App,
   Alert,
-  Table,
   Result,
 } from 'antd';
 import {
@@ -46,6 +45,7 @@ import type {
   BulkResultadosInput,
 } from '../types';
 import ModulePageLayout from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
@@ -403,7 +403,7 @@ export const AprobacionesPage: React.FC = () => {
     ];
 
     return (
-      <Table
+      <GlobalTable<ComponenteConResultado>
         columns={columns}
         dataSource={analisis.componentes}
         rowKey="componente_id"
@@ -476,12 +476,11 @@ export const AprobacionesPage: React.FC = () => {
     >
       {/* Tabla de órdenes pendientes de aprobación */}
       {!ordenSeleccionada && (
-        <Table
+        <GlobalTable<OrdenParaResultados>
           columns={columnasOrdenes}
           dataSource={ordenesPendientes || []}
-          rowKey="id"
           loading={loadingOrdenes}
-          pagination={{ pageSize: 10 }}
+          resourceName="órdenes pendientes"
           locale={{
             emptyText: (
               <Empty

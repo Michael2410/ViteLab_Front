@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
   Typography,
@@ -26,17 +25,21 @@ import { useConvenios, useCrearConvenio, useActualizarConvenio, useEliminarConve
 import { useAuthStore } from '../../../auth/hooks';
 import { ConvenioFormModal } from '../components/ConvenioFormModal';
 import type { Convenio, CreateConvenioInput, UpdateConvenioInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
 interface ConveniosPageProps {
   isTab?: boolean;
   createTrigger?: number;
+  externalSearch?: string;
 }
 
-export const ConveniosPage = ({ isTab = false, createTrigger }: ConveniosPageProps) => {
-  const [searchText, setSearchText] = useState('');
+export const ConveniosPage = ({ isTab = false, createTrigger, externalSearch }: ConveniosPageProps) => {
+  const [internalSearchText, setInternalSearchText] = useState('');
+  const searchText = isTab && externalSearch !== undefined ? externalSearch : internalSearchText;
+  const setSearchText = setInternalSearchText;
   const [modalOpen, setModalOpen] = useState(false);
   const [convenioSeleccionado, setConvenioSeleccionado] = useState<Convenio | null>(null);
 
@@ -190,8 +193,14 @@ export const ConveniosPage = ({ isTab = false, createTrigger }: ConveniosPagePro
       title: 'Estado',
       dataIndex: 'activo',
       key: 'activo',
-      width: 120,
+      width: 130,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record) => record.activo === value,
       render: (activo: boolean, record: Convenio) => (
         <Switch
           checked={activo}
@@ -241,48 +250,12 @@ export const ConveniosPage = ({ isTab = false, createTrigger }: ConveniosPagePro
   ];
 
   const content = (
-    <>
-      {isTab && (
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12,
-            marginBottom: 16,
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-          }}
-        >
-          <Input
-            placeholder="Buscar por empresa o RUC..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280, ...brandSearchStyle }}
-          />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{conveniosFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
-      )}
-
-      <Table
+    <div style={{ paddingTop: isTab ? 4 : 0 }}>
+      <GlobalTable
         columns={columns}
         dataSource={conveniosFiltrados || []}
-        rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1200 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} convenios`,
-        }}
+        resourceName="convenios"
       />
 
       {/* Modal */}
@@ -299,11 +272,11 @@ export const ConveniosPage = ({ isTab = false, createTrigger }: ConveniosPagePro
           actualizarConvenioMutation.isPending
         }
       />
-    </>
+    </div>
   );
 
   if (isTab) {
-    return <div style={{ paddingTop: 8 }}>{content}</div>;
+    return content;
   }
 
   return (
@@ -311,34 +284,20 @@ export const ConveniosPage = ({ isTab = false, createTrigger }: ConveniosPagePro
       title="Convenios Empresariales"
       subtitle="Gestión de acuerdos institucionales, tarifas corporativas y condiciones contractuales"
       actionButton={
-        hasPermission('catalogs.convenios.create') && (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nuevo Convenio
-          </BrandCreateButton>
-        )
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Input
             placeholder="Buscar por empresa o RUC..."
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280, ...brandSearchStyle }}
+            style={{ width: 250, ...brandSearchStyle }}
           />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{conveniosFiltrados?.length ?? 0}</strong>
-          </Text>
+          {hasPermission('catalogs.convenios.create') && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Nuevo Convenio
+            </BrandCreateButton>
+          )}
         </div>
       }
     >

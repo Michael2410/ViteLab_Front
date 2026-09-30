@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   DatePicker,
   Space,
   Tag,
@@ -16,7 +14,8 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { ajustesApi } from '../ajustes.api';
 import { almacenApi } from '../../shared/almacen.api';
@@ -143,21 +142,71 @@ export default function AjustesListPage() {
       title: 'Fecha',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 110,
+      width: 140,
       render: (date: string) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
+      filterDropdown: ({ setSelectedKeys, confirm, clearFilters }: any) => (
+        <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+          <RangePicker
+            value={rangoFechas}
+            onChange={(dates) => {
+              setRangoFechas(dates as any);
+              setSelectedKeys(dates ? ['selected'] : []);
+            }}
+            style={{ marginBottom: 8, display: 'flex' }}
+            format="DD/MM/YYYY"
+          />
+          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => {
+                confirm();
+                setPage(1);
+              }}
+            >
+              Filtrar
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                setRangoFechas(null);
+                clearFilters && clearFilters();
+                confirm();
+                setPage(1);
+              }}
+            >
+              Reiniciar
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered || !!rangoFechas),
     },
     {
       title: 'Almacén',
-      dataIndex: 'almacen_nombre',
-      key: 'almacen_nombre',
+      dataIndex: 'almacen_id',
+      key: 'almacen_id',
       width: 180,
-      render: (nom: string) => <Text strong>{nom}</Text>,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filteredValue: almacenId ? [almacenId] : null,
+      filterMultiple: false,
+      filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
+      render: (_: any, r: Ajuste) => <Text strong>{r.almacen_nombre}</Text>,
     },
     {
       title: 'Tipo',
       dataIndex: 'tipo',
       key: 'tipo',
-      width: 160,
+      width: 170,
+      filters: [
+        { text: 'Conteo Físico', value: 'CONTEO_FISICO' },
+        { text: 'Merma', value: 'MERMA' },
+        { text: 'Baja / Descarte', value: 'BAJA' },
+        { text: 'Regularización', value: 'REGULARIZACION' },
+      ],
+      filteredValue: tipoFilter ? [tipoFilter] : null,
+      filterMultiple: false,
+      filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (tipo: string) => getTipoTag(tipo),
     },
     {
@@ -180,7 +229,15 @@ export default function AjustesListPage() {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 170,
+      width: 190,
+      filters: [
+        { text: 'Pendiente Aprobación', value: 'PENDIENTE' },
+        { text: 'Aprobado', value: 'APROBADO' },
+        { text: 'Rechazado', value: 'RECHAZADO' },
+      ],
+      filteredValue: estadoFilter ? [estadoFilter] : null,
+      filterMultiple: false,
+      filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (st: string) => getEstadoTag(st),
     },
     {
@@ -212,99 +269,28 @@ export default function AjustesListPage() {
       title="Ajustes y Bajas de Inventario"
       subtitle="Regularizaciones de stock, registro de mermas, bajas y conteos físicos con aprobación de doble control"
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={() => setDrawerOpen(true)}>
-            Nuevo Ajuste
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por número o motivo..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              style={{ width: 240, ...brandSearchStyle }}
-              allowClear
-            />
-
-            <Select
-              placeholder="Filtrar por Almacén"
-              value={almacenId}
-              onChange={(val) => {
-                setAlmacenId(val);
-                setPage(1);
-              }}
-              style={{ width: 200, ...brandControlStyle }}
-              allowClear
-              options={almacenes.map((a) => ({ value: a.id, label: a.nombre }))}
-            />
-
-            <Select
-              placeholder="Tipo de Ajuste"
-              value={tipoFilter}
-              onChange={(val) => {
-                setTipoFilter(val);
-                setPage(1);
-              }}
-              style={{ width: 170, ...brandControlStyle }}
-              allowClear
-              options={[
-                { value: 'CONTEO_FISICO', label: 'Conteo Físico' },
-                { value: 'MERMA', label: 'Merma' },
-                { value: 'BAJA', label: 'Baja / Descarte' },
-                { value: 'REGULARIZACION', label: 'Regularización' },
-              ]}
-            />
-
-            <Select
-              placeholder="Estado"
-              value={estadoFilter}
-              onChange={(val) => {
-                setEstadoFilter(val);
-                setPage(1);
-              }}
-              style={{ width: 180, ...brandControlStyle }}
-              allowClear
-              options={[
-                { value: 'PENDIENTE', label: 'Pendiente Aprobación' },
-                { value: 'APROBADO', label: 'Aprobado' },
-                { value: 'RECHAZADO', label: 'Rechazado' },
-              ]}
-            />
-
-            <RangePicker
-              value={rangoFechas}
-              onChange={(dates) => {
-                setRangoFechas(dates as any);
-                setPage(1);
-              }}
-              format="YYYY-MM-DD"
-              style={{ ...brandControlStyle }}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total ajustes: <strong style={{ color: '#0f172a' }}>{total}</strong>
-          </Text>
-        </div>
+        <Space size="middle" wrap>
+          <Input
+            placeholder="Buscar por número o motivo..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{ width: 260, ...brandSearchStyle }}
+            allowClear
+          />
+          {canCreate && (
+            <BrandCreateButton onClick={() => setDrawerOpen(true)}>
+              Nuevo Ajuste
+            </BrandCreateButton>
+          )}
+        </Space>
       }
     >
-
-      <Table
+      <GlobalTable<Ajuste>
+        resourceName="ajustes"
         dataSource={ajustes}
         columns={columns}
         rowKey="id"
@@ -318,6 +304,17 @@ export default function AjustesListPage() {
             setPage(p);
             setLimit(l);
           },
+        }}
+        onChange={(_pagination, filters) => {
+          const alm = filters.almacen_id;
+          setAlmacenId(alm && alm.length > 0 ? (alm[0] as number) : undefined);
+
+          const tip = filters.tipo;
+          setTipoFilter(tip && tip.length > 0 ? (tip[0] as string) : undefined);
+
+          const est = filters.estado;
+          setEstadoFilter(est && est.length > 0 ? (est[0] as string) : undefined);
+          setPage(1);
         }}
       />
 

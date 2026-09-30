@@ -1,23 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   DatePicker,
-  Space,
   Tag,
   Typography,
   message,
 } from 'antd';
 import {
-  PlusOutlined,
   SearchOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { despachosApi } from '../despachos.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -97,6 +94,17 @@ export default function DespachosListPage() {
     }
   };
 
+  const handleTableChange = (pagination: any, tableFilters: any) => {
+    setPage(pagination.current || 1);
+    setLimit(pagination.pageSize || limit);
+
+    const almVal = tableFilters.almacen_nombre?.[0];
+    setAlmacenId(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+
+    const estVal = tableFilters.estado?.[0];
+    setEstadoFilter(estVal ? String(estVal) : undefined);
+  };
+
   const columns: ColumnsType<Despacho> = [
     {
       title: 'Número',
@@ -109,13 +117,56 @@ export default function DespachosListPage() {
       title: 'Fecha',
       dataIndex: 'fecha',
       key: 'fecha',
-      width: 110,
+      width: 140,
       render: (v) => (v ? dayjs(v).format('YYYY-MM-DD') : '-'),
+      filterDropdown: ({ confirm, clearFilters }) => (
+        <div style={{ padding: 12, width: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <RangePicker
+            style={{ width: '100%', ...brandControlStyle }}
+            format="YYYY-MM-DD"
+            placeholder={['Desde', 'Hasta']}
+            value={rangoFechas}
+            onChange={(dates) => {
+              setRangoFechas(dates ? [dates[0]!, dates[1]!] : null);
+              setPage(1);
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {rangoFechas && (
+              <Button
+                size="small"
+                onClick={() => {
+                  setRangoFechas(null);
+                  setPage(1);
+                  if (clearFilters) clearFilters();
+                  confirm();
+                }}
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => confirm()}
+              style={{ background: '#0284c7', borderColor: '#0284c7' }}
+            >
+              Filtrar
+            </Button>
+          </div>
+        </div>
+      ),
+      filterIcon: () => renderTableFilterIcon(Boolean(rangoFechas)),
     },
     {
       title: 'Almacén Origen',
       dataIndex: 'almacen_nombre',
       key: 'almacen_nombre',
+      width: 170,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filterMultiple: false,
+      filteredValue: almacenId !== undefined ? [almacenId] : null,
+      filterIcon: renderTableFilterIcon,
       render: (v) => <Tag color="blue">{v || 'Principal'}</Tag>,
     },
     {
@@ -143,7 +194,15 @@ export default function DespachosListPage() {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 110,
+      width: 130,
+      align: 'center',
+      filters: [
+        { text: 'Registrado', value: 'REGISTRADO' },
+        { text: 'Anulado', value: 'ANULADO' },
+      ],
+      filterMultiple: false,
+      filteredValue: estadoFilter ? [estadoFilter] : null,
+      filterIcon: renderTableFilterIcon,
       render: (v) => (
         <Tag color={v === 'REGISTRADO' ? 'green' : 'red'}>
           {v}
@@ -158,7 +217,7 @@ export default function DespachosListPage() {
       render: (_, r) => (
         <Button
           type="text"
-          icon={<EyeOutlined />}
+          icon={<EyeOutlined style={{ color: '#0284c7' }} />}
           onClick={() => verDetalle(r)}
         />
       ),
@@ -170,90 +229,38 @@ export default function DespachosListPage() {
       title="Despachos al Personal"
       subtitle="Registro y control de asignaciones de materiales y reactivos a los trabajadores"
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={() => setDrawerOpen(true)}>
-            Nuevo Despacho
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por número o receptor..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              style={{ width: 260, ...brandSearchStyle }}
-              allowClear
-            />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Buscar por número o receptor..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{ width: 260, ...brandSearchStyle }}
+            allowClear
+          />
 
-            <Select
-              placeholder="Almacén de origen"
-              value={almacenId}
-              onChange={(val) => {
-                setAlmacenId(val);
-                setPage(1);
-              }}
-              style={{ width: 200, ...brandControlStyle }}
-              allowClear
-              options={almacenes.map((a) => ({ value: a.id, label: a.nombre }))}
-            />
-
-            <Select
-              placeholder="Estado"
-              value={estadoFilter}
-              onChange={(val) => {
-                setEstadoFilter(val);
-                setPage(1);
-              }}
-              style={{ width: 140, ...brandControlStyle }}
-              allowClear
-              options={[
-                { value: 'REGISTRADO', label: 'Registrado' },
-                { value: 'ANULADO', label: 'Anulado' },
-              ]}
-            />
-
-            <RangePicker
-              value={rangoFechas}
-              onChange={(dates) => {
-                setRangoFechas(dates as any);
-                setPage(1);
-              }}
-              format="YYYY-MM-DD"
-              style={{ ...brandControlStyle }}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total despachos: <strong style={{ color: '#0f172a' }}>{total}</strong>
-          </Text>
+          {canCreate && (
+            <BrandCreateButton onClick={() => setDrawerOpen(true)}>
+              Nuevo Despacho
+            </BrandCreateButton>
+          )}
         </div>
       }
     >
-
-      <Table
-        dataSource={despachos}
-        columns={columns}
+      <GlobalTable<Despacho>
+        resourceName="despachos"
         rowKey="id"
+        columns={columns}
+        dataSource={despachos}
         loading={loading}
+        onChange={handleTableChange}
         pagination={{
           current: page,
           pageSize: limit,
           total,
-          showSizeChanger: true,
           onChange: (p, l) => {
             setPage(p);
             setLimit(l);

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Table,
   Button,
   Space,
   Typography,
@@ -9,7 +8,6 @@ import {
   Switch,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -22,7 +20,8 @@ import { useSedes, useCrearSede, useActualizarSede, useEliminarSede } from '../h
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { SedeFormModal } from '../components/SedeFormModal';
 import type { Sede, CreateSedeInput, UpdateSedeInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
@@ -139,6 +138,12 @@ export const SedesPage: React.FC = () => {
       key: 'activo',
       width: 120,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (activo: boolean, record: Sede) => (
         <Switch
           checked={activo}
@@ -196,38 +201,25 @@ export const SedesPage: React.FC = () => {
       title="Sedes del Laboratorio"
       subtitle="Gestión de locales, centros de toma de muestras y sucursales operativas"
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nueva Sede
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <Space size="middle" wrap>
           <Input
-            placeholder="Buscar por código o nombre de sede..."
+            placeholder="Buscar sede o dirección..."
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 280, ...brandSearchStyle }}
           />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{sedesFiltradas?.length ?? 0}</strong>
-          </Text>
-        </div>
+          {canCreate && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Nueva Sede
+            </BrandCreateButton>
+          )}
+        </Space>
       }
     >
-      <Table
+      <GlobalTable<Sede>
+        resourceName="configuracion-sedes"
         columns={columns}
         dataSource={sedesFiltradas || []}
         rowKey="id"

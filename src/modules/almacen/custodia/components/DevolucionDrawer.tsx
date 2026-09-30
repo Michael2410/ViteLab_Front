@@ -5,7 +5,6 @@ import {
   Select,
   DatePicker,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -18,6 +17,7 @@ import {
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { custodiaApi } from '../custodia.api';
 import { almacenApi } from '../../shared/almacen.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -328,7 +328,8 @@ export default function DevolucionDrawer({
           </Button>
         </div>
 
-        <Table
+        <GlobalTable<LineaDevolucion>
+          rowKey="key"
           dataSource={lineas}
           columns={columns}
           pagination={false}

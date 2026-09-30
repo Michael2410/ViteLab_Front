@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -11,7 +10,6 @@ import {
   Input,
 } from 'antd';
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -23,7 +21,8 @@ import { useRoles, useEliminarRol } from '../hooks';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { RolFormModal } from '../components/RolFormModal';
 import type { Rol } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
@@ -133,6 +132,12 @@ export function RolesPage() {
       key: 'activo',
       width: 100,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (activo: boolean) => (
         <Tag color={activo ? 'success' : 'default'}>
           {activo ? 'Activo' : 'Inactivo'}
@@ -193,38 +198,25 @@ export function RolesPage() {
       title="Gestión de Roles y Permisos"
       subtitle="Administración de perfiles de usuario, niveles de acceso y permisos del sistema"
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleCrear}>
-            Nuevo Rol
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <Space size="middle" wrap>
           <Input
-            placeholder="Buscar por nombre o descripción de rol..."
+            placeholder="Buscar rol o descripción..."
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 320, ...brandSearchStyle }}
+            style={{ width: 280, ...brandSearchStyle }}
             allowClear
           />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total roles: <strong style={{ color: '#0f172a' }}>{rolesFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
+          {canCreate && (
+            <BrandCreateButton onClick={handleCrear}>
+              Nuevo Rol
+            </BrandCreateButton>
+          )}
+        </Space>
       }
     >
-      <Table
+      <GlobalTable<Rol>
+        resourceName="configuracion-roles"
         columns={columns}
         dataSource={rolesFiltrados}
         rowKey="id"

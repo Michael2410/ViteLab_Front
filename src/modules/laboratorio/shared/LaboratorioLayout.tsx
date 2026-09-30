@@ -4,9 +4,7 @@ import {
   Button,
   Avatar,
   Dropdown,
-  Typography,
   Breadcrumb,
-  Space,
   Tag,
   Grid,
   Tooltip,
@@ -40,9 +38,9 @@ import { usePermissions } from '../../../shared/components/PermissionGuard';
 import { WhatsAppQRModal, useWhatsAppStatus } from '../whatsapp';
 import viteLogo from '../../../assets/logo/logo.png';
 import { AppSwitcher } from '../../../shared/components/AppSwitcher';
+import { getUserInitials } from '../../../shared/utils/user.utils';
 
-const { Header, Sider, Content, Footer } = Layout;
-const { Text } = Typography;
+const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid; // Destructure useBreakpoint
 
 export default function LaboratorioLayout() {
@@ -244,6 +242,11 @@ export default function LaboratorioLayout() {
       key: 'portal',
       label: 'Portal Principal',
       onClick: () => navigate('/portal'),
+    },
+    {
+      key: 'almacen',
+      label: 'Almacén & Logística',
+      onClick: () => navigate('/almacen'),
     },
     {
       key: 'personal',
@@ -544,13 +547,15 @@ export default function LaboratorioLayout() {
               >
                 <Avatar
                   size={30}
-                  icon={<UserOutlined />}
                   style={{
                     background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
                     color: '#ffffff',
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    fontSize: 12,
                   }}
-                />
+                >
+                  {getUserInitials(user)}
+                </Avatar>
                 {screens.sm && (
                   <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 600, color: '#0f172a' }}>
@@ -591,24 +596,6 @@ export default function LaboratorioLayout() {
           <Outlet />
         </Content>
 
-        {/* FOOTER */}
-        <Footer
-          style={{
-            textAlign: 'center',
-            background: 'transparent',
-            padding: isDashboard ? '10px 24px 24px' : '20px 24px',
-            marginTop: isDashboard ? 4 : 'auto'
-          }}
-        >
-          <Space direction="vertical" size={2}>
-            <Text type="secondary" style={{ fontSize: 12, color: '#64748b' }}>
-              © {new Date().getFullYear()} ViteLab Systems — Plataforma de Gestión Clínica
-            </Text>
-            <Text type="secondary" style={{ fontSize: 11, color: '#94a3b8' }}>
-              v1.0.0
-            </Text>
-          </Space>
-        </Footer>
       </Layout>
 
       {/* Modal de WhatsApp */}

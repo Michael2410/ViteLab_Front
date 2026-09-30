@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Tabs } from 'antd';
+import { Tabs, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
-import ModulePageLayout, { BrandCreateButton } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
 import { useAuthStore } from '../../../auth/hooks';
 import { TarifariosPage } from './TarifariosPage';
 import { ConveniosPage } from '../../convenios/pages/ConveniosPage';
@@ -11,6 +12,7 @@ export const TarifasConveniosPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = useAuthStore();
   const [createTrigger, setCreateTrigger] = useState(0);
+  const [searchText, setSearchText] = useState('');
 
   const activeKey = useMemo(() => {
     const requestedTab = searchParams.get('tab');
@@ -19,6 +21,19 @@ export const TarifasConveniosPage: React.FC = () => {
     }
     return 'tarifarios';
   }, [searchParams]);
+
+  const searchPlaceholder = useMemo(() => {
+    switch (activeKey) {
+      case 'tarifarios':
+        return 'Buscar tarifario...';
+      case 'convenios':
+        return 'Buscar por empresa o RUC...';
+      case 'tipos-cliente':
+        return 'Buscar por tipo de cliente...';
+      default:
+        return 'Buscar...';
+    }
+  }, [activeKey]);
 
   const tabItems = useMemo(() => {
     const items = [];
@@ -32,7 +47,7 @@ export const TarifasConveniosPage: React.FC = () => {
           </span>
         ),
         description: 'Listas de precios base, tarifas especiales y márgenes para análisis clínicos',
-        children: <TarifariosPage isTab createTrigger={createTrigger} />,
+        children: <TarifariosPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
@@ -45,7 +60,7 @@ export const TarifasConveniosPage: React.FC = () => {
           </span>
         ),
         description: 'Acuerdos comerciales con empresas, aseguradoras y centros médicos remitentes',
-        children: <ConveniosPage isTab createTrigger={createTrigger} />,
+        children: <ConveniosPage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
@@ -58,43 +73,60 @@ export const TarifasConveniosPage: React.FC = () => {
           </span>
         ),
         description: 'Segmentación comercial de clientes, pacientes particulares e institucionales',
-        children: <TiposClientePage isTab createTrigger={createTrigger} />,
+        children: <TiposClientePage isTab createTrigger={createTrigger} externalSearch={searchText} />,
       });
     }
 
     return items;
-  }, [hasPermission, createTrigger]);
+  }, [hasPermission, createTrigger, searchText]);
 
   const currentTab = useMemo(() => tabItems.find((i) => i.key === activeKey) || tabItems[0], [activeKey, tabItems]);
 
   const handleTabChange = (key: string) => {
+    setSearchText('');
     setSearchParams({ tab: key });
   };
 
   const actionButton = useMemo(() => {
-    if (activeKey === 'tarifarios' && hasPermission('tariffs.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nuevo Tarifario
-        </BrandCreateButton>
-      );
-    }
-    if (activeKey === 'convenios' && hasPermission('catalogs.convenios.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nuevo Convenio
-        </BrandCreateButton>
-      );
-    }
-    if (activeKey === 'tipos-cliente' && hasPermission('catalogs.tipos-cliente.create')) {
-      return (
-        <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
-          Nuevo Tipo
-        </BrandCreateButton>
-      );
-    }
-    return undefined;
-  }, [activeKey, hasPermission]);
+    const createBtn = (() => {
+      if (activeKey === 'tarifarios' && hasPermission('tariffs.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nuevo Tarifario
+          </BrandCreateButton>
+        );
+      }
+      if (activeKey === 'convenios' && hasPermission('catalogs.convenios.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nuevo Convenio
+          </BrandCreateButton>
+        );
+      }
+      if (activeKey === 'tipos-cliente' && hasPermission('catalogs.tipos-cliente.create')) {
+        return (
+          <BrandCreateButton onClick={() => setCreateTrigger((prev) => prev + 1)}>
+            Nuevo Tipo
+          </BrandCreateButton>
+        );
+      }
+      return null;
+    })();
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <Input
+          placeholder={searchPlaceholder}
+          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ width: 250, ...brandSearchStyle }}
+        />
+        {createBtn}
+      </div>
+    );
+  }, [activeKey, hasPermission, searchPlaceholder, searchText]);
 
   return (
     <ModulePageLayout

@@ -1,22 +1,19 @@
 import { useState, useMemo } from 'react';
 import {
-  Table,
   Button,
   Tag,
   Space,
   Input,
-  Select,
-  Typography,
   type TableProps,
 } from 'antd';
 import {
-  PlusOutlined,
   SearchOutlined,
   PrinterOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useDocumentosLaboralesList,
@@ -26,8 +23,6 @@ import {
 import type { DocumentoLaboralItem } from '../../types';
 import { GenerarDocumentoModal } from '../components/GenerarDocumentoModal';
 import { VistaPreviaDocumentoModal } from '../components/VistaPreviaDocumentoModal';
-
-const { Text } = Typography;
 
 export default function DocumentosPage() {
   const { hasPermission } = usePermissions();
@@ -110,6 +105,14 @@ export default function DocumentosPage() {
       title: 'Tipo de Documento',
       dataIndex: 'tipo_documento',
       key: 'tipo',
+      filters: [
+        { text: 'Constancias de Trabajo', value: 'CONSTANCIA_TRABAJO' },
+        { text: 'Certificados Laborales', value: 'CERTIFICADO_LABORAL' },
+        { text: 'Cartas de Presentación', value: 'CARTA_PRESENTACION' },
+      ],
+      filteredValue: tipoFilter !== 'TODOS' ? [tipoFilter] : null,
+      filterMultiple: false,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (t) => getTipoTag(t),
     },
     {
@@ -168,61 +171,36 @@ export default function DocumentosPage() {
       subtitle="Emisión oficial y registro de constancias de trabajo, certificados de servicios y cartas institucionales con membrete"
       wrapInTableCard={false}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={() => setModalGenerarOpen(true)}>
-            Generar Documento
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por código o colaborador..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              allowClear
-              style={{ width: 280, ...brandSearchStyle }}
-            />
-
-            <Select
-              value={tipoFilter}
-              onChange={(v) => setTipoFilter(v)}
-              style={{ width: 220, ...brandControlStyle }}
-              options={[
-                { label: 'Todos los tipos', value: 'TODOS' },
-                { label: 'Constancias de Trabajo', value: 'CONSTANCIA_TRABAJO' },
-                { label: 'Certificados Laborales', value: 'CERTIFICADO_LABORAL' },
-                { label: 'Cartas de Presentación', value: 'CARTA_PRESENTACION' },
-              ]}
-            />
-          </div>
-
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{documentosFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
+        <Space size="middle" wrap>
+          <Input
+            placeholder="Buscar por código o colaborador..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          {canCreate && (
+            <BrandCreateButton onClick={() => setModalGenerarOpen(true)}>
+              Generar Documento
+            </BrandCreateButton>
+          )}
+        </Space>
       }
     >
-
       {/* Tabla Libre */}
-      <Table
+      <GlobalTable<DocumentoLaboralItem>
+        resourceName="personal-documentos"
         columns={columns}
         dataSource={documentosFiltrados}
         rowKey="id"
         loading={isLoading}
         pagination={{ pageSize: 10, showSizeChanger: true }}
         locale={{ emptyText: 'No hay documentos laborales emitidos' }}
+        onChange={(_pagination, tableFilters) => {
+          const t = tableFilters.tipo;
+          setTipoFilter(t && t.length > 0 ? (t[0] as string) : 'TODOS');
+        }}
       />
 
       {/* Modal Generar */}

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Tabs,
-  Table,
   Button,
   Modal,
   Form,
@@ -19,7 +18,8 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { maestrosApi } from '../maestros.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -291,6 +291,12 @@ export default function MaestrosPage() {
       dataIndex: 'permite_decimales',
       key: 'permite_decimales',
       width: 170,
+      filters: [
+        { text: 'Sí', value: true },
+        { text: 'No', value: false },
+      ],
+      onFilter: (value, record) => record.permite_decimales === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (v: boolean) => (v ? <Tag color="green">Sí</Tag> : <Tag>No</Tag>),
     },
     {
@@ -299,6 +305,12 @@ export default function MaestrosPage() {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (v: boolean, r) => (
         <Switch
           checked={v}
@@ -342,6 +354,12 @@ export default function MaestrosPage() {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (v: boolean, r) => (
         <Switch
           checked={v}
@@ -377,7 +395,16 @@ export default function MaestrosPage() {
 
   // Columnas Almacenes
   const colsAlmacenes: ColumnsType<Almacen> = [
-    { title: 'Sede', dataIndex: 'sede_nombre', key: 'sede_nombre', width: 180, render: (v) => <Tag color="cyan">{v || 'Sede'}</Tag> },
+    {
+      title: 'Sede',
+      dataIndex: 'sede_nombre',
+      key: 'sede_nombre',
+      width: 180,
+      filters: sedes.map((s) => ({ text: s.nombre, value: s.nombre })),
+      onFilter: (value, record) => record.sede_nombre === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
+      render: (v) => <Tag color="cyan">{v || 'Sede'}</Tag>,
+    },
     { title: 'Nombre Almacén', dataIndex: 'nombre', key: 'nombre', render: (v) => <Text strong>{v}</Text> },
     { title: 'Descripción', dataIndex: 'descripcion', key: 'descripcion', render: (v) => v || '—' },
     {
@@ -385,6 +412,12 @@ export default function MaestrosPage() {
       dataIndex: 'es_principal',
       key: 'es_principal',
       width: 120,
+      filters: [
+        { text: 'Principal', value: true },
+        { text: 'Secundario', value: false },
+      ],
+      onFilter: (value, record) => record.es_principal === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (v: boolean) => (v ? <Tag color="gold">Principal</Tag> : <Text type="secondary">Secundario</Text>),
     },
     {
@@ -393,6 +426,12 @@ export default function MaestrosPage() {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (v: boolean, r) => (
         <Switch
           checked={v}
@@ -428,9 +467,38 @@ export default function MaestrosPage() {
 
   // Columnas Ubicaciones
   const colsUbicaciones: ColumnsType<Ubicacion> = [
+    {
+      title: 'Almacén',
+      dataIndex: 'almacen_id',
+      key: 'almacen_id',
+      width: 180,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filteredValue: filtroAlmacenId ? [filtroAlmacenId] : null,
+      filterMultiple: false,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
+      render: (almId: number) => {
+        const alm = almacenes.find((a) => a.id === almId);
+        return alm ? <Text strong>{alm.nombre}</Text> : '—';
+      },
+    },
     { title: 'Código', dataIndex: 'codigo', key: 'codigo', width: 120, render: (v) => <Tag color="geekblue">{v}</Tag> },
     { title: 'Nombre / Estante', dataIndex: 'nombre', key: 'nombre', render: (v) => <Text strong>{v}</Text> },
-    { title: 'Tipo', dataIndex: 'tipo', key: 'tipo', width: 140, render: (v) => <Tag color="purple">{v}</Tag> },
+    {
+      title: 'Tipo',
+      dataIndex: 'tipo',
+      key: 'tipo',
+      width: 140,
+      filters: [
+        { text: 'Estante', value: 'ESTANTE' },
+        { text: 'Refrigerador', value: 'REFRIGERADOR' },
+        { text: 'Congelador', value: 'CONGELADOR' },
+        { text: 'Cajón', value: 'CAJON' },
+        { text: 'Otro', value: 'OTRO' },
+      ],
+      onFilter: (value, record) => record.tipo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
+      render: (v) => <Tag color="purple">{v}</Tag>,
+    },
     {
       title: 'Rango Temp.',
       key: 'temp',
@@ -448,6 +516,12 @@ export default function MaestrosPage() {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      onFilter: (value, record) => record.activo === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (v: boolean, r) => (
         <Switch
           checked={v}
@@ -552,11 +626,21 @@ export default function MaestrosPage() {
       title="Maestros y Catálogos de Almacén"
       subtitle={currentTabConfig.description}
       actionButton={
-        canManage ? (
-          <BrandCreateButton onClick={handleOpenCreate}>
-            {currentTabConfig.createLabel}
-          </BrandCreateButton>
-        ) : undefined
+        <Space size="middle" wrap>
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder={`Buscar ${currentTabConfig.singular.toLowerCase()}...`}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 260, ...brandSearchStyle }}
+          />
+          {canManage && (
+            <BrandCreateButton onClick={handleOpenCreate}>
+              {currentTabConfig.createLabel}
+            </BrandCreateButton>
+          )}
+        </Space>
       }
       extraHeader={
         <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
@@ -577,48 +661,10 @@ export default function MaestrosPage() {
           />
         </div>
       }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              placeholder={`Buscar ${currentTabConfig.singular.toLowerCase()}...`}
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 280, ...brandSearchStyle }}
-            />
-            {activeTab === 'ubicaciones' && (
-              <Select
-                placeholder="Filtrar por almacén..."
-                allowClear
-                style={{ width: 240, ...brandControlStyle }}
-                value={filtroAlmacenId}
-                onChange={(v) => setFiltroAlmacenId(v)}
-                options={almacenes.map((a) => ({
-                  value: a.id,
-                  label: `${a.nombre} (${a.sede_nombre || 'Sede'})`,
-                }))}
-              />
-            )}
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{currentCount}</strong>
-          </Text>
-        </div>
-      }
     >
       {activeTab === 'unidades' && (
-        <Table<UnidadMedida>
+        <GlobalTable<UnidadMedida>
+          resourceName="maestros-unidades"
           rowKey="id"
           columns={colsUnidades}
           dataSource={unidadesFiltradas}
@@ -627,12 +673,13 @@ export default function MaestrosPage() {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total) => `Total ${total} registros`,
+            showTotal: (total) => `Total: ${total} unidades`,
           }}
         />
       )}
       {activeTab === 'categorias' && (
-        <Table<Categoria>
+        <GlobalTable<Categoria>
+          resourceName="maestros-categorias"
           rowKey="id"
           columns={colsCategorias}
           dataSource={categoriasFiltradas}
@@ -641,12 +688,13 @@ export default function MaestrosPage() {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total) => `Total ${total} registros`,
+            showTotal: (total) => `Total: ${total} categorías`,
           }}
         />
       )}
       {activeTab === 'almacenes' && (
-        <Table<Almacen>
+        <GlobalTable<Almacen>
+          resourceName="maestros-almacenes"
           rowKey="id"
           columns={colsAlmacenes}
           dataSource={almacenesFiltrados}
@@ -655,12 +703,13 @@ export default function MaestrosPage() {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total) => `Total ${total} registros`,
+            showTotal: (total) => `Total: ${total} almacenes`,
           }}
         />
       )}
       {activeTab === 'ubicaciones' && (
-        <Table<Ubicacion>
+        <GlobalTable<Ubicacion>
+          resourceName="maestros-ubicaciones"
           rowKey="id"
           columns={colsUbicaciones}
           dataSource={ubicacionesFiltradas}
@@ -669,7 +718,11 @@ export default function MaestrosPage() {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total) => `Total ${total} registros`,
+            showTotal: (total) => `Total: ${total} ubicaciones`,
+          }}
+          onChange={(_pagination, filters) => {
+            const alm = filters.almacen_id;
+            setFiltroAlmacenId(alm && alm.length > 0 ? (alm[0] as number) : undefined);
           }}
         />
       )}

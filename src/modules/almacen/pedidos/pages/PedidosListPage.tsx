@@ -1,23 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   DatePicker,
   Space,
   Tag,
   Typography,
+  Tooltip,
   message,
 } from 'antd';
 import {
-  PlusOutlined,
   SearchOutlined,
   EyeOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { pedidosApi } from '../pedidos.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -26,6 +26,7 @@ import type { Pedido } from '../pedidos.types';
 import type { Almacen } from '../../maestros/maestros.types';
 import PedidoDrawer from '../components/PedidoDrawer';
 import PedidoDetalleModal from '../components/PedidoDetalleModal';
+import { DespacharPedidoModal } from '../components/DespacharPedidoModal';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -46,6 +47,8 @@ export default function PedidosListPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [despachoModalOpen, setDespachoModalOpen] = useState(false);
+  const [pedidoADespachar, setPedidoADespachar] = useState<Pedido | null>(null);
 
   const { hasPermission, isSuperAdmin } = usePermissions();
   const canCreate = isSuperAdmin || hasPermission('almacen.pedidos.create');
@@ -98,6 +101,17 @@ export default function PedidosListPage() {
     }
   };
 
+  const handleTableChange = (pagination: any, tableFilters: any) => {
+    setPage(pagination.current || 1);
+    setLimit(pagination.pageSize || limit);
+
+    const almVal = tableFilters.almacen_nombre?.[0];
+    setAlmacenId(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+
+    const estVal = tableFilters.estado?.[0];
+    setEstadoFilter(estVal ? String(estVal) : undefined);
+  };
+
   const getStatusColor = (st: string) => {
     switch (st) {
       case 'PENDIENTE': return 'gold';
@@ -122,13 +136,56 @@ export default function PedidosListPage() {
       title: 'Fecha',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 110,
+      width: 140,
       render: (v) => (v ? dayjs(v).format('YYYY-MM-DD') : '-'),
+      filterDropdown: ({ confirm, clearFilters }) => (
+        <div style={{ padding: 12, width: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <RangePicker
+            style={{ width: '100%', ...brandControlStyle }}
+            format="YYYY-MM-DD"
+            placeholder={['Desde', 'Hasta']}
+            value={rangoFechas}
+            onChange={(dates) => {
+              setRangoFechas(dates ? [dates[0]!, dates[1]!] : null);
+              setPage(1);
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {rangoFechas && (
+              <Button
+                size="small"
+                onClick={() => {
+                  setRangoFechas(null);
+                  setPage(1);
+                  if (clearFilters) clearFilters();
+                  confirm();
+                }}
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => confirm()}
+              style={{ background: '#0284c7', borderColor: '#0284c7' }}
+            >
+              Filtrar
+            </Button>
+          </div>
+        </div>
+      ),
+      filterIcon: () => renderTableFilterIcon(Boolean(rangoFechas)),
     },
     {
       title: 'Almacén Destino',
       dataIndex: 'almacen_nombre',
       key: 'almacen_nombre',
+      width: 170,
+      filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
+      filterMultiple: false,
+      filteredValue: almacenId !== undefined ? [almacenId] : null,
+      filterIcon: renderTableFilterIcon,
       render: (v) => <Tag color="blue">{v || 'Almacén'}</Tag>,
     },
     {
@@ -155,20 +212,64 @@ export default function PedidosListPage() {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 130,
+      width: 140,
+      align: 'center',
+      filters: [
+        { value: 'PENDIENTE', text: 'Pendiente' },
+        { value: 'APROBADO', text: 'Aprobado' },
+        { value: 'ATENDIDO_PARCIAL', text: 'Atendido Parcial' },
+        { value: 'ATENDIDO_TOTAL', text: 'Atendido Total' },
+        { value: 'RECHAZADO', text: 'Rechazado' },
+        { value: 'ANULADO', text: 'Anulado' },
+      ],
+      filterMultiple: false,
+      filteredValue: estadoFilter ? [estadoFilter] : null,
+      filterIcon: renderTableFilterIcon,
       render: (v) => <Tag color={getStatusColor(v)}>{v}</Tag>,
     },
     {
       title: 'Acciones',
       key: 'acciones',
-      width: 90,
+      width: 130,
       align: 'center',
       render: (_, r) => (
-        <Button
-          type="text"
-          icon={<EyeOutlined />}
-          onClick={() => verDetalle(r)}
-        />
+        <Space size={4}>
+          <Tooltip title="Ver Detalle">
+            <Button
+              type="text"
+              icon={<EyeOutlined style={{ color: '#0284c7' }} />}
+              onClick={() => verDetalle(r)}
+            />
+          </Tooltip>
+
+          {canApprove && r.estado === 'PENDIENTE' && (
+            <Tooltip title="Aprobar y Despachar">
+              <Button
+                type="text"
+                style={{ color: '#0284c7' }}
+                icon={<SendOutlined />}
+                onClick={() => {
+                  setPedidoADespachar(r);
+                  setDespachoModalOpen(true);
+                }}
+              />
+            </Tooltip>
+          )}
+
+          {canApprove && ['APROBADO', 'ATENDIDO_PARCIAL'].includes(r.estado) && (
+            <Tooltip title="Despachar Pedido">
+              <Button
+                type="text"
+                style={{ color: '#059669' }}
+                icon={<SendOutlined />}
+                onClick={() => {
+                  setPedidoADespachar(r);
+                  setDespachoModalOpen(true);
+                }}
+              />
+            </Tooltip>
+          )}
+        </Space>
       ),
     },
   ];
@@ -178,94 +279,38 @@ export default function PedidosListPage() {
       title="Pedidos Internos"
       subtitle="Solicitudes de reactivos y materiales requeridos para el trabajo en laboratorio"
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={() => setDrawerOpen(true)}>
-            Nuevo Pedido
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por número o solicitante..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              style={{ width: 260, ...brandSearchStyle }}
-              allowClear
-            />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Buscar por número o solicitante..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{ width: 260, ...brandSearchStyle }}
+            allowClear
+          />
 
-            <Select
-              placeholder="Almacén de destino"
-              value={almacenId}
-              onChange={(val) => {
-                setAlmacenId(val);
-                setPage(1);
-              }}
-              style={{ width: 200, ...brandControlStyle }}
-              allowClear
-              options={almacenes.map((a) => ({ value: a.id, label: a.nombre }))}
-            />
-
-            <Select
-              placeholder="Estado"
-              value={estadoFilter}
-              onChange={(val) => {
-                setEstadoFilter(val);
-                setPage(1);
-              }}
-              style={{ width: 160, ...brandControlStyle }}
-              allowClear
-              options={[
-                { value: 'PENDIENTE', label: 'Pendiente' },
-                { value: 'APROBADO', label: 'Aprobado' },
-                { value: 'ATENDIDO_PARCIAL', label: 'Atendido Parcial' },
-                { value: 'ATENDIDO_TOTAL', label: 'Atendido Total' },
-                { value: 'RECHAZADO', label: 'Rechazado' },
-                { value: 'ANULADO', label: 'Anulado' },
-              ]}
-            />
-
-            <RangePicker
-              value={rangoFechas}
-              onChange={(dates) => {
-                setRangoFechas(dates as any);
-                setPage(1);
-              }}
-              format="YYYY-MM-DD"
-              style={{ ...brandControlStyle }}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total pedidos: <strong style={{ color: '#0f172a' }}>{total}</strong>
-          </Text>
+          {canCreate && (
+            <BrandCreateButton onClick={() => setDrawerOpen(true)}>
+              Nuevo Pedido
+            </BrandCreateButton>
+          )}
         </div>
       }
     >
-
-      <Table
-        dataSource={pedidos}
-        columns={columns}
+      <GlobalTable<Pedido>
+        resourceName="pedidos"
         rowKey="id"
+        columns={columns}
+        dataSource={pedidos}
         loading={loading}
+        onChange={handleTableChange}
         pagination={{
           current: page,
           pageSize: limit,
           total,
-          showSizeChanger: true,
           onChange: (p, l) => {
             setPage(p);
             setLimit(l);
@@ -286,6 +331,20 @@ export default function PedidosListPage() {
         onSuccess={cargarPedidos}
         canApprove={canApprove}
         canAnular={canDelete}
+        onDespachar={(p) => {
+          setPedidoADespachar(p);
+          setDespachoModalOpen(true);
+        }}
+      />
+
+      <DespacharPedidoModal
+        open={despachoModalOpen}
+        pedido={pedidoADespachar}
+        onClose={() => {
+          setDespachoModalOpen(false);
+          setPedidoADespachar(null);
+        }}
+        onSuccess={cargarPedidos}
       />
     </ModulePageLayout>
   );

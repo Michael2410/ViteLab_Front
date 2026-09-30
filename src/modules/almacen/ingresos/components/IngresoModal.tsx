@@ -7,7 +7,6 @@ import {
   Select,
   DatePicker,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -21,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { ingresosApi } from '../ingresos.api';
 import { almacenApi } from '../../shared/almacen.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
@@ -459,7 +459,7 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
           </Button>
         </div>
 
-        <Table<LineaForm>
+        <GlobalTable<LineaForm>
           rowKey="key"
           columns={columns}
           dataSource={lineas}

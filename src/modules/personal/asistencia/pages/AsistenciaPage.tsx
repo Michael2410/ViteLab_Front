@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  Table,
   Button,
   Tag,
   Space,
@@ -12,7 +11,6 @@ import {
 } from 'antd';
 import {
   ClockCircleOutlined,
-  PlusOutlined,
   SearchOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -23,7 +21,8 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useAsistenciaList,
@@ -261,6 +260,15 @@ export default function AsistenciaPage() {
       title: 'Condición / Estado',
       key: 'estado',
       align: 'center',
+      filters: [
+        { text: 'Presente', value: 'PRESENTE' },
+        { text: 'Tardanza', value: 'TARDANZA' },
+        { text: 'Falta Justificada / Licencia', value: 'FALTA_JUSTIFICADA' },
+        { text: 'Falta Injustificada', value: 'FALTA_INJUSTIFICADA' },
+      ],
+      filteredValue: filterEstado !== 'TODOS' ? [filterEstado] : null,
+      filterMultiple: false,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, r) => getEstadoBadge(r.estado, r.minutos_tardanza),
     },
     {
@@ -330,11 +338,21 @@ export default function AsistenciaPage() {
       subtitle="Monitoreo de puntualidad, control horario de entradas y salidas, justificación de inasistencias y permisos"
       wrapInTableCard={false}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleNuevo}>
-            Registrar Asistencia
-          </BrandCreateButton>
-        ) : undefined
+        <Space size="middle" wrap>
+          <Input
+            placeholder="Buscar por colaborador o documento..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          {canCreate && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Registrar Asistencia
+            </BrandCreateButton>
+          )}
+        </Space>
       }
     >
       {/* Tarjetas interactivas de estadísticas y filtros de asistencia */}
@@ -527,7 +545,7 @@ export default function AsistenciaPage() {
         </div>
       </div>
 
-      {/* Barra de Búsqueda y Fecha */}
+      {/* Barra de Fecha */}
       <div
         style={{
           display: 'flex',
@@ -583,19 +601,11 @@ export default function AsistenciaPage() {
             </Button>
           )}
         </Space>
-
-        <Input
-          placeholder="Buscar por colaborador o documento..."
-          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          allowClear
-          style={{ width: 280, ...brandSearchStyle }}
-        />
       </div>
 
       {/* Tabla Libre */}
-      <Table
+      <GlobalTable<RegistroAsistencia>
+        resourceName="personal-asistencia"
         columns={columns}
         dataSource={asistencias}
         rowKey="id"
@@ -604,9 +614,13 @@ export default function AsistenciaPage() {
           pageSize: 10,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total) => `Total ${total} registros`,
+          showTotal: (total) => `Total: ${total} registros`,
         }}
         locale={{ emptyText: 'No hay registros de asistencia para los filtros seleccionados' }}
+        onChange={(_pagination, tableFilters) => {
+          const est = tableFilters.estado;
+          setFilterEstado(est && est.length > 0 ? (est[0] as string) : 'TODOS');
+        }}
       />
 
       {/* Modal Registro / Edición */}

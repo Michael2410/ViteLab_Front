@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   Space,
   Tag,
   Switch,
@@ -16,7 +14,8 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { productosApi } from '../productos.api';
 import { almacenApi } from '../../shared/almacen.api';
@@ -113,6 +112,23 @@ export default function ProductosListPage() {
     }
   };
 
+  const handleTableChange = (pagination: any, tableFilters: any) => {
+    setPage(pagination.current || 1);
+    setLimit(pagination.pageSize || limit);
+
+    const catVal = tableFilters.categoria_nombre?.[0];
+    setCategoriaId(catVal !== undefined && catVal !== null ? Number(catVal) : undefined);
+
+    const actVal = tableFilters.activo?.[0];
+    if (actVal === 'true') {
+      setActivoFilter(true);
+    } else if (actVal === 'false') {
+      setActivoFilter(false);
+    } else {
+      setActivoFilter(undefined);
+    }
+  };
+
   const columns: ColumnsType<Producto> = [
     {
       title: 'Código',
@@ -142,6 +158,10 @@ export default function ProductosListPage() {
       dataIndex: 'categoria_nombre',
       key: 'categoria_nombre',
       width: 240,
+      filters: categorias.map((c) => ({ text: c.nombre, value: c.id })),
+      filterMultiple: false,
+      filteredValue: categoriaId !== undefined ? [categoriaId] : null,
+      filterIcon: renderTableFilterIcon,
       render: (val: string | null) => val || <Text type="secondary">—</Text>,
     },
     {
@@ -202,6 +222,13 @@ export default function ProductosListPage() {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: 'true' },
+        { text: 'Inactivo', value: 'false' },
+      ],
+      filterMultiple: false,
+      filteredValue: activoFilter === undefined ? null : [activoFilter ? 'true' : 'false'],
+      filterIcon: renderTableFilterIcon,
       render: (activo: boolean, record) => (
         <Switch
           checked={activo}
@@ -239,86 +266,42 @@ export default function ProductosListPage() {
       title="Catálogo de Productos"
       subtitle={`Reactivos, materiales, insumos y calibradores (${total} registrados)`}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleCrear}>
-            Nuevo Producto
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por código o nombre..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onPressEnter={() => {
-                setPage(1);
-                cargarProductos();
-              }}
-              style={{ width: 280, ...brandSearchStyle }}
-              allowClear
-            />
-
-            <Select
-              placeholder="Todas las categorías"
-              allowClear
-              value={categoriaId}
-              onChange={(val) => {
-                setCategoriaId(val);
-                setPage(1);
-              }}
-              style={{ width: 210, ...brandControlStyle }}
-              options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
-            />
-
-            <Select
-              value={activoFilter === undefined ? 'todos' : activoFilter ? 'activos' : 'inactivos'}
-              onChange={(val) => {
-                setActivoFilter(val === 'todos' ? undefined : val === 'activos');
-                setPage(1);
-              }}
-              style={{ width: 160, ...brandControlStyle }}
-              options={[
-                { value: 'activos', label: 'Solo Activos' },
-                { value: 'inactivos', label: 'Solo Inactivos' },
-                { value: 'todos', label: 'Todos los estados' },
-              ]}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total productos: <strong style={{ color: '#0f172a' }}>{total}</strong>
-          </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Buscar por código o nombre..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onPressEnter={() => {
+              setPage(1);
+              cargarProductos();
+            }}
+            style={{ width: 260, ...brandSearchStyle }}
+            allowClear
+          />
+          {canCreate && (
+            <BrandCreateButton onClick={handleCrear}>
+              Nuevo Producto
+            </BrandCreateButton>
+          )}
         </div>
       }
     >
-      <Table<Producto>
+      <GlobalTable<Producto>
+        resourceName="productos"
         rowKey="id"
         columns={columns}
         dataSource={productos}
         loading={loading}
-        scroll={{ x: 'max-content' }}
+        onChange={handleTableChange}
         pagination={{
           current: page,
           pageSize: limit,
           total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
           onChange: (p, l) => {
             setPage(p);
             setLimit(l);
           },
-          showTotal: (tot) => `Total: ${tot} productos`,
         }}
       />
 

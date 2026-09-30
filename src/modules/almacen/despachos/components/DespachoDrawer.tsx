@@ -5,7 +5,6 @@ import {
   Select,
   DatePicker,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -18,6 +17,7 @@ import {
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { despachosApi } from '../despachos.api';
 import { stockApi } from '../../stock/stock.api';
 import { personalApi } from '../../../personal/api';
@@ -365,7 +365,8 @@ export default function DespachoDrawer({ open, onClose, onSuccess }: DespachoDra
           </Button>
         </div>
 
-        <Table
+        <GlobalTable<LineaDespacho>
+          rowKey="key"
           dataSource={lineas}
           columns={columns}
           pagination={false}

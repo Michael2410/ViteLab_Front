@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   Tag,
   Space,
   Avatar,
@@ -46,8 +44,8 @@ import { DarDeBajaModal } from '../components/DarDeBajaModal';
 import { HistorialLaboralDrawer } from '../components/HistorialLaboralDrawer';
 import { ExpedienteColaboradorDrawer } from '../components/ExpedienteColaboradorDrawer';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
-import { BrandCreateButton } from '../../../../shared/components/BrandCreateButton';
-import { brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 
 export default function PersonalPage() {
   const { modal } = App.useApp();
@@ -230,6 +228,10 @@ export default function PersonalPage() {
     {
       title: 'Cargo & Área',
       key: 'cargo',
+      filters: areaFilterOptions.map((a) => ({ text: a.label, value: a.value })),
+      filteredValue: filters.area ? [filters.area] : null,
+      filterMultiple: false,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, record) => (
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
@@ -271,7 +273,14 @@ export default function PersonalPage() {
     {
       title: 'Estado',
       key: 'activo',
-      width: 140,
+      width: 150,
+      filters: [
+        { text: 'Solo Activos', value: true },
+        { text: 'Cesados / Inactivos', value: false },
+      ],
+      filteredValue: filters.activo !== undefined ? [filters.activo] : null,
+      filterMultiple: false,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, record) => {
         if (record.activo) {
           return (
@@ -480,47 +489,36 @@ export default function PersonalPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Top Banner / Actions */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 16,
-      }}>
-        <div>
-          <h1 style={{
-            fontSize: 22,
-            fontWeight: 800,
-            color: '#0f172a',
-            margin: '0 0 4px',
-            letterSpacing: '-0.02em',
-          }}>
-            Directorio de Personal & Talento
-          </h1>
-          <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-            Gestión integral de colaboradores, expedientes laborales, cargos y firmas médicas de resultados
-          </p>
-        </div>
-
-        {canCreate && (
-          <Space size="middle">
+    <ModulePageLayout
+      title="Directorio de Personal & Talento"
+      subtitle="Gestión integral de colaboradores, expedientes laborales, cargos y firmas médicas de resultados"
+      actionButton={
+        <Space size="middle" wrap>
+          <Input
+            placeholder="Buscar por nombre, documento o email..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={filters.search}
+            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+            style={{ width: 280, ...brandSearchStyle }}
+          />
+          {canCreate && (
             <BrandCreateButton
               icon={<UserAddOutlined />}
               onClick={handleOpenCreate}
             >
               Nuevo Colaborador
             </BrandCreateButton>
-          </Space>
-        )}
-      </div>
-
-      {/* Statistics Cards (Blanco / Azul / Menta / Violeta) */}
+          )}
+        </Space>
+      }
+    >
+      {/* Statistics Cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
         gap: 16,
+        marginBottom: 20,
       }}>
         <div style={{
           backgroundColor: '#ffffff',
@@ -655,74 +653,9 @@ export default function PersonalPage() {
         </div>
       </div>
 
-      {/* Filters Toolbar */}
-      <div style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: 12,
-        padding: '12px 16px',
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 12,
-        alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-      }}>
-        <Input
-          placeholder="Buscar por nombre, documento o email..."
-          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-          allowClear
-          value={filters.search}
-          onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-          style={{ width: 280, ...brandSearchStyle }}
-        />
-
-        <Select
-          placeholder="Estado colaborador"
-          allowClear
-          value={filters.activo}
-          onChange={(val) => setFilters((prev) => ({ ...prev, activo: val }))}
-          options={[
-            { label: 'Solo Activos', value: true },
-            { label: 'Cesados / Inactivos', value: false },
-          ]}
-          style={{ width: 160, ...brandControlStyle }}
-        />
-
-        <Select
-          placeholder="Filtrar por cargo"
-          allowClear
-          showSearch
-          value={filters.cargo}
-          onChange={(val) => setFilters((prev) => ({ ...prev, cargo: val }))}
-          options={cargoFilterOptions}
-          optionFilterProp="label"
-          style={{ width: 180, ...brandControlStyle }}
-        />
-
-        <Select
-          placeholder="Filtrar por área"
-          allowClear
-          showSearch
-          value={filters.area}
-          onChange={(val) => setFilters((prev) => ({ ...prev, area: val }))}
-          options={areaFilterOptions}
-          optionFilterProp="label"
-          style={{ width: 180, ...brandControlStyle }}
-        />
-
-        {(filters.search || filters.cargo || filters.area || filters.activo !== undefined) && (
-          <Button
-            type="link"
-            onClick={() => setFilters({})}
-            style={{ color: '#0284c7', fontSize: 12, padding: 0, fontWeight: 500 }}
-          >
-            Limpiar filtros
-          </Button>
-        )}
-      </div>
-
       {/* Main Table Libre */}
-      <Table
+      <GlobalTable<Personal>
+        resourceName="personal-directorio"
         columns={columns}
         dataSource={personalList}
         rowKey="id"
@@ -731,9 +664,18 @@ export default function PersonalPage() {
           pageSize: 10,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total) => `Total ${total} colaboradores`,
+          showTotal: (total) => `Total: ${total} colaboradores`,
         }}
         locale={{ emptyText: 'No se encontraron colaboradores' }}
+        onChange={(_pagination, tableFilters) => {
+          const area = tableFilters.cargo;
+          const activo = tableFilters.activo;
+          setFilters((prev) => ({
+            ...prev,
+            area: area && area.length > 0 ? (area[0] as string) : undefined,
+            activo: activo && activo.length > 0 ? (activo[0] as boolean) : undefined,
+          }));
+        }}
       />
 
       {/* Form Drawer */}
@@ -773,6 +715,6 @@ export default function PersonalPage() {
           setPersonalParaExpediente(null);
         }}
       />
-    </div>
+    </ModulePageLayout>
   );
 }

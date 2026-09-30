@@ -1,6 +1,8 @@
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Input, message } from 'antd';
+import { Modal, Descriptions, Tag, Typography, Button, Space, Input, message } from 'antd';
+import { SendOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import type { Pedido, ItemPedidoDetalle } from '../pedidos.types';
 import { pedidosApi } from '../pedidos.api';
 
@@ -13,6 +15,7 @@ interface PedidoDetalleModalProps {
   onSuccess?: () => void;
   canApprove?: boolean;
   canAnular?: boolean;
+  onDespachar?: (pedido: Pedido) => void;
 }
 
 export default function PedidoDetalleModal({
@@ -22,6 +25,7 @@ export default function PedidoDetalleModal({
   onSuccess,
   canApprove = false,
   canAnular = false,
+  onDespachar,
 }: PedidoDetalleModalProps) {
   const [procesando, setProcesando] = useState(false);
   const [mostrarRechazo, setMostrarRechazo] = useState(false);
@@ -181,10 +185,42 @@ export default function PedidoDetalleModal({
                 <Button type="primary" onClick={handleAprobar} loading={procesando}>
                   Aprobar Pedido
                 </Button>
+                {onDespachar && (
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={() => {
+                      onDespachar(pedido);
+                      onClose();
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
+                      borderColor: '#0284c7',
+                    }}
+                  >
+                    Aprobar y Despachar
+                  </Button>
+                )}
                 <Button danger onClick={() => setMostrarRechazo(true)}>
                   Rechazar
                 </Button>
               </>
+            )}
+            {canApprove && ['APROBADO', 'ATENDIDO_PARCIAL'].includes(pedido.estado) && onDespachar && (
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={() => {
+                  onDespachar(pedido);
+                  onClose();
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
+                  borderColor: '#0284c7',
+                }}
+              >
+                Despachar Entrega
+              </Button>
             )}
             {canAnular && ['PENDIENTE', 'APROBADO'].includes(pedido.estado) && !mostrarAnulacion && (
               <Button danger onClick={() => setMostrarAnulacion(true)}>
@@ -287,7 +323,7 @@ export default function PedidoDetalleModal({
         <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
           Ítems del Pedido
         </Text>
-        <Table
+        <GlobalTable<ItemPedidoDetalle>
           dataSource={pedido.items || []}
           columns={columns}
           rowKey="id"

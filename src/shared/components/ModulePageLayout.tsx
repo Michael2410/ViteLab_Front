@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 export { BrandCreateButton, type BrandCreateButtonProps } from './BrandCreateButton';
+export { renderTableFilterIcon } from '../utils/table.utils';
 
 export const brandButtonStyle: React.CSSProperties = {
   background: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
@@ -22,7 +23,17 @@ export const brandControlStyle: React.CSSProperties = {
 
 export const brandSearchStyle: React.CSSProperties = {
   ...brandControlStyle,
-  borderColor: '#cbd5e1',
+  height: '38px',
+  minWidth: '280px',
+  borderRadius: '10px',
+  border: '1.5px solid #E2E8F0',
+  backgroundColor: '#FFFFFF',
+  padding: '8px 16px 8px 38px',
+  fontSize: '14px',
+  color: '#334155',
+  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+  outline: 'none',
+  transition: 'all 0.2s ease-in-out',
 };
 
 export interface ModulePageLayoutProps {

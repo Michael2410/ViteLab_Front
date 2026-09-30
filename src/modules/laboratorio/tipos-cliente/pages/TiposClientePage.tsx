@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
   Typography,
@@ -24,17 +23,21 @@ import {
 import { useAuthStore } from '../../../auth/hooks';
 import { TipoClienteFormModal } from '../components/TipoClienteFormModal';
 import type { TipoCliente, CreateTipoClienteInput, UpdateTipoClienteInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
 interface TiposClientePageProps {
   isTab?: boolean;
   createTrigger?: number;
+  externalSearch?: string;
 }
 
-export const TiposClientePage = ({ isTab = false, createTrigger }: TiposClientePageProps) => {
-  const [searchText, setSearchText] = useState('');
+export const TiposClientePage = ({ isTab = false, createTrigger, externalSearch }: TiposClientePageProps) => {
+  const [internalSearchText, setInternalSearchText] = useState('');
+  const searchText = isTab && externalSearch !== undefined ? externalSearch : internalSearchText;
+  const setSearchText = setInternalSearchText;
   const [modalOpen, setModalOpen] = useState(false);
   const [tipoClienteSeleccionado, setTipoClienteSeleccionado] = useState<TipoCliente | null>(null);
 
@@ -115,8 +118,14 @@ export const TiposClientePage = ({ isTab = false, createTrigger }: TiposClienteP
       title: 'Estado',
       dataIndex: 'activo',
       key: 'activo',
-      width: 150,
+      width: 140,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record) => record.activo === value,
       render: (activo: boolean, record: TipoCliente) => (
         <Switch
           checked={activo}
@@ -165,114 +174,15 @@ export const TiposClientePage = ({ isTab = false, createTrigger }: TiposClienteP
     },
   ];
 
-  if (isTab) {
-    return (
-      <div style={{ paddingTop: 8 }}>
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 16,
-            flexWrap: 'wrap',
-            gap: 12,
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-          }}
-        >
-          <Input
-            placeholder="Buscar por tipo de cliente..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280, ...brandSearchStyle }}
-          />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{tiposClienteFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={tiposClienteFiltrados || []}
-          rowKey="id"
-          loading={isLoading}
-          scroll={{ x: 800 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} tipos de cliente`,
-          }}
-        />
-
-        <TipoClienteFormModal
-          open={modalOpen}
-          tipoCliente={tipoClienteSeleccionado}
-          onCancel={() => {
-            setModalOpen(false);
-            setTipoClienteSeleccionado(null);
-          }}
-          onSubmit={handleSubmitForm}
-          loading={crearTipoClienteMutation.isPending || actualizarTipoClienteMutation.isPending}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <ModulePageLayout
-      title="Tipos de Cliente"
-      subtitle="Clasificación comercial y tarifaria de clientes (Particular, Convenios, Empresas)"
-      actionButton={
-        hasPermission('catalogs.tipos-cliente.create') && (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nuevo Tipo
-          </BrandCreateButton>
-        )
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <Input
-            placeholder="Buscar por tipo de cliente..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280, ...brandSearchStyle }}
-          />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{tiposClienteFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
-      }
-    >
-      <Table
+  const content = (
+    <div style={{ paddingTop: isTab ? 4 : 0 }}>
+      <GlobalTable
         columns={columns}
         dataSource={tiposClienteFiltrados || []}
-        rowKey="id"
         loading={isLoading}
-        scroll={{ x: 800 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} tipos de cliente`,
-        }}
+        resourceName="tipos de cliente"
       />
 
-      {/* Modal */}
       <TipoClienteFormModal
         open={modalOpen}
         tipoCliente={tipoClienteSeleccionado}
@@ -283,6 +193,37 @@ export const TiposClientePage = ({ isTab = false, createTrigger }: TiposClienteP
         onSubmit={handleSubmitForm}
         loading={crearTipoClienteMutation.isPending || actualizarTipoClienteMutation.isPending}
       />
+    </div>
+  );
+
+  if (isTab) {
+    return content;
+  }
+
+  return (
+    <ModulePageLayout
+      title="Tipos de Cliente"
+      subtitle="Clasificación comercial y tarifaria de clientes (Particular, Convenios, Empresas)"
+      actionButton={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Buscar por tipo de cliente..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 250, ...brandSearchStyle }}
+          />
+          {hasPermission('catalogs.tipos-cliente.create') && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Nuevo Tipo
+            </BrandCreateButton>
+          )}
+        </div>
+      }
+    >
+      {content}
     </ModulePageLayout>
   );
 };
+

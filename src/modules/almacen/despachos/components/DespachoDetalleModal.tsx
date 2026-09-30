@@ -1,6 +1,7 @@
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Input, message } from 'antd';
+import { Modal, Descriptions, Tag, Typography, Button, Space, Input, message } from 'antd';
 import { useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import type { Despacho, DespachoItem } from '../despachos.types';
 import { despachosApi } from '../despachos.api';
 
@@ -171,7 +172,7 @@ export default function DespachoDetalleModal({
         <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
           Ítems Despachados
         </Text>
-        <Table
+        <GlobalTable<DespachoItem>
           dataSource={despacho.items || []}
           columns={columns}
           rowKey="id"

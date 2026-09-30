@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
   Select,
@@ -23,7 +22,8 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, brandControlStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { custodiaApi } from '../custodia.api';
 import { personalApi } from '../../../personal/api';
@@ -197,7 +197,18 @@ export default function CustodiaPage() {
     {
       title: 'Vencimiento',
       key: 'vencimiento',
-      width: 150,
+      width: 170,
+      filters: [
+        { text: 'Por Vencer (≤30 d)', value: 'POR_VENCER' },
+        { text: 'Vencidos', value: 'VENCIDO' },
+        { text: 'Normal', value: 'NORMAL' },
+      ],
+      filterMultiple: false,
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, r) => {
+        if (value === 'NORMAL') return r.estado_vencimiento !== 'VENCIDO' && r.estado_vencimiento !== 'POR_VENCER';
+        return r.estado_vencimiento === value;
+      },
       render: (_, r) => {
         if (!r.fecha_vencimiento) return <Text type="secondary">-</Text>;
         let color = 'cyan';
@@ -271,7 +282,15 @@ export default function CustodiaPage() {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 110,
+      width: 130,
+      align: 'center',
+      filters: [
+        { text: 'Registrado', value: 'REGISTRADO' },
+        { text: 'Anulado', value: 'ANULADO' },
+      ],
+      filterMultiple: false,
+      filterIcon: renderTableFilterIcon,
+      onFilter: (val, r) => r.estado === val,
       render: (v) => <Tag color={v === 'REGISTRADO' ? 'green' : 'red'}>{v}</Tag>,
     },
   ];
@@ -312,7 +331,15 @@ export default function CustodiaPage() {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 110,
+      width: 130,
+      align: 'center',
+      filters: [
+        { text: 'Registrado', value: 'REGISTRADO' },
+        { text: 'Anulado', value: 'ANULADO' },
+      ],
+      filterMultiple: false,
+      filterIcon: renderTableFilterIcon,
+      onFilter: (val, r) => r.estado === val,
       render: (v) => <Tag color={v === 'REGISTRADO' ? 'green' : 'red'}>{v}</Tag>,
     },
   ];
@@ -324,23 +351,58 @@ export default function CustodiaPage() {
       title="Custodia Personal & Consumos"
       subtitle={currentTabConfig.description}
       actionButton={
-        canCreateConsumo ? (
-          <Space>
-            <BrandCreateButton
-              icon={<ShoppingOutlined />}
-              onClick={() => setConsumoDrawerOpen(true)}
-            >
-              Registrar Consumo
-            </BrandCreateButton>
-            <Button
-              icon={<RollbackOutlined />}
-              onClick={() => setDevolucionDrawerOpen(true)}
-              style={{ height: 38, borderRadius: 8 }}
-            >
-              Devolver a Almacén
-            </Button>
-          </Space>
-        ) : undefined
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {canViewAllPersonal && (
+            <Select
+              placeholder="Ver inventario de: (Todo el personal)"
+              value={selectedPersonalId}
+              onChange={(val) => {
+                setSelectedPersonalId(val);
+                setPageCustodia(1);
+              }}
+              style={{ width: 250, ...brandControlStyle }}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={personalList.map((p) => ({
+                value: p.id,
+                label: `${p.nombres} ${p.apellidos} (${p.numero_documento || 'Sin doc'})`,
+              }))}
+            />
+          )}
+
+          {activeTab === 'custodia' && (
+            <Input
+              placeholder="Buscar código, nombre o lote..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              value={searchCustodia}
+              onChange={(e) => {
+                setSearchCustodia(e.target.value);
+                setPageCustodia(1);
+              }}
+              style={{ width: 240, ...brandSearchStyle }}
+              allowClear
+            />
+          )}
+
+          {canCreateConsumo && (
+            <Space>
+              <BrandCreateButton
+                icon={<ShoppingOutlined />}
+                onClick={() => setConsumoDrawerOpen(true)}
+              >
+                Registrar Consumo
+              </BrandCreateButton>
+              <Button
+                icon={<RollbackOutlined />}
+                onClick={() => setDevolucionDrawerOpen(true)}
+                style={{ height: 38, borderRadius: 8 }}
+              >
+                Devolver a Almacén
+              </Button>
+            </Space>
+          )}
+        </div>
       }
       extraHeader={
         <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
@@ -361,56 +423,6 @@ export default function CustodiaPage() {
               ),
             }))}
           />
-        </div>
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {canViewAllPersonal && (
-              <Select
-                placeholder="Ver inventario de: (Todo el personal)"
-                value={selectedPersonalId}
-                onChange={(val) => {
-                  setSelectedPersonalId(val);
-                  setPageCustodia(1);
-                }}
-                style={{ width: 280, ...brandControlStyle }}
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                options={personalList.map((p) => ({
-                  value: p.id,
-                  label: `${p.nombres} ${p.apellidos} (${p.numero_documento || 'Sin doc'})`,
-                }))}
-              />
-            )}
-
-            <Input
-              placeholder="Buscar por código, nombre o lote..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={searchCustodia}
-              onChange={(e) => {
-                setSearchCustodia(e.target.value);
-                setPageCustodia(1);
-              }}
-              style={{ width: 280, ...brandSearchStyle }}
-              allowClear
-            />
-          </div>
-          {activeTab === 'custodia' && (
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Total en custodia: <strong style={{ color: '#0f172a' }}>{totalCustodia}</strong>
-            </Text>
-          )}
         </div>
       }
     >
@@ -451,7 +463,8 @@ export default function CustodiaPage() {
       </Row>
 
       {activeTab === 'custodia' && (
-        <Table
+        <GlobalTable<ItemCustodia>
+          resourceName="ítems en custodia"
           dataSource={itemsCustodia}
           columns={columnsCustodia}
           rowKey="id"
@@ -466,7 +479,8 @@ export default function CustodiaPage() {
       )}
 
       {activeTab === 'consumos' && (
-        <Table
+        <GlobalTable<Consumo>
+          resourceName="consumos"
           dataSource={consumos}
           columns={columnsConsumos}
           rowKey="id"
@@ -476,7 +490,8 @@ export default function CustodiaPage() {
       )}
 
       {activeTab === 'devoluciones' && (
-        <Table
+        <GlobalTable<Devolucion>
+          resourceName="devoluciones"
           dataSource={devoluciones}
           columns={columnsDevoluciones}
           rowKey="id"

@@ -4,23 +4,25 @@ import { Popover, Tooltip, Tag } from 'antd';
 import { ArrowRightOutlined } from '@ant-design/icons';
 import { IconResultados, IconAlmacen, IconPersonal, IconConfiguracion, IconApps } from '../../assets/icons/NavIcons';
 import { usePermissions } from './PermissionGuard';
+import { useAuthStore } from '../../modules/auth/hooks';
 
 export const AppSwitcher: React.FC = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
+  const { hasAnyPermission, isSuperAdmin, isAdmin } = usePermissions();
+  const { user } = useAuthStore();
 
   const currentPath = location.pathname;
 
-  const canAccessConfig = isSuperAdmin || hasAnyPermission([
+  const canAccessConfig = isSuperAdmin || isAdmin || Boolean(user?.permisos?.some((p: string) => p.startsWith('auth.') || p.startsWith('catalogs.') || p.startsWith('settings.'))) || hasAnyPermission([
     'auth.users.read',
     'auth.roles.read',
     'catalogs.sedes.read',
     'settings.read',
   ]);
 
-  const canAccessPersonal = isSuperAdmin || hasAnyPermission([
+  const canAccessPersonal = isSuperAdmin || isAdmin || Boolean(user?.permisos?.some((p: string) => p.startsWith('personal.'))) || hasAnyPermission([
     'personal.directorio.read',
     'personal.contratos.read',
     'personal.catalogos.read',
@@ -29,13 +31,19 @@ export const AppSwitcher: React.FC = () => {
     'personal.documentos.read',
   ]);
 
-  const canAccessAlmacen = isSuperAdmin || hasAnyPermission([
+  const canAccessAlmacen = isSuperAdmin || isAdmin || Boolean(user?.permisos?.some((p: string) => p.startsWith('almacen.'))) || hasAnyPermission([
     'almacen.dashboard.read',
     'almacen.productos.read',
     'almacen.proveedores.read',
     'almacen.maestros.read',
     'almacen.stock.read',
     'almacen.ingresos.read',
+    'almacen.pedidos.read',
+    'almacen.despachos.read',
+    'almacen.movimientos.read',
+    'almacen.ajustes.read',
+    'almacen.custodia.read',
+    'almacen.consumos.read',
   ]);
 
   interface ModuleItem {

@@ -4,7 +4,6 @@ import {
   Form,
   Select,
   Button,
-  Table,
   Space,
   Row,
   Col,
@@ -16,6 +15,7 @@ import {
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { pedidosApi } from '../pedidos.api';
 import { productosApi } from '../../productos/productos.api';
 import { personalApi } from '../../../personal/api';
@@ -315,7 +315,8 @@ export default function PedidoDrawer({ open, onClose, onSuccess }: PedidoDrawerP
           </Button>
         </div>
 
-        <Table
+        <GlobalTable<LineaPedido>
+          rowKey="key"
           dataSource={lineas}
           columns={columns}
           pagination={false}

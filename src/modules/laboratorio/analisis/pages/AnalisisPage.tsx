@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
   Typography,
@@ -28,17 +27,21 @@ import { useAuthStore } from '../../../auth/hooks';
 import { obtenerAnalisisPorId } from '../api';
 import { AnalisisFormModal } from '../components/AnalisisFormModal';
 import type { Analisis, CreateAnalisisInput, UpdateAnalisisInput } from '../types';
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 
 const { Text } = Typography;
 
 interface AnalisisPageProps {
   isTab?: boolean;
   createTrigger?: number;
+  externalSearch?: string;
 }
 
-export const AnalisisPage = ({ isTab = false, createTrigger }: AnalisisPageProps) => {
-  const [searchText, setSearchText] = useState('');
+export const AnalisisPage = ({ isTab = false, createTrigger, externalSearch }: AnalisisPageProps) => {
+  const [internalSearchText, setInternalSearchText] = useState('');
+  const searchText = isTab && externalSearch !== undefined ? externalSearch : internalSearchText;
+  const setSearchText = setInternalSearchText;
   const [modalOpen, setModalOpen] = useState(false);
   const [analisisSeleccionado, setAnalisisSeleccionado] = useState<Analisis | null>(null);
 
@@ -171,8 +174,14 @@ export const AnalisisPage = ({ isTab = false, createTrigger }: AnalisisPageProps
       title: 'Estado',
       dataIndex: 'activo',
       key: 'activo',
-      width: 120,
+      width: 130,
       align: 'center',
+      filters: [
+        { text: 'Activo', value: true },
+        { text: 'Inactivo', value: false },
+      ],
+      filterIcon: renderTableFilterIcon,
+      onFilter: (value, record: Analisis) => record.activo === value,
       render: (activo: boolean, record: Analisis) => (
         <Switch
           checked={activo}
@@ -222,48 +231,12 @@ export const AnalisisPage = ({ isTab = false, createTrigger }: AnalisisPageProps
   ];
 
   const content = (
-    <>
-      {isTab && (
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12,
-            marginBottom: 16,
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.02)',
-          }}
-        >
-          <Input
-            placeholder="Buscar por nombre o sinónimos..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 320, ...brandSearchStyle }}
-          />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{analisisFiltrados?.length ?? 0}</strong>
-          </Text>
-        </div>
-      )}
-
-      <Table
+    <div style={{ paddingTop: isTab ? 4 : 0 }}>
+      <GlobalTable
         columns={columns}
         dataSource={analisisFiltrados || []}
-        rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1400 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} análisis`,
-        }}
+        resourceName="análisis"
       />
 
       {/* Modal */}
@@ -280,11 +253,11 @@ export const AnalisisPage = ({ isTab = false, createTrigger }: AnalisisPageProps
           actualizarAnalisisMutation.isPending
         }
       />
-    </>
+    </div>
   );
 
   if (isTab) {
-    return <div style={{ paddingTop: 8 }}>{content}</div>;
+    return content;
   }
 
   return (
@@ -292,34 +265,20 @@ export const AnalisisPage = ({ isTab = false, createTrigger }: AnalisisPageProps
       title="Análisis Clínicos"
       subtitle="Gestión de pruebas, catálogo maestro de exámenes y componentes asociados"
       actionButton={
-        hasPermission('catalogs.analysis.create') && (
-          <BrandCreateButton onClick={handleNuevo}>
-            Nuevo Análisis
-          </BrandCreateButton>
-        )
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Input
             placeholder="Buscar por nombre o sinónimos..."
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 320, ...brandSearchStyle }}
+            style={{ width: 280, ...brandSearchStyle }}
           />
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total registros: <strong style={{ color: '#0f172a' }}>{analisisFiltrados?.length ?? 0}</strong>
-          </Text>
+          {hasPermission('catalogs.analysis.create') && (
+            <BrandCreateButton onClick={handleNuevo}>
+              Nuevo Análisis
+            </BrandCreateButton>
+          )}
         </div>
       }
     >

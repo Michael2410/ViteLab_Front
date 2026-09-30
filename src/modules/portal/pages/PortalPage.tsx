@@ -9,23 +9,24 @@ import {
 } from '@ant-design/icons';
 import { useAuthStore } from '../../auth/hooks';
 import { usePermissions } from '../../../shared/components/PermissionGuard';
+import { getUserInitials } from '../../../shared/utils/user.utils';
 import viteLogo from '../../../assets/logo/logo.png';
 import { IconResultados, IconAlmacen, IconPersonal, IconConfiguracion } from '../../../assets/icons/NavIcons';
 
 export default function PortalPage() {
   const navigate = useNavigate();
   const { user, clearAuth } = useAuthStore();
-  const { hasAnyPermission, isSuperAdmin } = usePermissions();
+  const { hasAnyPermission, isSuperAdmin, isAdmin } = usePermissions();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const canAccessConfig = isSuperAdmin || hasAnyPermission([
+  const canAccessConfig = isSuperAdmin || isAdmin || Boolean(user?.permisos?.some((p: string) => p.startsWith('auth.') || p.startsWith('catalogs.') || p.startsWith('settings.'))) || hasAnyPermission([
     'auth.users.read',
     'auth.roles.read',
     'catalogs.sedes.read',
     'settings.read',
   ]);
 
-  const canAccessPersonal = isSuperAdmin || hasAnyPermission([
+  const canAccessPersonal = isSuperAdmin || isAdmin || Boolean(user?.permisos?.some((p: string) => p.startsWith('personal.'))) || hasAnyPermission([
     'personal.directorio.read',
     'personal.contratos.read',
     'personal.catalogos.read',
@@ -34,13 +35,19 @@ export default function PortalPage() {
     'personal.documentos.read',
   ]);
 
-  const canAccessAlmacen = isSuperAdmin || hasAnyPermission([
+  const canAccessAlmacen = isSuperAdmin || isAdmin || Boolean(user?.permisos?.some((p: string) => p.startsWith('almacen.'))) || hasAnyPermission([
     'almacen.dashboard.read',
     'almacen.productos.read',
     'almacen.proveedores.read',
     'almacen.maestros.read',
     'almacen.stock.read',
     'almacen.ingresos.read',
+    'almacen.pedidos.read',
+    'almacen.despachos.read',
+    'almacen.movimientos.read',
+    'almacen.ajustes.read',
+    'almacen.custodia.read',
+    'almacen.consumos.read',
   ]);
 
   const handleLogout = () => {
@@ -50,7 +57,7 @@ export default function PortalPage() {
     navigate('/login');
   };
 
-  // Mismo menú desglosable que en los otros layouts
+  // Menú desglosable completo en el header
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'user-info',
@@ -66,6 +73,33 @@ export default function PortalPage() {
           </Tag>
         </div>
       ),
+    },
+    { type: 'divider' },
+    {
+      key: 'laboratorio',
+      label: 'Laboratorio Clínico',
+      onClick: () => navigate('/dashboard'),
+    },
+    {
+      key: 'almacen',
+      label: 'Almacén & Logística',
+      onClick: () => navigate('/almacen'),
+    },
+    {
+      key: 'personal',
+      label: 'Personal & RRHH',
+      onClick: () => navigate('/personal'),
+    },
+    {
+      key: 'configuracion',
+      label: 'Configuración & Seguridad',
+      onClick: () => navigate('/configuracion/usuarios'),
+    },
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Mi Perfil',
+      onClick: () => navigate('/perfil'),
     },
     { type: 'divider' },
     {
@@ -186,14 +220,16 @@ export default function PortalPage() {
           >
             <Avatar
               size={32}
-              icon={<UserOutlined />}
               style={{
                 background: 'linear-gradient(135deg, #10b981 0%, #2563eb 100%)',
                 boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
                 marginRight: 10,
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: 13,
               }}
             >
-              {user?.nombres?.charAt(0)?.toUpperCase()}
+              {getUserInitials(user)}
             </Avatar>
             <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>

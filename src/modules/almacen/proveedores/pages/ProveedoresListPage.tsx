@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
   Button,
   Input,
-  Select,
   Space,
   Switch,
   Tooltip,
@@ -17,7 +15,8 @@ import {
   MailOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { ModulePageLayout, BrandCreateButton, brandSearchStyle, brandControlStyle } from '../../../../shared/components/ModulePageLayout';
+import { ModulePageLayout, BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { proveedoresApi } from '../proveedores.api';
 import type { Proveedor } from '../proveedores.types';
@@ -159,6 +158,13 @@ export default function ProveedoresListPage() {
       key: 'activo',
       width: 140,
       align: 'center',
+      filters: [
+        { text: 'Solo Activos', value: 'true' },
+        { text: 'Solo Inactivos', value: 'false' },
+      ],
+      filteredValue: activoFilter === undefined ? null : [String(activoFilter)],
+      filterMultiple: false,
+      filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (activo: boolean, record) => (
         <Switch
           checked={activo}
@@ -196,64 +202,32 @@ export default function ProveedoresListPage() {
       title="Directorio de Proveedores"
       subtitle={`Proveedores registrados para suministro de reactivos, insumos y equipos (${total} registros)`}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleCrear}>
-            Nuevo Proveedor
-          </BrandCreateButton>
-        ) : undefined
-      }
-      filters={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Input
-              placeholder="Buscar por RUC, razón social o nombre..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onPressEnter={() => {
-                setPage(1);
-                cargarProveedores();
-              }}
-              style={{ width: 320, ...brandSearchStyle }}
-              allowClear
-            />
-
-            <Select
-              value={activoFilter === undefined ? 'todos' : activoFilter ? 'activos' : 'inactivos'}
-              onChange={(val) => {
-                setActivoFilter(val === 'todos' ? undefined : val === 'activos');
-                setPage(1);
-              }}
-              style={{ width: 150, ...brandControlStyle }}
-              options={[
-                { value: 'activos', label: 'Solo Activos' },
-                { value: 'inactivos', label: 'Solo Inactivos' },
-                { value: 'todos', label: 'Todos los estados' },
-              ]}
-            />
-          </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Total proveedores: <strong style={{ color: '#0f172a' }}>{total}</strong>
-          </Text>
-        </div>
+        <Space size="middle" wrap>
+          <Input
+            placeholder="Buscar por RUC, razón social o nombre..."
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{ width: 280, ...brandSearchStyle }}
+            allowClear
+          />
+          {canCreate && (
+            <BrandCreateButton onClick={handleCrear}>
+              Nuevo Proveedor
+            </BrandCreateButton>
+          )}
+        </Space>
       }
     >
-
-      <Table<Proveedor>
+      <GlobalTable<Proveedor>
+        resourceName="proveedores"
         rowKey="id"
         columns={columns}
         dataSource={proveedores}
         loading={loading}
-        scroll={{ x: 'max-content' }}
         pagination={{
           current: page,
           pageSize: limit,
@@ -265,6 +239,11 @@ export default function ProveedoresListPage() {
             setLimit(l);
           },
           showTotal: (tot) => `Total: ${tot} proveedores`,
+        }}
+        onChange={(_pagination, filters) => {
+          const act = filters.activo;
+          setActivoFilter(act && act.length > 0 ? act[0] === 'true' : undefined);
+          setPage(1);
         }}
       />
 

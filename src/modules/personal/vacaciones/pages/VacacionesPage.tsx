@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  Table,
   Button,
   Tag,
   Space,
@@ -11,7 +10,6 @@ import {
   Drawer,
   Tabs,
   Badge,
-  Segmented,
   type TableProps,
 } from 'antd';
 import {
@@ -31,7 +29,8 @@ import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 
-import ModulePageLayout, { BrandCreateButton, brandSearchStyle } from '../../../../shared/components/ModulePageLayout';
+import ModulePageLayout, { BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
+import GlobalTable from '../../../../shared/components/GlobalTable';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import {
   useVacacionesSolicitudes,
@@ -585,6 +584,15 @@ export default function VacacionesPage() {
       dataIndex: 'estado',
       key: 'estado',
       align: 'center',
+      filters: [
+        { text: 'Pendiente', value: 'PENDIENTE' },
+        { text: 'Aprobada', value: 'APROBADA' },
+        { text: 'Rechazada', value: 'RECHAZADA' },
+        { text: 'Gozada / En curso', value: 'TOMADA' },
+      ],
+      filteredValue: estadoFilter !== 'TODAS' ? [estadoFilter] : null,
+      filterMultiple: false,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (e) => getEstadoBadge(e),
     },
     {
@@ -692,14 +700,30 @@ export default function VacacionesPage() {
       subtitle={currentTabConfig.description}
       wrapInTableCard={false}
       actionButton={
-        canCreate ? (
-          <BrandCreateButton onClick={handleOpenGlobal}>
-            Programar Vacaciones
-          </BrandCreateButton>
-        ) : undefined
+        <Space size="middle" wrap>
+          {tab !== 'calendario' && (
+            <Input
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              placeholder={
+                tab === 'saldos'
+                  ? 'Buscar colaborador, cargo o área...'
+                  : 'Buscar por colaborador o motivo...'
+              }
+              allowClear
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: 280, ...brandSearchStyle }}
+            />
+          )}
+          {canCreate && (
+            <BrandCreateButton onClick={handleOpenGlobal}>
+              Programar Vacaciones
+            </BrandCreateButton>
+          )}
+        </Space>
       }
       extraHeader={
-        <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '6px 16px 0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <Tabs
             activeKey={tab}
             onChange={(key) => {
@@ -726,84 +750,27 @@ export default function VacacionesPage() {
               ),
             }))}
           />
+          {tab === 'saldos' && (
+            <Tag
+              color={esMype ? 'purple' : 'blue'}
+              style={{
+                borderRadius: 6,
+                fontWeight: 600,
+                padding: '2px 10px',
+                fontSize: 12,
+                marginBottom: 10,
+              }}
+            >
+              {esMype ? 'Régimen MYPE (15 días/año)' : 'Régimen General (30 días/año)'}
+            </Tag>
+          )}
         </div>
-      }
-      filters={
-        tab !== 'calendario' ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              flexWrap: 'wrap',
-              gap: 12,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <Input
-                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                placeholder={
-                  tab === 'saldos'
-                    ? 'Buscar colaborador por nombre, cargo o área...'
-                    : 'Buscar por colaborador o motivo...'
-                }
-                allowClear
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ width: 280, ...brandSearchStyle }}
-              />
-              {tab === 'solicitudes' && (
-                <Segmented
-                  value={estadoFilter}
-                  onChange={(val) => setEstadoFilter(val as string)}
-                  options={[
-                    { label: 'Todas', value: 'TODAS' },
-                    { label: 'Pendientes', value: 'PENDIENTE' },
-                    { label: 'Aprobadas', value: 'APROBADA' },
-                    { label: 'Rechazadas', value: 'RECHAZADA' },
-                  ]}
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    padding: 3,
-                    borderRadius: 8,
-                    fontWeight: 600,
-                  }}
-                />
-              )}
-            </div>
-            <div style={{ fontSize: 13, color: '#64748b' }}>
-              {tab === 'saldos' ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Tag
-                    color={esMype ? 'purple' : 'blue'}
-                    style={{
-                      borderRadius: 6,
-                      fontWeight: 600,
-                      padding: '2px 10px',
-                      fontSize: 12,
-                    }}
-                  >
-                    {esMype ? 'Régimen MYPE (15 días/año • 1.25/mes)' : 'Régimen General (30 días/año • 2.5/mes)'}
-                  </Tag>
-                  <span>
-                    Total colaboradores: <strong style={{ color: '#0f172a' }}>{saldosFiltrados.length}</strong>
-                  </span>
-                </div>
-              ) : (
-                <>
-                  Total solicitudes: <strong style={{ color: '#0f172a' }}>{solicitudesFiltradas.length}</strong>
-                </>
-              )}
-            </div>
-          </div>
-        ) : undefined
       }
     >
       {/* Contenido según pestaña */}
       {tab === 'saldos' && (
-        <Table
+        <GlobalTable<SaldoVacacionalColaborador>
+          resourceName="vacaciones-saldos"
           columns={columnsSaldos}
           dataSource={saldosFiltrados}
           rowKey="personal_id"
@@ -811,14 +778,15 @@ export default function VacacionesPage() {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total) => `Total ${total} colaboradores`,
+            showTotal: (total) => `Total: ${total} colaboradores`,
           }}
           locale={{ emptyText: 'No hay colaboradores disponibles' }}
         />
       )}
 
       {tab === 'solicitudes' && (
-        <Table
+        <GlobalTable<SolicitudVacacion>
+          resourceName="vacaciones-solicitudes"
           columns={columnsSolicitudes}
           dataSource={solicitudesFiltradas}
           rowKey="id"
@@ -827,9 +795,13 @@ export default function VacacionesPage() {
             pageSize: 10,
             showSizeChanger: true,
             pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total) => `Total ${total} solicitudes`,
+            showTotal: (total) => `Total: ${total} solicitudes`,
           }}
           locale={{ emptyText: 'No hay solicitudes vacacionales registradas' }}
+          onChange={(_pagination, tableFilters) => {
+            const est = tableFilters.estado;
+            setEstadoFilter(est && est.length > 0 ? (est[0] as string) : 'TODAS');
+          }}
         />
       )}
 
