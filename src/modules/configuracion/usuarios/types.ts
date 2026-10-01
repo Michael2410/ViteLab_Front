@@ -29,6 +29,7 @@ export interface Usuario {
   personal?: PersonalVinculado | null;
   sedes?: SedeAsignada[];
   activo: boolean;
+  two_factor_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -8,6 +8,7 @@ import {
   eliminarUsuario,
   obtenerRoles,
 } from './api';
+import { authApi } from '../../auth/api';
 import type { CreateUsuarioInput, UpdateUsuarioInput } from './types';
 
 // Query keys
@@ -89,5 +90,21 @@ export const useRoles = () => {
   return useQuery({
     queryKey: usuariosKeys.roles,
     queryFn: obtenerRoles,
+  });
+};
+
+// Hook para restablecer 2FA
+export const useAdminReset2FA = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: number) => authApi.adminReset2FA(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usuariosKeys.all });
+      message.success('2FA restablecido exitosamente para el usuario');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Error al restablecer 2FA');
+    },
   });
 };

@@ -1,19 +1,34 @@
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Form, Input, Button, message, ConfigProvider, theme, Modal } from 'antd';
-import { UserOutlined, LockOutlined, SafetyCertificateOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Button, message, ConfigProvider, theme, Modal, Typography, Space } from 'antd';
+import {
+  UserOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+  CloseCircleOutlined,
+  QrcodeOutlined,
+  CopyOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { authApi } from '../api';
 import { useAuthStore } from '../hooks';
-import type { LoginRequest } from '../types';
+import type { LoginRequest, Login2FARequired } from '../types';
 import viteLogo from '../../../assets/logo/logo.png';
+
+type LoginStep = 'credentials' | 'verify_2fa' | 'setup_2fa';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth, clearAuth, isAuthenticated } = useAuthStore();
   const [form] = Form.useForm();
+  const [step, setStep] = useState<LoginStep>('credentials');
+  const [twoFactorData, setTwoFactorData] = useState<Login2FARequired | null>(null);
+  const [otpCode, setOtpCode] = useState<string>('');
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
+  const [savedBackupCodes, setSavedBackupCodes] = useState<string[]>([]);
 
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
@@ -25,12 +40,24 @@ export default function LoginPage() {
 
     onSuccess: (response) => {
       if (response.success) {
-        const { user, accessToken, refreshToken } = response.data;
-        setAuth(user, accessToken, refreshToken);
-        message.success(`¡Bienvenido, ${user.nombres}!`);
-        navigate("/portal");
+        const data = response.data;
+        if ('requires2FA' in data && data.requires2FA) {
+          setTwoFactorData(data);
+          setOtpCode('');
+          if (data.setupNeeded) {
+            setStep('setup_2fa');
+            message.info('Vincule su aplicación autenticadora para continuar');
+          } else {
+            setStep('verify_2fa');
+          }
+        } else if ('user' in data) {
+          const { user, accessToken, refreshToken } = data;
+          setAuth(user, accessToken, refreshToken);
+          message.success(`¡Bienvenido, ${user.nombres}!`);
+          navigate('/portal');
+        }
       } else {
-        const msg = response.message || "Usuario o contraseña incorrectos";
+        const msg = response.message || 'Usuario o contraseña incorrectos';
         setErrorMessage(msg);
         setErrorModalOpen(true);
       }
@@ -40,9 +67,54 @@ export default function LoginPage() {
       const backendMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Usuario o contraseña incorrectos";
+        'Usuario o contraseña incorrectos';
 
       setErrorMessage(backendMessage);
+      setErrorModalOpen(true);
+    },
+  });
+
+  const verify2FAMutation = useMutation({
+    mutationFn: authApi.verify2FA,
+    onSuccess: (response) => {
+      if (response.success) {
+        const { user, accessToken, refreshToken } = response.data;
+        setAuth(user, accessToken, refreshToken);
+        message.success(`¡Bienvenido, ${user.nombres}!`);
+        navigate('/portal');
+      } else {
+        setErrorMessage(response.message || 'Código incorrecto o expirado');
+        setErrorModalOpen(true);
+      }
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Código incorrecto o expirado';
+      setErrorMessage(msg);
+      setErrorModalOpen(true);
+    },
+  });
+
+  const confirmSetupMutation = useMutation({
+    mutationFn: authApi.confirm2FASetup,
+    onSuccess: (response) => {
+      if (response.success) {
+        const { user, accessToken, refreshToken, backupCodes } = response.data;
+        setAuth(user, accessToken, refreshToken);
+        message.success('¡Doble factor configurado exitosamente!');
+        if (backupCodes && backupCodes.length > 0) {
+          setSavedBackupCodes(backupCodes);
+          setBackupModalOpen(true);
+        } else {
+          navigate('/portal');
+        }
+      } else {
+        setErrorMessage(response.message || 'Código incorrecto');
+        setErrorModalOpen(true);
+      }
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Código incorrecto';
+      setErrorMessage(msg);
       setErrorModalOpen(true);
     },
   });
@@ -273,7 +345,7 @@ export default function LoginPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 24,
+              marginBottom: 20,
             }}
           >
             <div
@@ -302,109 +374,314 @@ export default function LoginPage() {
                   boxShadow: '0 0 6px #10b981',
                 }}
               />
-              <span>Portal de Acceso Clínico</span>
+              <span>
+                {step === 'credentials' && 'Portal de Acceso Clínico'}
+                {step === 'verify_2fa' && 'Verificación de Identidad (2FA)'}
+                {step === 'setup_2fa' && 'Vinculación Inicial de Seguridad'}
+              </span>
             </div>
           </div>
 
-          {/* FORMULARIO */}
-          <Form
-            form={form}
-            name="login"
-            layout="vertical"
-            requiredMark={false}
-            onFinish={handleSubmit}
-            size="large"
-          >
-            {/* Campo Usuario con Título e Ícono adentro */}
-            <div style={{ marginBottom: 16 }}>
-              <div className="vitelab-embedded-input">
-                <div
-                  className="vitelab-input-label"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    color: '#1e293b',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: 0.3,
-                    marginBottom: 2,
-                    userSelect: 'none',
-                    transition: 'color 0.2s ease',
-                  }}
-                >
-                  <UserOutlined style={{ fontSize: 11.5 }} />
-                  <span>Usuario</span>
-                </div>
-                <Form.Item
-                  name="username"
-                  rules={[{ required: true, message: 'Ingrese su usuario o correo' }]}
-                  style={{ margin: 0 }}
-                >
-                  <Input
-                    placeholder="ej. admin"
-                    bordered={false}
-                    style={{
-                      height: 26,
-                      color: '#0f172a',
-                    }}
-                  />
-                </Form.Item>
-              </div>
-            </div>
-
-            {/* Campo Contraseña con Título e Ícono adentro */}
-            <div style={{ marginBottom: 10 }}>
-              <div className="vitelab-embedded-input">
-                <div
-                  className="vitelab-input-label"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    color: '#1e293b',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: 0.3,
-                    marginBottom: 2,
-                    userSelect: 'none',
-                    transition: 'color 0.2s ease',
-                  }}
-                >
-                  <LockOutlined style={{ fontSize: 11.5 }} />
-                  <span>Contraseña</span>
-                </div>
-                <Form.Item
-                  name="password"
-                  rules={[{ required: true, message: 'Ingrese su contraseña' }]}
-                  style={{ margin: 0 }}
-                >
-                  <Input.Password
-                    placeholder="••••••••••••"
-                    bordered={false}
-                    style={{
-                      height: 26,
-                      color: '#0f172a',
-                    }}
-                  />
-                </Form.Item>
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'right', marginBottom: 22 }}>
-            </div>
-
-            {/* Botón Iniciar Sesión con gradiente Azul-Menta */}
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loginMutation.isPending}
-              block
-              className="vitelab-btn-submit"
+          {/* VISTA 1: INGRESO DE CREDENCIALES */}
+          {step === 'credentials' && (
+            <Form
+              form={form}
+              name="login"
+              layout="vertical"
+              requiredMark={false}
+              onFinish={handleSubmit}
+              size="large"
             >
-              INICIAR SESIÓN
-            </Button>
-          </Form>
+              {/* Campo Usuario con Título e Ícono adentro */}
+              <div style={{ marginBottom: 16 }}>
+                <div className="vitelab-embedded-input">
+                  <div
+                    className="vitelab-input-label"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      color: '#1e293b',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: 0.3,
+                      marginBottom: 2,
+                      userSelect: 'none',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    <UserOutlined style={{ fontSize: 11.5 }} />
+                    <span>Usuario</span>
+                  </div>
+                  <Form.Item
+                    name="username"
+                    rules={[{ required: true, message: 'Ingrese su usuario o correo' }]}
+                    style={{ margin: 0 }}
+                  >
+                    <Input
+                      placeholder="ej. admin"
+                      bordered={false}
+                      style={{
+                        height: 26,
+                        color: '#0f172a',
+                      }}
+                    />
+                  </Form.Item>
+                </div>
+              </div>
+
+              {/* Campo Contraseña con Título e Ícono adentro */}
+              <div style={{ marginBottom: 10 }}>
+                <div className="vitelab-embedded-input">
+                  <div
+                    className="vitelab-input-label"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      color: '#1e293b',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: 0.3,
+                      marginBottom: 2,
+                      userSelect: 'none',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    <LockOutlined style={{ fontSize: 11.5 }} />
+                    <span>Contraseña</span>
+                  </div>
+                  <Form.Item
+                    name="password"
+                    rules={[{ required: true, message: 'Ingrese su contraseña' }]}
+                    style={{ margin: 0 }}
+                  >
+                    <Input.Password
+                      placeholder="••••••••••••"
+                      bordered={false}
+                      style={{
+                        height: 26,
+                        color: '#0f172a',
+                      }}
+                    />
+                  </Form.Item>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right', marginBottom: 22 }}></div>
+
+              {/* Botón Iniciar Sesión con gradiente Azul-Menta */}
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loginMutation.isPending}
+                block
+                className="vitelab-btn-submit"
+              >
+                CONTINUAR
+              </Button>
+            </Form>
+          )}
+
+          {/* VISTA 2: VERIFICACIÓN 2FA HABITUAL */}
+          {step === 'verify_2fa' && (
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#0284c7',
+                  fontSize: 24,
+                  marginBottom: 10,
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.15)',
+                }}
+              >
+                <SafetyCertificateOutlined />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>
+                Código de Autenticación
+              </h3>
+              <p style={{ fontSize: 12.5, color: '#64748b', margin: '0 0 20px 0', lineHeight: 1.4 }}>
+                Ingresa el código dinámico de 6 dígitos que muestra tu app (Google o Microsoft Authenticator) o un código de respaldo.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 22 }}>
+                <Input.OTP
+                  length={6}
+                  size="large"
+                  value={otpCode}
+                  onChange={(val) => {
+                    setOtpCode(val);
+                    if (val.length === 6 && twoFactorData?.tempToken) {
+                      verify2FAMutation.mutate({ tempToken: twoFactorData.tempToken, code: val });
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <Button
+                type="primary"
+                block
+                className="vitelab-btn-submit"
+                loading={verify2FAMutation.isPending}
+                disabled={otpCode.length < 6}
+                onClick={() => {
+                  if (twoFactorData?.tempToken) {
+                    verify2FAMutation.mutate({ tempToken: twoFactorData.tempToken, code: otpCode });
+                  }
+                }}
+                style={{ marginBottom: 12 }}
+              >
+                VERIFICAR Y ACCEDER
+              </Button>
+
+              <Button
+                type="link"
+                onClick={() => {
+                  setStep('credentials');
+                  setOtpCode('');
+                  setTwoFactorData(null);
+                }}
+                style={{ color: '#64748b', fontSize: 12.5 }}
+              >
+                ← Volver al inicio de sesión
+              </Button>
+            </div>
+          )}
+
+          {/* VISTA 3: VINCULACIÓN INICIAL (ONBOARDING) */}
+          {step === 'setup_2fa' && (
+            <div>
+              <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                <div
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0f766e',
+                    fontSize: 22,
+                    marginBottom: 6,
+                    boxShadow: '0 4px 12px rgba(15, 118, 110, 0.15)',
+                  }}
+                >
+                  <QrcodeOutlined />
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', margin: '0 0 3px 0' }}>
+                  Vincular Autenticador
+                </h3>
+                <p style={{ fontSize: 12, color: '#64748b', margin: 0, lineHeight: 1.35 }}>
+                  Escanea el código QR con <strong>Google Authenticator</strong> o <strong>Microsoft Authenticator</strong>:
+                </p>
+              </div>
+
+              {/* Contenedor QR y Clave Manual */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#ffffff',
+                  borderRadius: 14,
+                  border: '1.5px solid #e2e8f0',
+                  padding: 12,
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
+                  marginBottom: 14,
+                }}
+              >
+                {twoFactorData?.qrCodeDataUrl && (
+                  <img
+                    src={twoFactorData.qrCodeDataUrl}
+                    alt="Código QR de Vinculación 2FA"
+                    style={{ width: 160, height: 160, borderRadius: 8, display: 'block' }}
+                  />
+                )}
+
+                {twoFactorData?.manualKey && (
+                  <div style={{ marginTop: 8, textAlign: 'center', width: '100%' }}>
+                    <span style={{ fontSize: 10.5, color: '#64748b', display: 'block' }}>
+                      ¿No puedes escanear el QR? Usa esta clave manual:
+                    </span>
+                    <Typography.Text
+                      copyable={{ text: twoFactorData.manualKey }}
+                      code
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        color: '#0f172a',
+                        display: 'inline-block',
+                        marginTop: 2,
+                      }}
+                    >
+                      {twoFactorData.manualKey}
+                    </Typography.Text>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ textAlign: 'center', marginBottom: 14 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>
+                  Ingresa el código de 6 dígitos que muestra tu app:
+                </span>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <Input.OTP
+                    length={6}
+                    size="middle"
+                    value={otpCode}
+                    onChange={(val) => {
+                      setOtpCode(val);
+                      if (val.length === 6 && twoFactorData?.tempToken) {
+                        confirmSetupMutation.mutate({ tempToken: twoFactorData.tempToken, code: val });
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="primary"
+                block
+                className="vitelab-btn-submit"
+                loading={confirmSetupMutation.isPending}
+                disabled={otpCode.length < 6}
+                onClick={() => {
+                  if (twoFactorData?.tempToken) {
+                    confirmSetupMutation.mutate({ tempToken: twoFactorData.tempToken, code: otpCode });
+                  }
+                }}
+                style={{ marginBottom: 10 }}
+              >
+                CONFIRMAR Y ACTIVAR
+              </Button>
+
+              <div style={{ textAlign: 'center' }}>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => {
+                    setStep('credentials');
+                    setOtpCode('');
+                    setTwoFactorData(null);
+                  }}
+                  style={{ color: '#64748b', fontSize: 12 }}
+                >
+                  ← Cancelar y volver
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Mensaje de Soporte / Seguridad */}
           <div
@@ -460,7 +737,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Popup Modal de Error de Credenciales */}
+      {/* Popup Modal de Error */}
       <Modal
         open={errorModalOpen}
         onCancel={() => setErrorModalOpen(false)}
@@ -494,8 +771,112 @@ export default function LoginPage() {
             <CloseCircleOutlined />
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>
-            Credenciales incorrectas
+            {errorMessage || 'Credenciales incorrectas'}
           </div>
+          <Button
+            type="primary"
+            onClick={() => setErrorModalOpen(false)}
+            style={{ marginTop: 8, borderRadius: 8 }}
+          >
+            Entendido
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Modal de Códigos de Respaldo */}
+      <Modal
+        open={backupModalOpen}
+        onCancel={() => {
+          setBackupModalOpen(false);
+          navigate('/portal');
+        }}
+        footer={null}
+        centered
+        width={440}
+        destroyOnHidden
+        styles={{
+          content: {
+            borderRadius: 20,
+            padding: '24px',
+            textAlign: 'center',
+          },
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              backgroundColor: '#ecfdf5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#059669',
+              fontSize: 26,
+            }}
+          >
+            <CheckCircleOutlined />
+          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+            ¡Doble Factor Activado!
+          </h3>
+          <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+            Guarda estos códigos de recuperación en un lugar seguro. Puedes usar cada uno una sola vez si pierdes acceso a tu aplicación autenticadora.
+          </p>
+
+          <div
+            style={{
+              width: '100%',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: 12,
+              padding: '12px 16px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '8px 16px',
+              marginTop: 6,
+            }}
+          >
+            {savedBackupCodes.map((code, idx) => (
+              <span
+                key={idx}
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: '#1e293b',
+                  letterSpacing: 1,
+                }}
+              >
+                {code}
+              </span>
+            ))}
+          </div>
+
+          <Space style={{ width: '100%', marginTop: 8 }} direction="vertical">
+            <Button
+              block
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(savedBackupCodes.join('\n'));
+                message.success('Códigos copiados al portapapeles');
+              }}
+            >
+              Copiar Códigos
+            </Button>
+            <Button
+              type="primary"
+              block
+              className="vitelab-btn-submit"
+              onClick={() => {
+                setBackupModalOpen(false);
+                navigate('/portal');
+              }}
+            >
+              CONTINUAR AL PORTAL
+            </Button>
+          </Space>
         </div>
       </Modal>
     </ConfigProvider>

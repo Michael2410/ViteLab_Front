@@ -20,10 +20,11 @@ import {
   IdcardOutlined,
   PhoneOutlined,
   UserAddOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { useUsuarios, useCrearUsuario, useActualizarUsuario, useEliminarUsuario } from '../hooks';
+import { useUsuarios, useCrearUsuario, useActualizarUsuario, useEliminarUsuario, useAdminReset2FA } from '../hooks';
 import { usePersonalList } from '../../../personal/hooks';
 import type { Personal } from '../../../personal/types';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
@@ -72,6 +73,7 @@ export const UsuariosPage: React.FC = () => {
   const crearUsuarioMutation = useCrearUsuario();
   const actualizarUsuarioMutation = useActualizarUsuario();
   const eliminarUsuarioMutation = useEliminarUsuario();
+  const adminReset2FAMutation = useAdminReset2FA();
 
   // Colaboradores activos en RRHH sin cuenta de usuario
   const personalSinCuenta = useMemo(() => {
@@ -163,6 +165,19 @@ export const UsuariosPage: React.FC = () => {
     await actualizarUsuarioMutation.mutateAsync({
       id: usuario.id,
       data: { activo: !usuario.activo },
+    });
+  };
+
+  const handleReset2FA = (usuario: Usuario) => {
+    modal.confirm({
+      title: '¿Restablecer 2FA de este usuario?',
+      content: `Se restablecerá la configuración de doble factor para "${usuario.username}". En su próximo inicio de sesión se le solicitará vincular su aplicación autenticadora nuevamente.`,
+      okText: 'Restablecer',
+      okType: 'danger',
+      cancelText: 'Cancelar',
+      onOk: async () => {
+        await adminReset2FAMutation.mutateAsync(usuario.id);
+      },
     });
   };
 
@@ -311,6 +326,32 @@ export const UsuariosPage: React.FC = () => {
       ),
     },
     {
+      title: '2FA (TOTP)',
+      dataIndex: 'two_factor_enabled',
+      key: 'two_factor_enabled',
+      width: 120,
+      align: 'center',
+      filters: [
+        { text: 'Activado', value: true },
+        { text: 'Pendiente', value: false },
+      ],
+      onFilter: (value, record) => !!record.two_factor_enabled === value,
+      filterIcon: (filtered) => renderTableFilterIcon(filtered),
+      render: (enabled?: boolean) => (
+        <Tag
+          color={enabled ? 'success' : 'default'}
+          style={{
+            borderRadius: 6,
+            fontWeight: 600,
+            fontSize: 11,
+            padding: '1px 8px',
+          }}
+        >
+          {enabled ? 'Activado' : 'Pendiente'}
+        </Tag>
+      ),
+    },
+    {
       title: 'Fecha',
       dataIndex: 'created_at',
       key: 'created_at',
@@ -326,7 +367,7 @@ export const UsuariosPage: React.FC = () => {
           {
             title: 'Acciones',
             key: 'acciones',
-            width: 90,
+            width: 110,
             align: 'center' as const,
             render: (_: any, record: Usuario) => (
               <Space size="small">
@@ -337,6 +378,16 @@ export const UsuariosPage: React.FC = () => {
                       size="small"
                       icon={<EditOutlined style={{ color: '#0284c7' }} />}
                       onClick={() => handleEditar(record)}
+                    />
+                  </Tooltip>
+                )}
+                {canUpdate && record.two_factor_enabled && (
+                  <Tooltip title="Restablecer 2FA (Re-vincular)">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<KeyOutlined style={{ color: '#d97706' }} />}
+                      onClick={() => handleReset2FA(record)}
                     />
                   </Tooltip>
                 )}
