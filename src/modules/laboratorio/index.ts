@@ -11,7 +11,6 @@ export { default as HeaderAlertas } from './shared/components/HeaderAlertas';
 // Órdenes
 export * from './ordenes/pages/OrdenesPage';
 export * from './ordenes/pages/OrdenDetallePage';
-export * from './ordenes/pages/OrdenImprimiblePage';
 export * from './ordenes/components/NuevaOrdenDrawer';
 export * from './ordenes/components/EditarOrdenDrawer';
 export * from './ordenes/components/OrdenDetalleDrawer';

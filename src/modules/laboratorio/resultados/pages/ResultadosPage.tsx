@@ -414,18 +414,6 @@ export const ResultadosPage: React.FC = () => {
           </Button>
         ) : undefined
       }
-      filters={
-        !ordenSeleccionada ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: 12 }}>
-            <span style={{ fontSize: 13, color: '#475569' }}>
-              Listado de órdenes que requieren ingreso o validación técnica de resultados
-            </span>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Órdenes pendientes: <strong style={{ color: '#0f172a' }}>{ordenesPendientes?.length || 0}</strong>
-            </Text>
-          </div>
-        ) : undefined
-      }
     >
       {contextHolder}
 

@@ -35,8 +35,8 @@ export default function IngresosListPage() {
   const [limit, setLimit] = useState(10);
 
   const [search, setSearch] = useState('');
-  const [almacenId, setAlmacenId] = useState<number | undefined>(undefined);
-  const [estadoFilter, setEstadoFilter] = useState<string | undefined>(undefined);
+  const [almacenIds, setAlmacenIds] = useState<number[] | undefined>(undefined);
+  const [estadoFilter, setEstadoFilter] = useState<string[] | undefined>(undefined);
   const [rangoFechas, setRangoFechas] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
@@ -63,7 +63,7 @@ export default function IngresosListPage() {
         page,
         limit,
         search: search.trim() || undefined,
-        almacen_id: almacenId,
+        almacen_id: almacenIds,
         estado: estadoFilter,
         fecha_desde: rangoFechas ? rangoFechas[0].format('YYYY-MM-DD') : undefined,
         fecha_hasta: rangoFechas ? rangoFechas[1].format('YYYY-MM-DD') : undefined,
@@ -76,7 +76,7 @@ export default function IngresosListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, almacenId, estadoFilter, rangoFechas]);
+  }, [page, limit, search, almacenIds, estadoFilter, rangoFechas]);
 
   useEffect(() => {
     cargarIngresos();
@@ -99,11 +99,11 @@ export default function IngresosListPage() {
     setPage(pagination.current || 1);
     setLimit(pagination.pageSize || limit);
 
-    const almVal = tableFilters.almacen_nombre?.[0];
-    setAlmacenId(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+    const almVal = tableFilters.almacen_nombre;
+    setAlmacenIds(almVal && almVal.length > 0 ? (almVal as any[]).map(Number) : undefined);
 
-    const estVal = tableFilters.estado?.[0];
-    setEstadoFilter(estVal ? String(estVal) : undefined);
+    const estVal = tableFilters.estado;
+    setEstadoFilter(estVal && estVal.length > 0 ? (estVal as string[]) : undefined);
   };
 
   const columns: ColumnsType<Ingreso> = [
@@ -169,8 +169,7 @@ export default function IngresosListPage() {
       key: 'almacen_nombre',
       width: 170,
       filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
-      filterMultiple: false,
-      filteredValue: almacenId !== undefined ? [almacenId] : null,
+      filteredValue: almacenIds && almacenIds.length > 0 ? almacenIds : null,
       filterIcon: renderTableFilterIcon,
       render: (a: string) => <span style={{ fontWeight: 600 }}>{a}</span>,
     },
@@ -232,8 +231,7 @@ export default function IngresosListPage() {
         { text: 'Registrado', value: 'REGISTRADO' },
         { text: 'Anulado', value: 'ANULADO' },
       ],
-      filterMultiple: false,
-      filteredValue: estadoFilter ? [estadoFilter] : null,
+      filteredValue: estadoFilter && estadoFilter.length > 0 ? estadoFilter : null,
       filterIcon: renderTableFilterIcon,
       render: (st: string) => {
         if (st === 'REGISTRADO') return <Tag color="success">REGISTRADO</Tag>;
@@ -261,7 +259,7 @@ export default function IngresosListPage() {
   return (
     <ModulePageLayout
       title="Ingresos de Almacén"
-      subtitle={`Entrada de mercadería por compras, facturas, guías e inventario inicial (${total} registros)`}
+      subtitle={`Entrada de mercadería por compras, facturas, guías e inventario inicial`}
       actionButton={
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Input

@@ -62,11 +62,15 @@ export default function DespachoDetalleModal({
       key: 'producto_nombre',
     },
     {
-      title: 'Lote',
-      dataIndex: 'numero_lote',
+      title: 'Lote / Marca',
       key: 'numero_lote',
-      width: 120,
-      render: (v) => <Tag color="blue">{v || 'S/L'}</Tag>,
+      width: 140,
+      render: (_, r) => (
+        <Space direction="vertical" size={2}>
+          <Tag color="blue">{r.numero_lote || 'S/L'}</Tag>
+          {r.marca && <Tag color="purple">{r.marca}</Tag>}
+        </Space>
+      ),
     },
     {
       title: 'Vencimiento',

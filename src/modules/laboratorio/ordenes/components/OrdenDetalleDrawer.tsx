@@ -13,7 +13,6 @@ import {
   Avatar,
   Tabs,
   Tooltip,
-  theme,
 } from 'antd';
 import {
   PrinterOutlined,
@@ -35,6 +34,8 @@ import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useOrdenDetalle, usePreanalitica } from '../hooks';
 import { useAuthStore } from '../../../auth/hooks';
+import { useConfiguracion } from '../../../configuracion/sistema/hooks';
+import { imprimirTicketOrden } from '../utils/printOrdenHelper';
 import {
   ESTADO_ORDEN_COLORS,
   ESTADO_ORDEN_LABELS,
@@ -62,12 +63,12 @@ export const OrdenDetalleDrawer: React.FC<OrdenDetalleDrawerProps> = ({
   onWhatsApp,
 }) => {
   const navigate = useNavigate();
-  const { token } = theme.useToken();
   const { hasPermission, user } = useAuthStore();
   const isSuperAdmin = user?.rol_nombre === 'SUPER_ADMIN' || user?.rol_id === 1;
   const canUpdate = isSuperAdmin || hasPermission('orders.update');
 
   const validId = open && ordenId ? ordenId : 0;
+  const { data: configuracion } = useConfiguracion();
   const { data: orden, isLoading, error } = useOrdenDetalle(validId, validId > 0 && hasPermission('orders.read'));
   const { data: preanaliticaIA, isLoading: loadingPreanalitica } = usePreanalitica(
     validId,
@@ -222,10 +223,10 @@ export const OrdenDetalleDrawer: React.FC<OrdenDetalleDrawerProps> = ({
               {hasPermission('orders.print') && (
                 <Button
                   icon={<PrinterOutlined />}
-                  onClick={() => navigate(`/ordenes/${orden.id}/imprimir`)}
+                  onClick={() => imprimirTicketOrden(orden, configuracion)}
                   style={{ borderRadius: 8, height: 36 }}
                 >
-                  Imprimir Comprobante
+                  Imprimir Ticket
                 </Button>
               )}
 

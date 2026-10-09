@@ -40,7 +40,7 @@ export default function AsistenciaPage() {
   const canUpdate = hasPermission('personal.asistencia.update');
   const canDelete = hasPermission('personal.asistencia.delete');
 
-  const [filterEstado, setFilterEstado] = useState<string>('TODOS');
+  const [filterEstados, setFilterEstados] = useState<string[] | undefined>(undefined);
   const [fechaFiltro, setFechaFiltro] = useState<string | undefined>(dayjs().format('YYYY-MM-DD'));
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -49,10 +49,10 @@ export default function AsistenciaPage() {
   const filtros = useMemo(() => {
     return {
       fecha: fechaFiltro,
-      estado: filterEstado === 'TODOS' ? undefined : (filterEstado as EstadoAsistencia),
+      estado: filterEstados && filterEstados.length > 0 ? (filterEstados as any) : undefined,
       search: search || undefined,
     };
-  }, [fechaFiltro, filterEstado, search]);
+  }, [fechaFiltro, filterEstados, search]);
 
   const { data: asistencias = [], isLoading } = useAsistenciaList(filtros);
   const { data: personalList = [] } = usePersonalList({ activo: true });
@@ -69,6 +69,11 @@ export default function AsistenciaPage() {
     const puntualidad = total > 0 ? Math.round((presentes / total) * 100) : 100;
     return { total, presentes, tardanzas, faltas, puntualidad };
   }, [asistencias]);
+
+  const isTotalActive = !filterEstados || filterEstados.length === 0;
+  const isPresenteActive = filterEstados?.length === 1 && filterEstados[0] === 'PRESENTE';
+  const isTardanzaActive = filterEstados?.length === 1 && filterEstados[0] === 'TARDANZA';
+  const isFaltaActive = Boolean(filterEstados?.some((e) => e.startsWith('FALTA')));
 
   const handleNuevo = () => {
     setRegistroAEditar(null);
@@ -266,8 +271,7 @@ export default function AsistenciaPage() {
         { text: 'Falta Justificada / Licencia', value: 'FALTA_JUSTIFICADA' },
         { text: 'Falta Injustificada', value: 'FALTA_INJUSTIFICADA' },
       ],
-      filteredValue: filterEstado !== 'TODOS' ? [filterEstado] : null,
-      filterMultiple: false,
+      filteredValue: filterEstados && filterEstados.length > 0 ? filterEstados : null,
       filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, r) => getEstadoBadge(r.estado, r.minutos_tardanza),
     },
@@ -366,10 +370,10 @@ export default function AsistenciaPage() {
       >
         {/* Card Total */}
         <div
-          onClick={() => setFilterEstado('TODOS')}
+          onClick={() => setFilterEstados(undefined)}
           style={{
             backgroundColor: '#ffffff',
-            border: filterEstado === 'TODOS' ? '2px solid #0d9488' : '1px solid #e2e8f0',
+            border: isTotalActive ? '2px solid #0d9488' : '1px solid #e2e8f0',
             borderRadius: 14,
             padding: '16px 20px',
             display: 'flex',
@@ -378,10 +382,10 @@ export default function AsistenciaPage() {
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             boxShadow:
-              filterEstado === 'TODOS'
+              isTotalActive
                 ? '0 6px 18px rgba(13, 148, 136, 0.15)'
                 : '0 2px 10px rgba(15, 23, 42, 0.03)',
-            transform: filterEstado === 'TODOS' ? 'translateY(-2px)' : 'none',
+            transform: isTotalActive ? 'translateY(-2px)' : 'none',
           }}
         >
           <div
@@ -411,10 +415,10 @@ export default function AsistenciaPage() {
 
         {/* Card Presentes */}
         <div
-          onClick={() => setFilterEstado('PRESENTE')}
+          onClick={() => setFilterEstados(isPresenteActive ? undefined : ['PRESENTE'])}
           style={{
             backgroundColor: '#ffffff',
-            border: filterEstado === 'PRESENTE' ? '2px solid #059669' : '1px solid #e2e8f0',
+            border: isPresenteActive ? '2px solid #059669' : '1px solid #e2e8f0',
             borderRadius: 14,
             padding: '16px 20px',
             display: 'flex',
@@ -423,10 +427,10 @@ export default function AsistenciaPage() {
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             boxShadow:
-              filterEstado === 'PRESENTE'
+              isPresenteActive
                 ? '0 6px 18px rgba(5, 150, 105, 0.15)'
                 : '0 2px 10px rgba(15, 23, 42, 0.03)',
-            transform: filterEstado === 'PRESENTE' ? 'translateY(-2px)' : 'none',
+            transform: isPresenteActive ? 'translateY(-2px)' : 'none',
           }}
         >
           <div
@@ -456,10 +460,10 @@ export default function AsistenciaPage() {
 
         {/* Card Tardanzas */}
         <div
-          onClick={() => setFilterEstado('TARDANZA')}
+          onClick={() => setFilterEstados(isTardanzaActive ? undefined : ['TARDANZA'])}
           style={{
             backgroundColor: '#ffffff',
-            border: filterEstado === 'TARDANZA' ? '2px solid #d97706' : '1px solid #e2e8f0',
+            border: isTardanzaActive ? '2px solid #d97706' : '1px solid #e2e8f0',
             borderRadius: 14,
             padding: '16px 20px',
             display: 'flex',
@@ -468,10 +472,10 @@ export default function AsistenciaPage() {
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             boxShadow:
-              filterEstado === 'TARDANZA'
+              isTardanzaActive
                 ? '0 6px 18px rgba(217, 119, 6, 0.15)'
                 : '0 2px 10px rgba(15, 23, 42, 0.03)',
-            transform: filterEstado === 'TARDANZA' ? 'translateY(-2px)' : 'none',
+            transform: isTardanzaActive ? 'translateY(-2px)' : 'none',
           }}
         >
           <div
@@ -501,10 +505,10 @@ export default function AsistenciaPage() {
 
         {/* Card Faltas */}
         <div
-          onClick={() => setFilterEstado('FALTA_JUSTIFICADA')}
+          onClick={() => setFilterEstados(isFaltaActive ? undefined : ['FALTA_JUSTIFICADA', 'FALTA_INJUSTIFICADA'])}
           style={{
             backgroundColor: '#ffffff',
-            border: filterEstado === 'FALTA_JUSTIFICADA' ? '2px solid #e11d48' : '1px solid #e2e8f0',
+            border: isFaltaActive ? '2px solid #e11d48' : '1px solid #e2e8f0',
             borderRadius: 14,
             padding: '16px 20px',
             display: 'flex',
@@ -513,10 +517,10 @@ export default function AsistenciaPage() {
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             boxShadow:
-              filterEstado === 'FALTA_JUSTIFICADA'
+              isFaltaActive
                 ? '0 6px 18px rgba(225, 29, 72, 0.15)'
                 : '0 2px 10px rgba(15, 23, 42, 0.03)',
-            transform: filterEstado === 'FALTA_JUSTIFICADA' ? 'translateY(-2px)' : 'none',
+            transform: isFaltaActive ? 'translateY(-2px)' : 'none',
           }}
         >
           <div
@@ -619,7 +623,7 @@ export default function AsistenciaPage() {
         locale={{ emptyText: 'No hay registros de asistencia para los filtros seleccionados' }}
         onChange={(_pagination, tableFilters) => {
           const est = tableFilters.estado;
-          setFilterEstado(est && est.length > 0 ? (est[0] as string) : 'TODOS');
+          setFilterEstados(est && est.length > 0 ? (est as string[]) : undefined);
         }}
       />
 

@@ -35,9 +35,9 @@ export default function AjustesListPage() {
   const [limit, setLimit] = useState(10);
 
   const [search, setSearch] = useState('');
-  const [almacenId, setAlmacenId] = useState<number | undefined>(undefined);
-  const [tipoFilter, setTipoFilter] = useState<string | undefined>(undefined);
-  const [estadoFilter, setEstadoFilter] = useState<string | undefined>(undefined);
+  const [almacenIds, setAlmacenIds] = useState<number[] | undefined>(undefined);
+  const [tipoFilter, setTipoFilter] = useState<string[] | undefined>(undefined);
+  const [estadoFilter, setEstadoFilter] = useState<string[] | undefined>(undefined);
   const [rangoFechas, setRangoFechas] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
@@ -63,7 +63,7 @@ export default function AjustesListPage() {
         page,
         limit,
         search: search.trim() || undefined,
-        almacen_id: almacenId,
+        almacen_id: almacenIds,
         tipo: tipoFilter,
         estado: estadoFilter,
         fecha_desde: rangoFechas ? rangoFechas[0].format('YYYY-MM-DD') : undefined,
@@ -76,7 +76,7 @@ export default function AjustesListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, almacenId, tipoFilter, estadoFilter, rangoFechas]);
+  }, [page, limit, search, almacenIds, tipoFilter, estadoFilter, rangoFechas]);
 
   useEffect(() => {
     cargarAjustes();
@@ -188,8 +188,7 @@ export default function AjustesListPage() {
       key: 'almacen_id',
       width: 180,
       filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
-      filteredValue: almacenId ? [almacenId] : null,
-      filterMultiple: false,
+      filteredValue: almacenIds && almacenIds.length > 0 ? almacenIds : null,
       filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (_: any, r: Ajuste) => <Text strong>{r.almacen_nombre}</Text>,
     },
@@ -204,8 +203,7 @@ export default function AjustesListPage() {
         { text: 'Baja / Descarte', value: 'BAJA' },
         { text: 'Regularización', value: 'REGULARIZACION' },
       ],
-      filteredValue: tipoFilter ? [tipoFilter] : null,
-      filterMultiple: false,
+      filteredValue: tipoFilter && tipoFilter.length > 0 ? tipoFilter : null,
       filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (tipo: string) => getTipoTag(tipo),
     },
@@ -235,8 +233,7 @@ export default function AjustesListPage() {
         { text: 'Aprobado', value: 'APROBADO' },
         { text: 'Rechazado', value: 'RECHAZADO' },
       ],
-      filteredValue: estadoFilter ? [estadoFilter] : null,
-      filterMultiple: false,
+      filteredValue: estadoFilter && estadoFilter.length > 0 ? estadoFilter : null,
       filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (st: string) => getEstadoTag(st),
     },
@@ -306,14 +303,14 @@ export default function AjustesListPage() {
           },
         }}
         onChange={(_pagination, filters) => {
-          const alm = filters.almacen_id;
-          setAlmacenId(alm && alm.length > 0 ? (alm[0] as number) : undefined);
+          const alm = filters.almacen_id as any[] | undefined;
+          setAlmacenIds(alm && alm.length > 0 ? alm.map(Number) : undefined);
 
-          const tip = filters.tipo;
-          setTipoFilter(tip && tip.length > 0 ? (tip[0] as string) : undefined);
+          const tip = filters.tipo as string[] | undefined;
+          setTipoFilter(tip && tip.length > 0 ? tip : undefined);
 
-          const est = filters.estado;
-          setEstadoFilter(est && est.length > 0 ? (est[0] as string) : undefined);
+          const est = filters.estado as string[] | undefined;
+          setEstadoFilter(est && est.length > 0 ? est : undefined);
           setPage(1);
         }}
       />

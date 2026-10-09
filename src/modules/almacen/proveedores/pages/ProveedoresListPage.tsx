@@ -159,11 +159,10 @@ export default function ProveedoresListPage() {
       width: 140,
       align: 'center',
       filters: [
-        { text: 'Solo Activos', value: 'true' },
-        { text: 'Solo Inactivos', value: 'false' },
+        { text: 'Activos', value: 'true' },
+        { text: 'Inactivos', value: 'false' },
       ],
       filteredValue: activoFilter === undefined ? null : [String(activoFilter)],
-      filterMultiple: false,
       filterIcon: (filtered: boolean) => renderTableFilterIcon(filtered),
       render: (activo: boolean, record) => (
         <Switch
@@ -200,7 +199,7 @@ export default function ProveedoresListPage() {
   return (
     <ModulePageLayout
       title="Directorio de Proveedores"
-      subtitle={`Proveedores registrados para suministro de reactivos, insumos y equipos (${total} registros)`}
+      subtitle={`Proveedores registrados para suministro de reactivos, insumos y equipos`}
       actionButton={
         <Space size="middle" wrap>
           <Input
@@ -241,8 +240,12 @@ export default function ProveedoresListPage() {
           showTotal: (tot) => `Total: ${tot} proveedores`,
         }}
         onChange={(_pagination, filters) => {
-          const act = filters.activo;
-          setActivoFilter(act && act.length > 0 ? act[0] === 'true' : undefined);
+          const act = filters.activo as string[] | undefined;
+          if (act && act.length === 1) {
+            setActivoFilter(act[0] === 'true');
+          } else {
+            setActivoFilter(undefined);
+          }
           setPage(1);
         }}
       />

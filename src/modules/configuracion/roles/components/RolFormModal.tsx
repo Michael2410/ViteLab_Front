@@ -80,7 +80,7 @@ export function RolFormModal({ visible, rol, onCancel, onSuccess }: RolFormModal
   
   // Obtener nombre amigable del submódulo
   const getNombreSubmodulo = (submodulo: string | null) => {
-    if (!submodulo) return 'General';
+    if (!submodulo || submodulo === 'general') return 'Acceso General';
     return SUBMODULO_NOMBRES[submodulo] || submodulo;
   };
 
@@ -267,11 +267,9 @@ export function RolFormModal({ visible, rol, onCancel, onSuccess }: RolFormModal
                   >
                     {modulo.submodulos.map((submodulo, idx) => (
                       <div key={idx} style={{ marginBottom: 16 }}>
-                        {submodulo.nombre && (
-                          <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
-                            {getNombreSubmodulo(submodulo.nombre)}
-                          </Text>
-                        )}
+                        <Text type="secondary" style={{ marginBottom: 8, display: 'block', fontWeight: 600 }}>
+                          {getNombreSubmodulo(submodulo.nombre)}
+                        </Text>
                         <Space wrap>
                           {submodulo.permisos.map((permiso) => (
                             <Checkbox

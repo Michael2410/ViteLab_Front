@@ -43,6 +43,9 @@ export const useWhatsAppSession = () => {
       if (currentStatus.phoneNumber) {
         setPhoneNumber(currentStatus.phoneNumber);
       }
+    } else if (currentStatus?.state === 'qr' && currentStatus?.qr) {
+      setConnectionState('qr');
+      setQrCode(currentStatus.qr);
     }
   }, [currentStatus]);
 
@@ -104,8 +107,14 @@ export const useWhatsAppSession = () => {
   // Mutation para iniciar sesión
   const startSessionMutation = useMutation({
     mutationFn: whatsappApi.startSession,
-    onSuccess: () => {
-      setConnectionState('connecting');
+    onSuccess: (data) => {
+      if (data?.qr) {
+        console.log('📱 QR obtenido desde respuesta REST startSession');
+        setQrCode(data.qr);
+        setConnectionState('qr');
+      } else {
+        setConnectionState((data?.state as ConnectionState) || 'connecting');
+      }
     },
     onError: (error: Error) => {
       message.error(error.message || 'Error al iniciar sesión');

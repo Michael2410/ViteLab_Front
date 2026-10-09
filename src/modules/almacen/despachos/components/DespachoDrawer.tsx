@@ -35,6 +35,7 @@ interface LineaDespacho {
   lote_id?: number;
   producto_nombre?: string;
   numero_lote?: string;
+  marca?: string | null;
   stock_disponible: number;
   unidad_medida?: string;
   fecha_vencimiento?: string | null;
@@ -135,6 +136,7 @@ export default function DespachoDrawer({ open, onClose, onSuccess }: DespachoDra
             lote_id: lote.lote_id,
             producto_nombre: lote.producto_nombre,
             numero_lote: lote.numero_lote || 'Sin lote',
+            marca: lote.marca || null,
             unidad_medida: lote.unidad_medida_codigo || '',
             fecha_vencimiento: lote.fecha_vencimiento,
             stock_disponible: lote.cantidad,
@@ -223,7 +225,7 @@ export default function DespachoDrawer({ open, onClose, onSuccess }: DespachoDra
           optionFilterProp="label"
           options={stockLotes.map((s) => ({
             value: s.lote_id,
-            label: `${s.producto_nombre} | Lote: ${s.numero_lote || 'S/L'} | Disp: ${s.cantidad} ${s.unidad_medida_codigo || ''}`,
+            label: `${s.producto_nombre} | Marca: ${s.marca || 'Sin marca'} | Lote: ${s.numero_lote || 'S/L'} | Disp: ${s.cantidad} ${s.unidad_medida_codigo || ''}`,
           }))}
         />
       ),

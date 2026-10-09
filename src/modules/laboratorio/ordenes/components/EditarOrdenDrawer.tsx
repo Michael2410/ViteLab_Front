@@ -29,6 +29,7 @@ import {
   CheckOutlined,
   EditOutlined,
   InfoCircleOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAuthStore } from '../../../auth/hooks';
@@ -78,6 +79,7 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
   const [convenioId, setConvenioId] = useState<number | undefined>(undefined);
   const [pacienteSummary, setPacienteSummary] = useState<any>(null);
   const [datosCargados, setDatosCargados] = useState(false);
+  const [metodoPago, setMetodoPago] = useState<string>('EFECTIVO');
 
   // --- Queries y Mutaciones ---
   const validId = open && ordenId ? ordenId : 0;
@@ -99,6 +101,7 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
     setConvenioId(undefined);
     setPacienteSummary(null);
     setDatosCargados(false);
+    setMetodoPago('EFECTIVO');
   };
 
   const handleClose = () => {
@@ -153,6 +156,7 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
         medico: orden.medico || undefined,
         nota: orden.nota || undefined,
       });
+      setMetodoPago(orden.metodo_pago || 'EFECTIVO');
       setTipoClienteSeleccionado(orden.tipo_cliente_id);
       setConvenioId(orden.convenio_id || undefined);
 
@@ -277,6 +281,7 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
         sede_id: ordenValues.sede_id,
         tipo_cliente_id: ordenValues.tipo_cliente_id,
         convenio_id: esParticular ? undefined : ordenValues.convenio_id || undefined,
+        metodo_pago: metodoPago || 'EFECTIVO',
         analisis: analisisSeleccionados,
         nota: ordenValues.nota || undefined,
         medico: ordenValues.medico || undefined,
@@ -865,6 +870,48 @@ export const EditarOrdenDrawer: React.FC<EditarOrdenDrawerProps> = ({
                   convenioId={esParticular ? undefined : convenioId}
                   analisisIniciales={analisisIniciales}
                 />
+              </div>
+
+              {/* Liquidación y Medio de Pago junto al precio final */}
+              <div
+                style={{
+                  marginTop: 18,
+                  background: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 16,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                }}
+              >
+                <div style={{ flex: '1 1 320px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <DollarOutlined style={{ color: '#0284c7', fontSize: 16 }} />
+                    <span style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
+                      Forma / Medio de Pago
+                    </span>
+                    <Tag color="blue" style={{ borderRadius: 4, fontSize: 11, margin: 0 }}>
+                      Obligatorio
+                    </Tag>
+                  </div>
+                  <Select
+                    value={metodoPago}
+                    onChange={(val) => setMetodoPago(val)}
+                    size="large"
+                    style={{ width: '100%', maxWidth: 380, borderRadius: 8 }}
+                    options={[
+                      { value: 'EFECTIVO', label: '💵 Efectivo (Dinero Físico)' },
+                      { value: 'YAPE', label: '🟣 Yape (Billetera Digital)' },
+                      { value: 'PLIN', label: '🔵 Plin (Billetera Digital)' },
+                      { value: 'TARJETA', label: '💳 Tarjeta de Crédito / Débito (POS)' },
+                      { value: 'TRANSFERENCIA', label: '🏦 Transferencia Bancaria' },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
           </div>

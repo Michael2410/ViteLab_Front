@@ -33,7 +33,7 @@ export const maestrosApi = {
     almacenApi.delete<Almacen>(`/maestros/almacenes/${id}`),
 
   // UBICACIONES
-  listarUbicaciones: (params?: { almacen_id?: number; activo?: boolean }) =>
+  listarUbicaciones: (params?: { almacen_id?: number | number[]; activo?: boolean }) =>
     almacenApi.get<Ubicacion[]>('/maestros/ubicaciones', params),
   crearUbicacion: (data: Partial<Ubicacion>) =>
     almacenApi.post<Ubicacion>('/maestros/ubicaciones', data),

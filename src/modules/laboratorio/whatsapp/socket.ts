@@ -19,8 +19,12 @@ class WhatsAppSocketService {
       return;
     }
 
+    const token = localStorage.getItem('accessToken') || undefined;
+
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
+      auth: { token },
+      query: { token },
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,

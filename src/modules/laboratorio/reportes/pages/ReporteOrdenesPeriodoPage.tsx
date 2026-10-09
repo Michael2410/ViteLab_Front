@@ -1,132 +1,229 @@
-import { useState } from 'react';
-import { Table, Typography, Tag, Card, Row, Col, Statistic, message, Result, Button } from 'antd';
-import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Typography, Tag, Row, Col, message, Result, Button, Space } from 'antd';
+import {
+  ArrowLeftOutlined,
+  LockOutlined,
+  FileTextOutlined,
+  DollarOutlined,
+  ExperimentOutlined,
+  RiseOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
-import PageContainer from '../../../../shared/components/PageContainer';
+import dayjs from 'dayjs';
+
+import ModulePageLayout from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import FiltrosReporte from '../components/FiltrosReporte';
 import ExportButtons from '../components/ExportButtons';
-import { useAuthStore } from '../../../auth/hooks';
+import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { getReporteOrdenesPeriodo } from '../api';
 import { exportToExcel, exportToPDF, formatDateTime, formatCurrency } from '../utils/exportHelpers';
 import type { FiltrosReporte as FiltrosType, OrdenReporte, ReporteOrdenesPeriodo } from '../types';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
-const estadoColors: Record<string, string> = {
-  REGISTRADA: 'blue',
-  MUESTRA_RECIBIDA: 'cyan',
-  CON_RESULTADOS: 'purple',
-  APROBADA: 'green',
-  IMPRESO: 'default',
+const estadoConfig: Record<string, { color: string; label: string }> = {
+  REGISTRADA: { color: 'blue', label: 'Registrada' },
+  MUESTRA_RECIBIDA: { color: 'cyan', label: 'Muestra Recibida' },
+  CON_RESULTADOS: { color: 'purple', label: 'Con Resultados' },
+  APROBADA: { color: 'green', label: 'Aprobada' },
+  IMPRESO: { color: 'default', label: 'Impreso' },
+};
+
+const metodoPagoConfig: Record<string, { color: string; label: string }> = {
+  EFECTIVO: { color: 'green', label: '💵 Efectivo' },
+  YAPE: { color: 'purple', label: '🟣 Yape' },
+  PLIN: { color: 'cyan', label: '🔵 Plin' },
+  TARJETA: { color: 'blue', label: '💳 Tarjeta / POS' },
+  TRANSFERENCIA: { color: 'orange', label: '🏦 Transferencia' },
 };
 
 export default function ReporteOrdenesPeriodoPage() {
   const navigate = useNavigate();
-  const { hasPermission } = useAuthStore();
-  const [filtros, setFiltros] = useState<FiltrosType>({});
+  const { hasPermission, isSuperAdmin, isAdmin } = usePermissions();
+
+  const canAccess =
+    isSuperAdmin ||
+    isAdmin ||
+    hasPermission('reports.ordenes.read') ||
+    hasPermission('reports.read');
+
+  // Inicializar por defecto con el mes en curso
+  const [filtros, setFiltros] = useState<FiltrosType>({
+    fecha_inicio: dayjs().startOf('month').format('YYYY-MM-DD'),
+    fecha_fin: dayjs().endOf('month').format('YYYY-MM-DD'),
+  });
+
   const [reporte, setReporte] = useState<ReporteOrdenesPeriodo | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleBuscar = async () => {
+  const fetchReporte = useCallback(async (paramsToSearch: FiltrosType) => {
     try {
       setLoading(true);
-      const data = await getReporteOrdenesPeriodo(filtros);
+      const data = await getReporteOrdenesPeriodo(paramsToSearch);
       setReporte(data);
     } catch (error) {
-      message.error('Error al generar el reporte');
-      console.error(error);
+      console.error('Error al generar el reporte:', error);
+      message.error('Error al generar el reporte de órdenes');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Carga inicial automática
+  useEffect(() => {
+    if (canAccess) {
+      fetchReporte(filtros);
+    }
+  }, [canAccess, fetchReporte]);
+
+  const handleBuscar = () => {
+    fetchReporte(filtros);
   };
 
   const handleLimpiar = () => {
-    setFiltros({});
-    setReporte(null);
+    const filtrosVacios: FiltrosType = {};
+    setFiltros(filtrosVacios);
+    fetchReporte(filtrosVacios);
   };
+
+  const ticketPromedio = useMemo(() => {
+    if (!reporte?.totales.cantidad || reporte.totales.cantidad === 0) return 0;
+    return reporte.totales.monto_total / reporte.totales.cantidad;
+  }, [reporte]);
+
+  const totalAnalisisSum = useMemo(() => {
+    if (!reporte?.ordenes) return 0;
+    return reporte.ordenes.reduce((acc, o) => acc + (o.total_analisis || 0), 0);
+  }, [reporte]);
 
   const columns: ColumnsType<OrdenReporte> = [
     {
       title: 'N° Atención',
       dataIndex: 'numero_atencion',
       key: 'numero_atencion',
-      width: 120,
+      width: 110,
+      render: (num) => (
+        <span style={{ fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
+          #{num}
+        </span>
+      ),
     },
     {
-      title: 'Fecha',
+      title: 'Fecha Registro',
       dataIndex: 'fecha_registro',
       key: 'fecha_registro',
-      width: 150,
-      render: (fecha) => formatDateTime(fecha),
+      width: 145,
+      render: (fecha) => (
+        <Text style={{ fontSize: 13, color: '#475569' }}>
+          {formatDateTime(fecha)}
+        </Text>
+      ),
     },
     {
       title: 'Paciente',
       key: 'paciente',
-      width: 200,
+      width: 210,
       render: (_, record) => (
         <div>
-          <Text strong>{record.paciente_apellidos}</Text>
-          <br />
-          <Text type="secondary">{record.paciente_nombres}</Text>
+          <div style={{ fontWeight: 600, color: '#0f172a' }}>
+            {record.paciente_apellidos}
+          </div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>
+            {record.paciente_nombres}
+          </div>
         </div>
       ),
     },
     {
-      title: 'DNI',
+      title: 'DNI / Doc',
       dataIndex: 'paciente_dni',
       key: 'paciente_dni',
-      width: 100,
+      width: 105,
+      render: (dni) => (
+        <span style={{ fontSize: 12, fontWeight: 500, color: '#334155' }}>
+          {dni || '-'}
+        </span>
+      ),
     },
     {
       title: 'Sede',
       dataIndex: 'sede_nombre',
       key: 'sede_nombre',
-      width: 120,
-    },
-    {
-      title: 'Tipo',
-      dataIndex: 'tipo_paciente',
-      key: 'tipo_paciente',
-      width: 100,
-      render: (tipo) => (
-        <Tag color={tipo === 'CONVENIO' ? 'blue' : 'green'}>
-          {tipo || 'PARTICULAR'}
+      width: 130,
+      render: (sede) => (
+        <Tag style={{ borderRadius: 6, fontWeight: 500 }}>
+          {sede || 'Principal'}
         </Tag>
       ),
     },
     {
-      title: 'Convenio',
-      dataIndex: 'convenio_nombre',
-      key: 'convenio_nombre',
-      width: 120,
-      render: (convenio) => convenio || '-',
+      title: 'Tipo / Convenio',
+      key: 'tipo_convenio',
+      width: 140,
+      render: (_, record) => (
+        record.tipo_paciente === 'CONVENIO' ? (
+          <div>
+            <Tag color="blue" style={{ borderRadius: 6, marginBottom: 2 }}>CONVENIO</Tag>
+            <div style={{ fontSize: 11, color: '#64748b' }}>{record.convenio_nombre}</div>
+          </div>
+        ) : (
+          <Tag color="green" style={{ borderRadius: 6 }}>PARTICULAR</Tag>
+        )
+      ),
+    },
+    {
+      title: 'Método de Pago',
+      dataIndex: 'metodo_pago',
+      key: 'metodo_pago',
+      width: 135,
+      render: (metodo) => {
+        const conf = metodoPagoConfig[metodo] || { color: 'default', label: metodo || 'Efectivo' };
+        return (
+          <Tag color={conf.color} style={{ borderRadius: 6, fontWeight: 600 }}>
+            {conf.label}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Análisis',
       dataIndex: 'total_analisis',
       key: 'total_analisis',
-      width: 80,
+      width: 85,
       align: 'center',
+      render: (count) => (
+        <Tag color="geekblue" style={{ borderRadius: 10, fontWeight: 600 }}>
+          {count || 0}
+        </Tag>
+      ),
     },
     {
-      title: 'Monto',
+      title: 'Monto Total',
       dataIndex: 'monto_total',
       key: 'monto_total',
-      width: 100,
+      width: 115,
       align: 'right',
-      render: (monto) => formatCurrency(monto || 0),
+      render: (monto) => (
+        <span style={{ fontWeight: 700, color: '#059669', fontSize: 13 }}>
+          {formatCurrency(monto || 0)}
+        </span>
+      ),
     },
     {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 130,
-      render: (estado) => (
-        <Tag color={estadoColors[estado] || 'default'}>
-          {estado?.replace('_', ' ')}
-        </Tag>
-      ),
+      width: 135,
+      render: (estado) => {
+        const conf = estadoConfig[estado] || { color: 'default', label: estado };
+        return (
+          <Tag color={conf.color} style={{ borderRadius: 6, fontWeight: 600 }}>
+            {conf.label}
+          </Tag>
+        );
+      },
     },
   ];
 
@@ -139,6 +236,7 @@ export default function ReporteOrdenesPeriodoPage() {
     { title: 'Sede', dataIndex: 'sede_nombre' },
     { title: 'Tipo', dataIndex: 'tipo_paciente' },
     { title: 'Convenio', dataIndex: 'convenio_nombre' },
+    { title: 'Método de Pago', dataIndex: 'metodo_pago' },
     { title: 'Análisis', dataIndex: 'total_analisis' },
     { title: 'Monto', dataIndex: 'monto_total' },
     { title: 'Estado', dataIndex: 'estado' },
@@ -152,22 +250,34 @@ export default function ReporteOrdenesPeriodoPage() {
 
   const handleExportPDF = () => {
     if (!reporte?.ordenes.length) return;
-    const subtitulo = filtros.fecha_inicio && filtros.fecha_fin
-      ? `Período: ${filtros.fecha_inicio} al ${filtros.fecha_fin}`
-      : 'Todas las fechas';
-    exportToPDF(reporte.ordenes, exportColumns, 'Reporte_Ordenes_Periodo', 'Reporte de Órdenes por Período', subtitulo);
+    const subtitulo =
+      filtros.fecha_inicio && filtros.fecha_fin
+        ? `Período: ${filtros.fecha_inicio} al ${filtros.fecha_fin}`
+        : 'Todas las fechas';
+    exportToPDF(
+      reporte.ordenes,
+      exportColumns,
+      'Reporte_Ordenes_Periodo',
+      'Reporte de Órdenes por Período',
+      subtitulo
+    );
     message.success('PDF exportado exitosamente');
   };
 
-  if (!hasPermission('orders.read')) {
+  if (!canAccess) {
     return (
       <Result
         status="403"
         icon={<LockOutlined />}
         title="Acceso Denegado"
-        subTitle="No tienes permisos para ver este reporte."
+        subTitle="No cuentas con permisos suficientes para consultar los reportes del laboratorio."
         extra={
-          <Button type="primary" onClick={() => navigate('/reportes')} icon={<ArrowLeftOutlined />}>
+          <Button
+            type="primary"
+            onClick={() => navigate('/reportes')}
+            icon={<ArrowLeftOutlined />}
+            style={{ borderRadius: 8 }}
+          >
             Volver a Reportes
           </Button>
         }
@@ -176,96 +286,255 @@ export default function ReporteOrdenesPeriodoPage() {
   }
 
   return (
-    <PageContainer>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ArrowLeftOutlined 
-          style={{ fontSize: 20, cursor: 'pointer' }} 
-          onClick={() => navigate('/reportes')}
-        />
+    <ModulePageLayout
+      title="Reporte de Órdenes por Período"
+      subtitle="Auditoría, volumen de atenciones y recaudación por rango de fechas, sede, estado y método de pago"
+      actionButton={
+        <Space size={10}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/reportes')}
+            style={{
+              height: 38,
+              borderRadius: 8,
+              fontWeight: 500,
+              color: '#475569',
+            }}
+          >
+            Volver
+          </Button>
+          <ExportButtons
+            onExportExcel={handleExportExcel}
+            onExportPDF={handleExportPDF}
+            disabled={!reporte?.ordenes?.length}
+          />
+        </Space>
+      }
+      stats={
         <div>
-          <Title level={3} style={{ margin: 0 }}>
-            Reporte de Órdenes por Período
-          </Title>
-          <Text type="secondary">
-            Listado detallado de órdenes con filtros por fecha, sede y estado
-          </Text>
-        </div>
-      </div>
-
-      <FiltrosReporte
-        filtros={filtros}
-        onFiltrosChange={setFiltros}
-        onBuscar={handleBuscar}
-        onLimpiar={handleLimpiar}
-        loading={loading}
-        mostrarEstado
-        mostrarSede
-      />
-
-      {reporte && (
-        <>
-          {/* Resumen */}
-          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]}>
             <Col xs={12} sm={6}>
-              <Card size="small">
-                <Statistic
-                  title="Total Órdenes"
-                  value={reporte.totales.cantidad}
-                  valueStyle={{ color: '#1890ff' }}
-                />
-              </Card>
+              <div
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'rgba(2, 132, 199, 0.1)',
+                    color: '#0284c7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                  }}
+                >
+                  <FileTextOutlined />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                    Total Órdenes
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                    {reporte?.totales.cantidad ?? 0}
+                  </div>
+                </div>
+              </div>
             </Col>
+
             <Col xs={12} sm={6}>
-              <Card size="small">
-                <Statistic
-                  title="Monto Total"
-                  value={reporte.totales.monto_total}
-                  precision={2}
-                  prefix="S/"
-                  valueStyle={{ color: '#52c41a' }}
-                />
-              </Card>
+              <div
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    color: '#059669',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                  }}
+                >
+                  <DollarOutlined />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                    Monto Recaudado
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#059669', lineHeight: 1.2 }}>
+                    {formatCurrency(reporte?.totales.monto_total ?? 0)}
+                  </div>
+                </div>
+              </div>
             </Col>
-            <Col xs={24} sm={12}>
-              <Card size="small">
-                <Text strong>Por Estado: </Text>
-                {reporte.totales.por_estado.map((e, i) => (
-                  <Tag key={i} color={estadoColors[e.estado]}>
-                    {e.estado}: {e.cantidad}
-                  </Tag>
-                ))}
-              </Card>
+
+            <Col xs={12} sm={6}>
+              <div
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'rgba(99, 102, 241, 0.1)',
+                    color: '#6366f1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                  }}
+                >
+                  <ExperimentOutlined />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                    Análisis Solicitados
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                    {totalAnalisisSum}
+                  </div>
+                </div>
+              </div>
+            </Col>
+
+            <Col xs={12} sm={6}>
+              <div
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    color: '#d97706',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                  }}
+                >
+                  <RiseOutlined />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                    Ticket Promedio
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                    {formatCurrency(ticketPromedio)}
+                  </div>
+                </div>
+              </div>
             </Col>
           </Row>
 
-          {/* Tabla */}
-          <Card
-            title={`Resultados (${reporte.ordenes.length} registros)`}
-            extra={
-              hasPermission('orders.print') && (
-                <ExportButtons
-                  onExportExcel={handleExportExcel}
-                  onExportPDF={handleExportPDF}
-                  disabled={!reporte.ordenes.length}
-                />
-              )
-            }
-          >
-            <Table
-              columns={columns}
-              dataSource={reporte.ordenes}
-              rowKey="id"
-              size="small"
-              scroll={{ x: 1200 }}
-              pagination={{
-                pageSize: 20,
-                showSizeChanger: true,
-                showTotal: (total) => `Total: ${total} registros`,
+          {/* Desglose interactivo por método de pago */}
+          {reporte?.totales.por_metodo_pago && reporte.totales.por_metodo_pago.length > 0 && (
+            <div
+              style={{
+                marginTop: 12,
+                padding: '10px 16px',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                flexWrap: 'wrap',
               }}
-            />
-          </Card>
-        </>
-      )}
-    </PageContainer>
+            >
+              <Text strong style={{ fontSize: 13, color: '#475569' }}>
+                Recaudación por Método:
+              </Text>
+              {reporte.totales.por_metodo_pago.map((item) => {
+                const conf = metodoPagoConfig[item.metodo] || { color: 'default', label: item.metodo };
+                return (
+                  <Tag
+                    key={item.metodo}
+                    color={conf.color}
+                    style={{
+                      borderRadius: 6,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      margin: 0,
+                    }}
+                  >
+                    <span>{conf.label}:</span>
+                    <span style={{ fontWeight: 700 }}>{formatCurrency(item.monto)}</span>
+                    <span style={{ opacity: 0.8, fontSize: 11 }}>({item.cantidad} ord.)</span>
+                  </Tag>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      }
+      filters={
+        <FiltrosReporte
+          filtros={filtros}
+          onFiltrosChange={setFiltros}
+          onBuscar={handleBuscar}
+          onLimpiar={handleLimpiar}
+          loading={loading}
+          mostrarEstado
+          mostrarSede
+          mostrarMetodoPago
+        />
+      }
+    >
+      <GlobalTable
+        columns={columns}
+        dataSource={reporte?.ordenes || []}
+        rowKey="id"
+        loading={loading}
+        resourceName="órdenes"
+      />
+    </ModulePageLayout>
   );
 }

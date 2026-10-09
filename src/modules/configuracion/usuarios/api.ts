@@ -35,3 +35,14 @@ export const obtenerRoles = async (): Promise<Rol[]> => {
   const { data } = await apiClient.get('/auth/roles');
   return data.data;
 };
+
+// Restablecer contraseña de usuario (Admin)
+export const restablecerPasswordUsuario = async (
+  id: number,
+  newPassword?: string
+): Promise<{ temporaryPassword: string; message: string }> => {
+  const { data } = await apiClient.post(`/auth/users/${id}/reset-password`, {
+    newPassword,
+  });
+  return data.data;
+};

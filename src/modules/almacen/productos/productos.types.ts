@@ -29,7 +29,7 @@ export interface ListarProductosParams {
   page?: number;
   limit?: number;
   search?: string;
-  categoria_id?: number;
+  categoria_id?: number | number[];
   activo?: boolean;
 }
 

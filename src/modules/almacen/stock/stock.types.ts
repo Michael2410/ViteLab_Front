@@ -17,6 +17,10 @@ export interface StockItem {
   cantidad: number;
   total_lotes?: number;
   proximo_vencimiento?: string | null;
+  ubicacion_id?: number | null;
+  ubicacion_codigo?: string | null;
+  ubicacion_nombre?: string | null;
+  ubicaciones_str?: string | null;
 }
 
 export interface KardexItem {
@@ -35,6 +39,9 @@ export interface KardexItem {
   unidad_medida_codigo?: string | null;
   lote_id: number;
   numero_lote?: string | null;
+  ubicacion_id?: number | null;
+  ubicacion_codigo?: string | null;
+  ubicacion_nombre?: string | null;
   cantidad: number;
   costo_unitario?: number | null;
   documento_tipo: string;
@@ -44,22 +51,25 @@ export interface KardexItem {
 }
 
 export interface ListarStockParams {
-  almacen_id?: number;
+  almacen_id?: number | number[];
   sede_id?: number;
   producto_id?: number;
-  categoria_id?: number;
+  categoria_id?: number | number[];
+  ubicacion_id?: number;
   search?: string;
   con_saldo?: boolean;
   desglosar_lote?: boolean;
+  agrupar_por?: 'producto' | 'marca' | 'lote';
   page?: number;
   limit?: number;
 }
 
 export interface ListarKardexParams {
-  almacen_id?: number;
+  almacen_id?: number | number[];
   producto_id?: number;
   lote_id?: number;
-  tipo?: string;
+  ubicacion_id?: number;
+  tipo?: string | string[];
   fecha_desde?: string;
   fecha_hasta?: string;
   page?: number;

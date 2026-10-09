@@ -213,7 +213,7 @@ export default function TransferenciaDrawer({
           optionFilterProp="label"
           options={stockLotes.map((s) => ({
             value: s.lote_id,
-            label: `${s.producto_nombre} | Lote: ${s.numero_lote || 'S/L'} | Disp: ${s.cantidad} ${s.unidad_medida_codigo || ''}`,
+            label: `${s.producto_nombre} | Marca: ${s.marca || 'Sin marca'} | Lote: ${s.numero_lote || 'S/L'} | Disp: ${s.cantidad} ${s.unidad_medida_codigo || ''}`,
           }))}
         />
       ),

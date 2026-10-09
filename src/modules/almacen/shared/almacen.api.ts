@@ -3,7 +3,17 @@ import type { ApiResponse } from './types';
 
 export const almacenApi = {
   get: async <T>(url: string, params?: Record<string, any>): Promise<T> => {
-    const res = await apiClient.get<ApiResponse<T>>(`/almacen${url}`, { params });
+    let cleanParams = params;
+    if (params) {
+      cleanParams = { ...params };
+      for (const key of Object.keys(cleanParams)) {
+        const val = cleanParams[key];
+        if (Array.isArray(val)) {
+          cleanParams[key] = val.join(',');
+        }
+      }
+    }
+    const res = await apiClient.get<ApiResponse<T>>(`/almacen${url}`, { params: cleanParams });
     return res.data.data;
   },
 

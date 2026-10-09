@@ -42,9 +42,9 @@ export interface Despacho {
 export interface ListarDespachosParams {
   page?: number;
   limit?: number;
-  almacen_id?: number;
+  almacen_id?: number | number[];
   receptor_personal_id?: number;
-  estado?: string;
+  estado?: string | string[];
   fecha_desde?: string;
   fecha_hasta?: string;
   search?: string;

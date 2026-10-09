@@ -4,6 +4,7 @@ export { default as ReporteOrdenesPeriodoPage } from './pages/ReporteOrdenesPeri
 export { default as ReporteIngresosSedeP } from './pages/ReporteIngresosSedeP';
 export { default as ReporteAnalisisRankingPage } from './pages/ReporteAnalisisRankingPage';
 export { default as ReporteProductividadPage } from './pages/ReporteProductividadPage';
+export { default as ReporteCuadreCajaPage } from './pages/ReporteCuadreCajaPage';
 
 // Componentes
 export { default as FiltrosReporte } from './components/FiltrosReporte';

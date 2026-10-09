@@ -41,9 +41,9 @@ export interface Pedido {
 export interface ListarPedidosParams {
   page?: number;
   limit?: number;
-  almacen_id?: number;
+  almacen_id?: number | number[];
   solicitante_personal_id?: number;
-  estado?: string;
+  estado?: string | string[];
   fecha_desde?: string;
   fecha_hasta?: string;
   search?: string;

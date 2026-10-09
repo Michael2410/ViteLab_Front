@@ -3,7 +3,7 @@ import {
   Tabs,
   Input,
   Button,
-  Switch,
+  Radio,
   DatePicker,
   Tag,
   Tooltip,
@@ -60,10 +60,9 @@ export default function StockListPage() {
   const [pageStock, setPageStock] = useState(1);
   const [limitStock, setLimitStock] = useState(10);
   const [searchStock, setSearchStock] = useState('');
-  const [almacenIdStock, setAlmacenIdStock] = useState<number | undefined>(undefined);
-  const [categoriaIdStock, setCategoriaIdStock] = useState<number | undefined>(undefined);
-  const [desglosarLote, setDesglosarLote] = useState(false);
-  const [soloConSaldo, setSoloConSaldo] = useState(true);
+  const [almacenIdsStock, setAlmacenIdsStock] = useState<number[] | undefined>(undefined);
+  const [categoriaIdsStock, setCategoriaIdsStock] = useState<number[] | undefined>(undefined);
+  const [modoVista, setModoVista] = useState<'producto' | 'marca' | 'lote'>('producto');
   const [loadingStock, setLoadingStock] = useState(false);
 
   // Estados Kardex
@@ -71,8 +70,8 @@ export default function StockListPage() {
   const [totalKardex, setTotalKardex] = useState(0);
   const [pageKardex, setPageKardex] = useState(1);
   const [limitKardex, setLimitKardex] = useState(10);
-  const [tipoMovimiento, setTipoMovimiento] = useState<string | undefined>(undefined);
-  const [almacenIdKardex, setAlmacenIdKardex] = useState<number | undefined>(undefined);
+  const [tiposMovimiento, setTiposMovimiento] = useState<string[] | undefined>(undefined);
+  const [almacenIdsKardex, setAlmacenIdsKardex] = useState<number[] | undefined>(undefined);
   const [rangoKardex, setRangoKardex] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [loadingKardex, setLoadingKardex] = useState(false);
 
@@ -97,10 +96,11 @@ export default function StockListPage() {
         page: pageStock,
         limit: limitStock,
         search: searchStock.trim() || undefined,
-        almacen_id: almacenIdStock,
-        categoria_id: categoriaIdStock,
-        desglosar_lote: desglosarLote,
-        con_saldo: soloConSaldo,
+        almacen_id: almacenIdsStock,
+        categoria_id: categoriaIdsStock,
+        agrupar_por: modoVista,
+        desglosar_lote: modoVista === 'lote',
+        con_saldo: true,
       });
       setStockItems(res.items || []);
       setTotalStock(res.total || 0);
@@ -109,7 +109,7 @@ export default function StockListPage() {
     } finally {
       setLoadingStock(false);
     }
-  }, [pageStock, limitStock, searchStock, almacenIdStock, categoriaIdStock, desglosarLote, soloConSaldo]);
+  }, [pageStock, limitStock, searchStock, almacenIdsStock, categoriaIdsStock, modoVista]);
 
   // Cargar Kardex
   const cargarKardex = useCallback(async () => {
@@ -118,8 +118,8 @@ export default function StockListPage() {
       const res = await stockApi.listarKardex({
         page: pageKardex,
         limit: limitKardex,
-        tipo: tipoMovimiento,
-        almacen_id: almacenIdKardex,
+        tipo: tiposMovimiento,
+        almacen_id: almacenIdsKardex,
         fecha_desde: rangoKardex ? rangoKardex[0].format('YYYY-MM-DD') : undefined,
         fecha_hasta: rangoKardex ? rangoKardex[1].format('YYYY-MM-DD') : undefined,
       });
@@ -130,7 +130,7 @@ export default function StockListPage() {
     } finally {
       setLoadingKardex(false);
     }
-  }, [pageKardex, limitKardex, tipoMovimiento, almacenIdKardex, rangoKardex]);
+  }, [pageKardex, limitKardex, tiposMovimiento, almacenIdsKardex, rangoKardex]);
 
   useEffect(() => {
     if (activeTab === 'stock') cargarStock();
@@ -141,22 +141,22 @@ export default function StockListPage() {
     setPageStock(pagination.current || 1);
     setLimitStock(pagination.pageSize || limitStock);
 
-    const almVal = tableFilters.almacen_nombre?.[0];
-    setAlmacenIdStock(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+    const almVal = tableFilters.almacen_nombre;
+    setAlmacenIdsStock(almVal && almVal.length > 0 ? (almVal as any[]).map(Number) : undefined);
 
-    const catVal = tableFilters.categoria_nombre?.[0];
-    setCategoriaIdStock(catVal !== undefined && catVal !== null ? Number(catVal) : undefined);
+    const catVal = tableFilters.categoria_nombre;
+    setCategoriaIdsStock(catVal && catVal.length > 0 ? (catVal as any[]).map(Number) : undefined);
   };
 
   const handleTableChangeKardex = (pagination: any, tableFilters: any) => {
     setPageKardex(pagination.current || 1);
     setLimitKardex(pagination.pageSize || limitKardex);
 
-    const movVal = tableFilters.tipo?.[0];
-    setTipoMovimiento(movVal ? String(movVal) : undefined);
+    const movVal = tableFilters.tipo;
+    setTiposMovimiento(movVal && movVal.length > 0 ? (movVal as string[]) : undefined);
 
-    const almVal = tableFilters.almacen_nombre?.[0];
-    setAlmacenIdKardex(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+    const almVal = tableFilters.almacen_nombre;
+    setAlmacenIdsKardex(almVal && almVal.length > 0 ? (almVal as any[]).map(Number) : undefined);
   };
 
   // Columnas Stock
@@ -183,8 +183,7 @@ export default function StockListPage() {
       key: 'almacen_nombre',
       width: 170,
       filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
-      filterMultiple: false,
-      filteredValue: almacenIdStock !== undefined ? [almacenIdStock] : null,
+      filteredValue: almacenIdsStock && almacenIdsStock.length > 0 ? almacenIdsStock : null,
       filterIcon: renderTableFilterIcon,
       render: (alm, r) => (
         <div>
@@ -199,12 +198,11 @@ export default function StockListPage() {
       key: 'categoria_nombre',
       width: 150,
       filters: categorias.map((c) => ({ text: c.nombre, value: c.id })),
-      filterMultiple: false,
-      filteredValue: categoriaIdStock !== undefined ? [categoriaIdStock] : null,
+      filteredValue: categoriaIdsStock && categoriaIdsStock.length > 0 ? categoriaIdsStock : null,
       filterIcon: renderTableFilterIcon,
       render: (c) => (c ? <Tag color="blue">{c}</Tag> : <Text type="secondary">—</Text>),
     },
-    ...(desglosarLote
+    ...(modoVista === 'lote'
       ? [
           {
             title: 'Lote / Marca',
@@ -213,15 +211,31 @@ export default function StockListPage() {
             render: (_: any, r: StockItem) => (
               <div>
                 <Tag color="geekblue">{r.numero_lote || 'Genérico'}</Tag>
-                {r.marca && <span style={{ fontSize: 11, color: '#64748b' }}>{r.marca}</span>}
+                {r.marca && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{r.marca}</div>}
               </div>
+            ),
+          },
+          {
+            title: 'Ubicación',
+            key: 'ubicacion',
+            width: 140,
+            render: (_: any, r: StockItem) => (
+              r.ubicacion_codigo ? (
+                <Tooltip title={r.ubicacion_nombre ? `${r.ubicacion_codigo} - ${r.ubicacion_nombre}` : r.ubicacion_codigo}>
+                  <Tag color="cyan">
+                    {r.ubicacion_codigo}
+                  </Tag>
+                </Tooltip>
+              ) : (
+                <Text type="secondary">—</Text>
+              )
             ),
           },
           {
             title: 'Vencimiento',
             dataIndex: 'fecha_vencimiento',
             key: 'venc',
-            width: 180,
+            width: 170,
             render: (v: string | null) => {
               if (!v) return <Text type="secondary">—</Text>;
               const dias = dayjs(v).diff(dayjs(), 'day');
@@ -234,13 +248,81 @@ export default function StockListPage() {
             },
           },
         ]
+      : modoVista === 'marca'
+      ? [
+          {
+            title: 'Marca',
+            key: 'marca',
+            width: 150,
+            render: (_: any, r: StockItem) => (
+              <Tag color="purple" style={{ fontWeight: 600 }}>
+                {r.marca || 'Sin Marca'}
+              </Tag>
+            ),
+          },
+          {
+            title: 'Lotes Registrados',
+            dataIndex: 'total_lotes',
+            key: 'lotes_count',
+            width: 140,
+            render: (t: number) => <Tag color="cyan">{t || 1} {t === 1 ? 'lote' : 'lotes'}</Tag>,
+          },
+          {
+            title: 'Ubicación(es)',
+            key: 'ubicaciones_str',
+            width: 150,
+            render: (_: any, r: StockItem) => (
+              r.ubicaciones_str ? (
+                <Tooltip title={`Ubicaciones: ${r.ubicaciones_str}`}>
+                  <Tag color="cyan">
+                    {r.ubicaciones_str}
+                  </Tag>
+                </Tooltip>
+              ) : (
+                <Text type="secondary">—</Text>
+              )
+            ),
+          },
+          {
+            title: 'Próx. Vencimiento',
+            dataIndex: 'proximo_vencimiento',
+            key: 'prox_venc',
+            width: 180,
+            render: (v: string | null) => {
+              if (!v) return <Text type="secondary">—</Text>;
+              const dias = dayjs(v).diff(dayjs(), 'day');
+              const color = dias < 0 ? 'magenta' : dias <= 30 ? 'red' : dias <= 90 ? 'gold' : 'green';
+              return (
+                <Tooltip title={dias < 0 ? 'Lote vencido' : `Lote más próximo de esta marca vence en ${dias} días`}>
+                  <Tag color={color}>{v}</Tag>
+                </Tooltip>
+              );
+            },
+          },
+        ]
       : [
           {
             title: 'Lotes Registrados',
             dataIndex: 'total_lotes',
             key: 'lotes_count',
+            width: 150,
+            render: (t: number) => <Tag color="cyan">{t || 1} {t === 1 ? 'lote' : 'lotes'}</Tag>,
+          },
+          {
+            title: 'Ubicación(es)',
+            key: 'ubicaciones_str',
             width: 160,
-            render: (t: number) => <Tag color="cyan">{t || 1} lotes</Tag>,
+            render: (_: any, r: StockItem) => (
+              r.ubicaciones_str ? (
+                <Tooltip title={`Ubicaciones: ${r.ubicaciones_str}`}>
+                  <Tag color="cyan">
+                    {r.ubicaciones_str}
+                  </Tag>
+                </Tooltip>
+              ) : (
+                <Text type="secondary">—</Text>
+              )
+            ),
           },
           {
             title: 'Vencimiento',
@@ -349,8 +431,7 @@ export default function StockListPage() {
         { value: 'AJUSTE_SALIDA', text: 'Ajuste Salida' },
         { value: 'ANULACION', text: 'Anulación' },
       ],
-      filterMultiple: false,
-      filteredValue: tipoMovimiento ? [tipoMovimiento] : null,
+      filteredValue: tiposMovimiento && tiposMovimiento.length > 0 ? tiposMovimiento : null,
       filterIcon: renderTableFilterIcon,
       render: (t: string) => {
         const color =
@@ -372,8 +453,7 @@ export default function StockListPage() {
       key: 'almacen_nombre',
       width: 160,
       filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
-      filterMultiple: false,
-      filteredValue: almacenIdKardex !== undefined ? [almacenIdKardex] : null,
+      filteredValue: almacenIdsKardex && almacenIdsKardex.length > 0 ? almacenIdsKardex : null,
       filterIcon: renderTableFilterIcon,
       render: (alm) => alm || <Text type="secondary">—</Text>,
     },
@@ -395,6 +475,22 @@ export default function StockListPage() {
       key: 'lote',
       width: 120,
       render: (l) => (l ? <Tag color="geekblue">{l}</Tag> : <Text type="secondary">—</Text>),
+    },
+    {
+      title: 'Ubicación',
+      key: 'ubicacion',
+      width: 140,
+      render: (_, r) => (
+        r.ubicacion_codigo ? (
+          <Tooltip title={r.ubicacion_nombre ? `${r.ubicacion_codigo} - ${r.ubicacion_nombre}` : r.ubicacion_codigo}>
+            <Tag color="cyan">
+              {r.ubicacion_codigo}
+            </Tag>
+          </Tooltip>
+        ) : (
+          <Text type="secondary">—</Text>
+        )
+      ),
     },
     {
       title: 'Cantidad',
@@ -436,9 +532,9 @@ export default function StockListPage() {
       subtitle={currentTabConfig.description}
       actionButton={
         activeTab === 'stock' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <Input
-              placeholder="Buscar por producto o lote..."
+              placeholder="Buscar por producto, marca o lote..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={searchStock}
               onChange={(e) => setSearchStock(e.target.value)}
@@ -450,23 +546,28 @@ export default function StockListPage() {
               allowClear
             />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 14, color: '#475569', fontWeight: 500 }}>Desglosar lote:</span>
-              <Switch size="default" checked={desglosarLote} onChange={(checked) => setDesglosarLote(checked)} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 14, color: '#475569', fontWeight: 500 }}>Solo saldo:</span>
-              <Switch size="default" checked={soloConSaldo} onChange={(checked) => setSoloConSaldo(checked)} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>Vista:</span>
+              <Radio.Group
+                value={modoVista}
+                onChange={(e) => {
+                  setModoVista(e.target.value);
+                  setPageStock(1);
+                }}
+              >
+                <Radio value="producto">Consolidado</Radio>
+                <Radio value="marca">Por Marca</Radio>
+                <Radio value="lote">Por Lote</Radio>
+              </Radio.Group>
             </div>
           </div>
         ) : (
-          (Boolean(tipoMovimiento) || almacenIdKardex !== undefined || Boolean(rangoKardex)) ? (
+          ((tiposMovimiento && tiposMovimiento.length > 0) || (almacenIdsKardex && almacenIdsKardex.length > 0) || Boolean(rangoKardex)) ? (
             <Button
               type="link"
               onClick={() => {
-                setTipoMovimiento(undefined);
-                setAlmacenIdKardex(undefined);
+                setTiposMovimiento(undefined);
+                setAlmacenIdsKardex(undefined);
                 setRangoKardex(null);
                 setPageKardex(1);
               }}

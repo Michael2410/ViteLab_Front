@@ -88,12 +88,26 @@ export default function IngresoDetalleModal({
       render: (_, r) => (
         <div>
           {r.numero_lote ? <Tag color="blue">{r.numero_lote}</Tag> : <Text type="secondary">Sin lote</Text>}
+          {r.marca && <Tag color="purple">{r.marca}</Tag>}
           {r.fecha_vencimiento && (
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
               Vence: {r.fecha_vencimiento}
             </div>
           )}
         </div>
+      ),
+    },
+    {
+      title: 'Ubicación',
+      key: 'ubicacion',
+      render: (_, r) => (
+        r.ubicacion_codigo ? (
+          <Tag color="cyan">
+            {r.ubicacion_codigo}{r.ubicacion_nombre ? ` - ${r.ubicacion_nombre}` : ''}
+          </Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        )
       ),
     },
     {

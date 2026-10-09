@@ -26,6 +26,7 @@ import {
   PedidosListPage as AlmacenPedidosPage,
   TransferenciasListPage as AlmacenTransferenciasPage,
   AjustesListPage as AlmacenAjustesPage,
+  OrdenesCompraListPage as AlmacenOrdenesCompraPage,
 } from './modules/almacen';
 import {
   PersonalPage,
@@ -40,7 +41,6 @@ import {
 // Módulo Órdenes (Laboratorio)
 import { OrdenesPage } from './modules/laboratorio/ordenes/pages/OrdenesPage';
 import { OrdenDetallePage } from './modules/laboratorio/ordenes/pages/OrdenDetallePage';
-import { OrdenImprimiblePage } from './modules/laboratorio/ordenes/pages/OrdenImprimiblePage';
 
 // Módulo Resultados (Laboratorio)
 import { ResultadosPage } from './modules/laboratorio/resultados/pages/ResultadosPage';
@@ -84,6 +84,7 @@ import {
   SistemaPage,
   RolesPage,
   SedesPage,
+  PlantillasDocumentosPage,
 } from './modules/configuracion';
 
 // Módulo Reportes (Laboratorio)
@@ -92,7 +93,8 @@ import {
   ReporteOrdenesPeriodoPage,
   ReporteIngresosSedeP,
   ReporteAnalisisRankingPage,
-  ReporteProductividadPage
+  ReporteProductividadPage,
+  ReporteCuadreCajaPage,
 } from './modules/laboratorio/reportes';
 
 const queryClient = new QueryClient({
@@ -109,6 +111,7 @@ function ConfiguracionIndexRedirect() {
   if (isSuperAdmin || hasPermission('auth.users.read')) return <Navigate to="/configuracion/usuarios" replace />;
   if (hasPermission('auth.roles.read')) return <Navigate to="/configuracion/roles" replace />;
   if (hasPermission('catalogs.sedes.read')) return <Navigate to="/configuracion/sedes" replace />;
+  if (hasPermission('configuracion.plantillas.read')) return <Navigate to="/configuracion/plantillas-documentos" replace />;
   if (hasPermission('settings.read')) return <Navigate to="/configuracion/sistema" replace />;
   return <Navigate to="/portal" replace />;
 }
@@ -239,6 +242,14 @@ function App() {
                   element={
                     <ProtectedRoute requiredPermission="almacen.stock.read">
                       <AlmacenStockPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="ordenes-compra"
+                  element={
+                    <ProtectedRoute requiredPermission="almacen.ordenes_compra.read">
+                      <AlmacenOrdenesCompraPage />
                     </ProtectedRoute>
                   }
                 />
@@ -389,6 +400,7 @@ function App() {
                       'auth.users.read',
                       'auth.roles.read',
                       'catalogs.sedes.read',
+                      'configuracion.plantillas.read',
                       'settings.read',
                     ]}
                   >
@@ -418,6 +430,14 @@ function App() {
                   element={
                     <ProtectedRoute requiredPermission="catalogs.sedes.read">
                       <SedesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="plantillas-documentos"
+                  element={
+                    <ProtectedRoute requiredPermissions={['configuracion.plantillas.read', 'settings.read']}>
+                      <PlantillasDocumentosPage />
                     </ProtectedRoute>
                   }
                 />
@@ -456,11 +476,6 @@ function App() {
                 <Route path="ordenes/:id" element={
                   <ProtectedRoute requiredPermission="orders.read">
                     <OrdenDetallePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/ordenes/:id/imprimir" element={
-                  <ProtectedRoute requiredPermission="orders.print">
-                    <OrdenImprimiblePage />
                   </ProtectedRoute>
                 } />
                 
@@ -522,28 +537,33 @@ function App() {
 
                 {/* Módulo de Reportes */}
                 <Route path="reportes" element={
-                  <ProtectedRoute requiredPermission="reports.read">
+                  <ProtectedRoute requiredPermissions={['reports.read', 'reports.ordenes.read', 'reports.ingresos.read', 'reports.analisis.read', 'reports.productividad.read', 'reports.cuadre_caja.read']}>
                     <ReportesPage />
                   </ProtectedRoute>
                 } />
                 <Route path="reportes/ordenes-periodo" element={
-                  <ProtectedRoute requiredPermission="reports.read">
+                  <ProtectedRoute requiredPermissions={['reports.ordenes.read', 'reports.read']}>
                     <ReporteOrdenesPeriodoPage />
                   </ProtectedRoute>
                 } />
                 <Route path="reportes/ingresos-sede" element={
-                  <ProtectedRoute requiredPermission="reports.read">
+                  <ProtectedRoute requiredPermissions={['reports.ingresos.read', 'reports.read']}>
                     <ReporteIngresosSedeP />
                   </ProtectedRoute>
                 } />
                 <Route path="reportes/analisis-ranking" element={
-                  <ProtectedRoute requiredPermission="reports.read">
+                  <ProtectedRoute requiredPermissions={['reports.analisis.read', 'reports.read']}>
                     <ReporteAnalisisRankingPage />
                   </ProtectedRoute>
                 } />
                 <Route path="reportes/productividad" element={
-                  <ProtectedRoute requiredPermission="reports.read">
+                  <ProtectedRoute requiredPermissions={['reports.productividad.read', 'reports.read']}>
                     <ReporteProductividadPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="reportes/cuadre-caja" element={
+                  <ProtectedRoute requiredPermissions={['reports.cuadre_caja.read', 'reports.read']}>
+                    <ReporteCuadreCajaPage />
                   </ProtectedRoute>
                 } />
 

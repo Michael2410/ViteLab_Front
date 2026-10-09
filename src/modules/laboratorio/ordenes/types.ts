@@ -131,6 +131,16 @@ export interface OrdenAnalisis {
   analisis?: Analisis;
 }
 
+export type MetodoPago = 'EFECTIVO' | 'YAPE' | 'PLIN' | 'TARJETA' | 'TRANSFERENCIA';
+
+export const METODO_PAGO_LABELS: Record<string, string> = {
+  EFECTIVO: 'Efectivo',
+  YAPE: 'Yape',
+  PLIN: 'Plin',
+  TARJETA: 'Tarjeta / POS',
+  TRANSFERENCIA: 'Transferencia',
+};
+
 export interface Orden {
   id: number;
   numero_atencion: number;
@@ -151,6 +161,7 @@ export interface Orden {
   nota?: string | null;
   medico?: string | null;
   condiciones_preanaliticas?: string | null;
+  metodo_pago?: string;
   created_at: string;
   updated_at: string;
   // Campos adicionales que vienen del backend
@@ -219,6 +230,7 @@ export interface CreateOrdenInput {
   sede_id: number;
   tipo_cliente_id: number;
   convenio_id?: number;
+  metodo_pago?: string;
   analisis: AnalisisSeleccionado[];
   nota?: string;
   medico?: string;
@@ -229,6 +241,7 @@ export interface UpdateOrdenInput {
   sede_id?: number;
   tipo_cliente_id?: number;
   convenio_id?: number;
+  metodo_pago?: string;
   medico?: string;
   analisis?: AnalisisSeleccionado[];
   nota?: string;
@@ -243,8 +256,10 @@ export interface UpdateEstadoOrdenInput {
 // ============================================
 
 export interface OrdenFilters {
-  estado?: EstadoOrden;
-  sede_id?: number;
+  estado?: EstadoOrden | EstadoOrden[];
+  estados?: EstadoOrden[];
+  sede_id?: number | number[];
+  sedes_filtro?: number[];
   fecha_desde?: string;
   fecha_hasta?: string;
   paciente_dni?: string;

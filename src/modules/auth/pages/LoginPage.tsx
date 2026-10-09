@@ -8,22 +8,28 @@ import {
   QrcodeOutlined,
   CopyOutlined,
   CheckCircleOutlined,
+  BankOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { authApi } from '../api';
 import { useAuthStore } from '../hooks';
-import type { LoginRequest, Login2FARequired } from '../types';
+import type { LoginRequest, Login2FARequired, LoginTenantRequired, LoginPasswordChangeRequired } from '../types';
 import viteLogo from '../../../assets/logo/logo.png';
 
-type LoginStep = 'credentials' | 'verify_2fa' | 'setup_2fa';
+type LoginStep = 'credentials' | 'verify_2fa' | 'setup_2fa' | 'select_tenant' | 'change_password';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth, clearAuth, isAuthenticated } = useAuthStore();
   const [form] = Form.useForm();
+  const [changePasswordForm] = Form.useForm();
   const [step, setStep] = useState<LoginStep>('credentials');
   const [twoFactorData, setTwoFactorData] = useState<Login2FARequired | null>(null);
+  const [tenantSelectionData, setTenantSelectionData] = useState<LoginTenantRequired | null>(null);
+  const [passwordChangeData, setPasswordChangeData] = useState<LoginPasswordChangeRequired | null>(null);
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState<string>('');
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -50,9 +56,17 @@ export default function LoginPage() {
           } else {
             setStep('verify_2fa');
           }
+        } else if ('requiresPasswordChange' in data && data.requiresPasswordChange) {
+          setPasswordChangeData(data as any);
+          setStep('change_password');
+          message.info('Por seguridad, debes establecer tu nueva contraseña personal.');
+        } else if ('requiresTenantSelection' in data && data.requiresTenantSelection) {
+          setTenantSelectionData(data);
+          setStep('select_tenant');
+          message.info('Seleccione el laboratorio al que desea ingresar');
         } else if ('user' in data) {
-          const { user, accessToken, refreshToken } = data;
-          setAuth(user, accessToken, refreshToken);
+          const { user, accessToken, refreshToken, activeTenant } = data;
+          setAuth(user, accessToken, refreshToken, activeTenant);
           message.success(`¡Bienvenido, ${user.nombres}!`);
           navigate('/portal');
         }
@@ -74,14 +88,48 @@ export default function LoginPage() {
     },
   });
 
+  const selectTenantMutation = useMutation({
+    mutationFn: (tenantId: string) =>
+      authApi.selectTenant({
+        tempToken: tenantSelectionData?.tempToken || '',
+        tenantId,
+      }),
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        const { user, accessToken, refreshToken, activeTenant } = response.data;
+        setAuth(user, accessToken, refreshToken, activeTenant);
+        message.success(`¡Bienvenido a ${activeTenant?.name || 'ViteLab'}!`);
+        navigate('/portal');
+      } else {
+        setErrorMessage(response.message || 'Error al seleccionar laboratorio');
+        setErrorModalOpen(true);
+      }
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || 'Error al seleccionar laboratorio';
+      setErrorMessage(msg);
+      setErrorModalOpen(true);
+    },
+  });
+
   const verify2FAMutation = useMutation({
     mutationFn: authApi.verify2FA,
     onSuccess: (response) => {
       if (response.success) {
-        const { user, accessToken, refreshToken } = response.data;
-        setAuth(user, accessToken, refreshToken);
-        message.success(`¡Bienvenido, ${user.nombres}!`);
-        navigate('/portal');
+        if ('requiresPasswordChange' in (response.data as any) && (response.data as any).requiresPasswordChange) {
+          setPasswordChangeData(response.data as any);
+          setStep('change_password');
+          message.info('Por seguridad, debes establecer tu nueva contraseña personal.');
+        } else if ('requiresTenantSelection' in (response.data as any) && (response.data as any).requiresTenantSelection) {
+          setTenantSelectionData(response.data as any);
+          setStep('select_tenant');
+          message.info('Seleccione el laboratorio al que desea ingresar');
+        } else {
+          const { user, accessToken, refreshToken, activeTenant } = response.data as any;
+          setAuth(user, accessToken, refreshToken, activeTenant);
+          message.success(`¡Bienvenido, ${user.nombres}!`);
+          navigate('/portal');
+        }
       } else {
         setErrorMessage(response.message || 'Código incorrecto o expirado');
         setErrorModalOpen(true);
@@ -114,6 +162,47 @@ export default function LoginPage() {
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || err.response?.data?.error || 'Código incorrecto';
+      setErrorMessage(msg);
+      setErrorModalOpen(true);
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (values: { newPassword: string }) =>
+      authApi.changeInitialPassword({
+        tempToken: passwordChangeData?.tempToken || '',
+        newPassword: values.newPassword,
+      }),
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        const data = response.data;
+        if ('requires2FA' in data && data.requires2FA) {
+          setTwoFactorData(data);
+          setOtpCode('');
+          if (data.setupNeeded) {
+            setStep('setup_2fa');
+            message.success('¡Contraseña actualizada! Vincula tu aplicación autenticadora para continuar.');
+          } else {
+            setStep('verify_2fa');
+            message.success('¡Contraseña actualizada! Ingresa tu código de autenticación.');
+          }
+        } else if ('requiresTenantSelection' in data && data.requiresTenantSelection) {
+          setTenantSelectionData(data);
+          setStep('select_tenant');
+          message.success('¡Contraseña actualizada exitosamente! Selecciona tu laboratorio.');
+        } else if ('user' in data) {
+          const { user, accessToken, refreshToken, activeTenant } = data;
+          setAuth(user, accessToken, refreshToken, activeTenant);
+          message.success(`¡Contraseña actualizada exitosamente! Bienvenido, ${user?.nombres || ''}.`);
+          navigate('/portal');
+        }
+      } else {
+        setErrorMessage(response.message || 'Error al actualizar la contraseña');
+        setErrorModalOpen(true);
+      }
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Error al actualizar la contraseña';
       setErrorMessage(msg);
       setErrorModalOpen(true);
     },
@@ -411,15 +500,15 @@ export default function LoginPage() {
                     }}
                   >
                     <UserOutlined style={{ fontSize: 11.5 }} />
-                    <span>Usuario</span>
+                    <span>Correo o Usuario</span>
                   </div>
                   <Form.Item
                     name="username"
-                    rules={[{ required: true, message: 'Ingrese su usuario o correo' }]}
+                    rules={[{ required: true, message: 'Ingrese su correo electrónico o usuario' }]}
                     style={{ margin: 0 }}
                   >
                     <Input
-                      placeholder="ej. admin"
+                      placeholder="ej. admin@vitelab.com o admin"
                       bordered={false}
                       style={{
                         height: 26,
@@ -682,6 +771,288 @@ export default function LoginPage() {
               </div>
             </div>
           )}
+
+          {/* VISTA 4: SELECCIÓN DE TENANT / LABORATORIO */}
+          {step === 'select_tenant' && (
+            <div>
+              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0284c7',
+                    fontSize: 24,
+                    marginBottom: 10,
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.15)',
+                  }}
+                >
+                  <MedicineBoxOutlined />
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  Selecciona tu Laboratorio
+                </h3>
+                <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                  Tienes membresías activas en múltiples laboratorios. Elige la sede para iniciar sesión:
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  maxHeight: 240,
+                  overflowY: 'auto',
+                  marginBottom: 20,
+                  paddingRight: 4,
+                }}
+              >
+                {tenantSelectionData?.tenants.map((t) => {
+                  const isSelected = selectedTenantId === t.id;
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => setSelectedTenantId(t.id)}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: 14,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        border: isSelected
+                          ? '2px solid #0284c7'
+                          : '1.5px solid rgba(226, 232, 240, 0.9)',
+                        backgroundColor: isSelected
+                          ? 'rgba(2, 132, 199, 0.08)'
+                          : 'rgba(255, 255, 255, 0.75)',
+                        backdropFilter: 'blur(6px)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: isSelected
+                          ? '0 4px 12px rgba(2, 132, 199, 0.15)'
+                          : '0 2px 4px rgba(0, 0, 0, 0.02)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 10,
+                            background: isSelected
+                              ? 'linear-gradient(135deg, #0284c7 0%, #059669 100%)'
+                              : 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isSelected ? '#ffffff' : '#64748b',
+                            fontSize: 16,
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <BankOutlined />
+                        </div>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 13.5,
+                              fontWeight: 700,
+                              color: isSelected ? '#0284c7' : '#0f172a',
+                            }}
+                          >
+                            {t.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>
+                            {t.role && (
+                              <>
+                                <span style={{ fontWeight: 600, color: '#059669' }}>{t.role}</span>
+                                {' • '}
+                              </>
+                            )}
+                            <span>{t.slug}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <CheckCircleOutlined style={{ color: '#0284c7', fontSize: 18 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Button
+                type="primary"
+                block
+                className="vitelab-btn-submit"
+                loading={selectTenantMutation.isPending}
+                disabled={!selectedTenantId}
+                onClick={() => {
+                  if (selectedTenantId) {
+                    selectTenantMutation.mutate(selectedTenantId);
+                  }
+                }}
+                style={{ marginBottom: 10 }}
+              >
+                INGRESAR AL LABORATORIO
+              </Button>
+
+              <div style={{ textAlign: 'center' }}>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => {
+                    setStep('credentials');
+                    setTenantSelectionData(null);
+                    setSelectedTenantId(null);
+                  }}
+                  style={{ color: '#64748b', fontSize: 12 }}
+                >
+                  ← Iniciar sesión con otra cuenta
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* VISTA 5: CAMBIO OBLIGATORIO DE CONTRASEÑA */}
+          {step === 'change_password' && (
+            <div>
+              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#d97706',
+                    fontSize: 24,
+                    marginBottom: 10,
+                    boxShadow: '0 4px 12px rgba(217, 119, 6, 0.15)',
+                  }}
+                >
+                  <LockOutlined />
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  Crea tu Nueva Contraseña
+                </h3>
+                <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                  {passwordChangeData?.email
+                    ? `Hola, ${passwordChangeData.email}. Por seguridad debes reemplazar tu contraseña provisional por una personal.`
+                    : 'Por seguridad de tu cuenta clínica, debes establecer una nueva contraseña personal para continuar.'}
+                </p>
+              </div>
+
+              <Form
+                form={changePasswordForm}
+                layout="vertical"
+                onFinish={(values) => {
+                  changePasswordMutation.mutate({ newPassword: values.newPassword });
+                }}
+              >
+                <div style={{ marginBottom: 14 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: '#475569',
+                      marginBottom: 5,
+                    }}
+                  >
+                    NUEVA CONTRASEÑA
+                  </label>
+                  <Form.Item
+                    name="newPassword"
+                    rules={[
+                      { required: true, message: 'Ingresa la nueva contraseña' },
+                      { min: 6, message: 'La contraseña debe tener al menos 6 caracteres' },
+                    ]}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Input.Password
+                      placeholder="Mínimo 6 caracteres"
+                      prefix={<LockOutlined style={{ color: '#0284c7', marginRight: 6 }} />}
+                      size="large"
+                      style={{ borderRadius: 8 }}
+                    />
+                  </Form.Item>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: '#475569',
+                      marginBottom: 5,
+                    }}
+                  >
+                    CONFIRMAR NUEVA CONTRASEÑA
+                  </label>
+                  <Form.Item
+                    name="confirmPassword"
+                    dependencies={['newPassword']}
+                    rules={[
+                      { required: true, message: 'Confirma la nueva contraseña' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('newPassword') === value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error('Las contraseñas no coinciden'));
+                        },
+                      }),
+                    ]}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Input.Password
+                      placeholder="Repite tu nueva contraseña"
+                      prefix={<SafetyCertificateOutlined style={{ color: '#0284c7', marginRight: 6 }} />}
+                      size="large"
+                      style={{ borderRadius: 8 }}
+                    />
+                  </Form.Item>
+                </div>
+
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  block
+                  className="vitelab-btn-submit"
+                  loading={changePasswordMutation.isPending}
+                  style={{ marginBottom: 12 }}
+                >
+                  ESTABLECER CONTRASEÑA Y CONTINUAR
+                </Button>
+
+                <div style={{ textAlign: 'center' }}>
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => {
+                      setStep('credentials');
+                      setPasswordChangeData(null);
+                      changePasswordForm.resetFields();
+                    }}
+                    style={{ color: '#64748b', fontSize: 12 }}
+                  >
+                    ← Cancelar e iniciar con otra cuenta
+                  </Button>
+                </div>
+              </Form>
+            </div>
+          )}
+
 
           {/* Mensaje de Soporte / Seguridad */}
           <div

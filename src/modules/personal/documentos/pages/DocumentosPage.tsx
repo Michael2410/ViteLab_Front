@@ -1,15 +1,18 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Tag,
   Space,
   Input,
+  Tooltip,
   type TableProps,
 } from 'antd';
 import {
   SearchOutlined,
   PrinterOutlined,
   EyeOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { ModulePageLayout, BrandCreateButton, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
@@ -20,28 +23,47 @@ import {
   useGenerarDocumentoLaboral,
   usePersonalList,
 } from '../../hooks';
+import { personalDocumentosApi } from '../../api';
+import { useConfiguracion } from '../../../configuracion/sistema/hooks';
+import { imprimirDocumentoLaboralA4 } from '../utils/printDocumentoLaboralHelper';
 import type { DocumentoLaboralItem } from '../../types';
 import { GenerarDocumentoModal } from '../components/GenerarDocumentoModal';
 import { VistaPreviaDocumentoModal } from '../components/VistaPreviaDocumentoModal';
 
 export default function DocumentosPage() {
-  const { hasPermission } = usePermissions();
+  const navigate = useNavigate();
+  const { hasPermission, isSuperAdmin } = usePermissions();
   const canCreate = hasPermission('personal.documentos.create');
+  const canManagePlantillas = isSuperAdmin || hasPermission('configuracion.plantillas.read') || hasPermission('settings.read');
 
-  const [tipoFilter, setTipoFilter] = useState<string>('TODOS');
+  const [tipoFilter, setTipoFilter] = useState<string[] | undefined>(undefined);
   const [search, setSearch] = useState('');
+  const [printingId, setPrintingId] = useState<number | null>(null);
 
   const [modalGenerarOpen, setModalGenerarOpen] = useState(false);
   const [modalVistaOpen, setModalVistaOpen] = useState(false);
   const [documentoSeleccionado, setDocumentoSeleccionado] = useState<DocumentoLaboralItem | null>(null);
 
+  const { data: configuracion } = useConfiguracion();
   const { data: documentos = [], isLoading } = useDocumentosLaboralesList();
   const { data: personalList = [] } = usePersonalList({ activo: true });
   const generarMutation = useGenerarDocumentoLaboral();
 
+  const handleImprimirDirecto = async (doc: DocumentoLaboralItem) => {
+    try {
+      setPrintingId(doc.id);
+      const fullDoc = await personalDocumentosApi.getById(doc.id);
+      imprimirDocumentoLaboralA4(doc, configuracion, fullDoc);
+    } catch (err) {
+      imprimirDocumentoLaboralA4(doc, configuracion);
+    } finally {
+      setPrintingId(null);
+    }
+  };
+
   const documentosFiltrados = useMemo(() => {
     return documentos.filter((d) => {
-      const matchTipo = tipoFilter === 'TODOS' || d.tipo_documento === tipoFilter;
+      const matchTipo = !tipoFilter || tipoFilter.length === 0 || tipoFilter.includes(d.tipo_documento);
       const matchSearch =
         !search ||
         d.colaborador_nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -110,8 +132,7 @@ export default function DocumentosPage() {
         { text: 'Certificados Laborales', value: 'CERTIFICADO_LABORAL' },
         { text: 'Cartas de Presentación', value: 'CARTA_PRESENTACION' },
       ],
-      filteredValue: tipoFilter !== 'TODOS' ? [tipoFilter] : null,
-      filterMultiple: false,
+      filteredValue: tipoFilter && tipoFilter.length > 0 ? tipoFilter : null,
       filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (t) => getTipoTag(t),
     },
@@ -145,17 +166,20 @@ export default function DocumentosPage() {
             size="small"
             type="primary"
             icon={<PrinterOutlined />}
-            onClick={() => handleVerDocumento(r)}
+            loading={printingId === r.id}
+            onClick={() => handleImprimirDirecto(r)}
             style={{ backgroundColor: '#0d9488', borderColor: '#0d9488', borderRadius: 6 }}
           >
             Imprimir
           </Button>
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleVerDocumento(r)}
-            style={{ borderRadius: 6 }}
-          />
+          <Tooltip title="Ver Detalle y Vista Previa">
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleVerDocumento(r)}
+              style={{ borderRadius: 6 }}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -180,6 +204,20 @@ export default function DocumentosPage() {
             allowClear
             style={{ width: 280, ...brandSearchStyle }}
           />
+          {canManagePlantillas && (
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => navigate('/configuracion/plantillas-documentos')}
+              style={{
+                borderRadius: 8,
+                fontWeight: 500,
+                color: '#475569',
+                borderColor: '#cbd5e1',
+              }}
+            >
+              Configurar Plantillas
+            </Button>
+          )}
           {canCreate && (
             <BrandCreateButton onClick={() => setModalGenerarOpen(true)}>
               Generar Documento
@@ -199,7 +237,7 @@ export default function DocumentosPage() {
         locale={{ emptyText: 'No hay documentos laborales emitidos' }}
         onChange={(_pagination, tableFilters) => {
           const t = tableFilters.tipo;
-          setTipoFilter(t && t.length > 0 ? (t[0] as string) : 'TODOS');
+          setTipoFilter(t && t.length > 0 ? (t as string[]) : undefined);
         }}
       />
 

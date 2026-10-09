@@ -9,6 +9,7 @@ export interface WhatsAppStatus {
   phoneNumber: string | null;
   lastConnectedAt: string | null;
   state: ConnectionState;
+  qr?: string | null;
 }
 
 export interface QRCodeData {

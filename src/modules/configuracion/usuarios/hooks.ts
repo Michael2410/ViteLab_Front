@@ -7,6 +7,7 @@ import {
   actualizarUsuario,
   eliminarUsuario,
   obtenerRoles,
+  restablecerPasswordUsuario,
 } from './api';
 import { authApi } from '../../auth/api';
 import type { CreateUsuarioInput, UpdateUsuarioInput } from './types';
@@ -105,6 +106,23 @@ export const useAdminReset2FA = () => {
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Error al restablecer 2FA');
+    },
+  });
+};
+
+// Hook para restablecer contraseña por el Admin
+export const useRestablecerPassword = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, newPassword }: { id: number; newPassword?: string }) =>
+      restablecerPasswordUsuario(id, newPassword),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: usuariosKeys.all });
+      message.success(data.message || 'Contraseña restablecida exitosamente');
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Error al restablecer contraseña');
     },
   });
 };

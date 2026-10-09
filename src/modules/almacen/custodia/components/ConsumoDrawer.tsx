@@ -12,6 +12,7 @@ import {
   InputNumber,
   Tag,
   Typography,
+  Alert,
   message,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -20,7 +21,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { custodiaApi } from '../custodia.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
-import type { ItemCustodia } from '../custodia.types';
+import type { ItemCustodia, Consumo } from '../custodia.types';
 
 const { Text } = Typography;
 
@@ -44,6 +45,7 @@ interface ConsumoDrawerProps {
   onSuccess: () => void;
   personalId?: number;
   itemsCustodiaIniciales?: ItemCustodia[];
+  consumoParaCorregir?: Consumo | null;
 }
 
 export default function ConsumoDrawer({
@@ -52,6 +54,7 @@ export default function ConsumoDrawer({
   onSuccess,
   personalId,
   itemsCustodiaIniciales = [],
+  consumoParaCorregir,
 }: ConsumoDrawerProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -62,18 +65,65 @@ export default function ConsumoDrawer({
 
   useEffect(() => {
     if (open) {
-      form.setFieldsValue({ fecha: dayjs() });
-      if (itemsCustodiaIniciales.length > 0) {
-        setDisponiblesCustodia(itemsCustodiaIniciales);
-      } else {
+      if (consumoParaCorregir) {
+        form.setFieldsValue({
+          fecha: consumoParaCorregir.fecha ? dayjs(consumoParaCorregir.fecha) : dayjs(),
+          observaciones: consumoParaCorregir.observaciones || '',
+        });
+        const targetPersonal = consumoParaCorregir.personal_id || personalId;
         custodiaApi
-          .listar({ personal_id: personalId, solo_con_stock: true, limit: 100 })
-          .then((res) => setDisponiblesCustodia(res.items || []))
+          .listar({ personal_id: targetPersonal, solo_con_stock: true, limit: 100 })
+          .then((res) => {
+            const items = res.items || [];
+            setDisponiblesCustodia(items);
+
+            if (consumoParaCorregir.items && consumoParaCorregir.items.length > 0) {
+              const prefilled: LineaConsumo[] = consumoParaCorregir.items.map((item, idx) => {
+                const match =
+                  items.find(
+                    (c) =>
+                      c.producto_id === item.producto_id &&
+                      c.lote_id === item.lote_id &&
+                      c.almacen_origen_id === item.almacen_origen_id
+                  ) ||
+                  items.find(
+                    (c) => c.producto_id === item.producto_id && c.lote_id === item.lote_id
+                  );
+
+                return {
+                  key: `corregir_${item.id || idx}_${Date.now()}`,
+                  custodia_id: match ? match.id : undefined,
+                  almacen_origen_id: item.almacen_origen_id,
+                  producto_id: item.producto_id,
+                  lote_id: item.lote_id,
+                  producto_nombre: item.producto_nombre,
+                  numero_lote: item.numero_lote || 'Sin lote',
+                  unidad_medida: item.unidad_medida_codigo,
+                  stock_disponible: match ? match.cantidad : item.cantidad,
+                  cantidad: item.cantidad,
+                  observacion: item.observacion || undefined,
+                };
+              });
+              setLineas(prefilled);
+            } else {
+              setLineas([]);
+            }
+          })
           .catch(console.error);
+      } else {
+        form.setFieldsValue({ fecha: dayjs(), observaciones: '' });
+        if (itemsCustodiaIniciales.length > 0) {
+          setDisponiblesCustodia(itemsCustodiaIniciales);
+        } else {
+          custodiaApi
+            .listar({ personal_id: personalId, solo_con_stock: true, limit: 100 })
+            .then((res) => setDisponiblesCustodia(res.items || []))
+            .catch(console.error);
+        }
+        setLineas([]);
       }
-      setLineas([]);
     }
-  }, [open, personalId, itemsCustodiaIniciales, form]);
+  }, [open, personalId, itemsCustodiaIniciales, consumoParaCorregir, form]);
 
   const agregarLinea = () => {
     setLineas((prev) => [
@@ -164,9 +214,10 @@ export default function ConsumoDrawer({
       }
 
       setSaving(true);
+      const targetPersonal = consumoParaCorregir ? consumoParaCorregir.personal_id : personalId;
       await custodiaApi.crearConsumo({
-        sede_id: sedeId || 1,
-        personal_id: personalId,
+        sede_id: consumoParaCorregir?.sede_id || sedeId || 1,
+        personal_id: targetPersonal,
         fecha: values.fecha?.format('YYYY-MM-DD'),
         observaciones: values.observaciones,
         items: lineas.map((l) => ({
@@ -178,7 +229,11 @@ export default function ConsumoDrawer({
         })),
       });
 
-      message.success('Consumo registrado exitosamente');
+      message.success(
+        consumoParaCorregir
+          ? 'Consumo corregido y registrado exitosamente'
+          : 'Consumo registrado exitosamente'
+      );
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -202,7 +257,7 @@ export default function ConsumoDrawer({
           optionFilterProp="label"
           options={disponiblesCustodia.map((c) => ({
             value: c.id,
-            label: `${c.producto_nombre} | Lote: ${c.numero_lote || 'S/L'} | Saldo: ${c.cantidad} ${c.unidad_medida_codigo}`,
+            label: `${c.producto_nombre} | Marca: ${c.marca || 'Sin marca'} | Lote: ${c.numero_lote || 'S/L'} | Saldo: ${c.cantidad} ${c.unidad_medida_codigo}`,
           }))}
         />
       ),
@@ -211,7 +266,7 @@ export default function ConsumoDrawer({
       title: 'Saldo Custodia',
       dataIndex: 'stock_disponible',
       key: 'stock_disponible',
-      width: 110,
+      width: 120,
       align: 'right',
       render: (v, r) => (
         <Text strong style={{ color: '#059669' }}>
@@ -223,7 +278,7 @@ export default function ConsumoDrawer({
       title: 'Cantidad a Consumir',
       dataIndex: 'cantidad',
       key: 'cantidad',
-      width: 140,
+      width: 150,
       render: (v, record) => (
         <InputNumber
           min={0.01}
@@ -238,11 +293,11 @@ export default function ConsumoDrawer({
     {
       title: 'Nota / Motivo',
       key: 'observacion',
-      width: 160,
-      render: (_, record) => (
+      dataIndex: 'observacion',
+      render: (v, record) => (
         <Input
-          placeholder="Uso en prueba..."
-          value={record.observacion}
+          placeholder="Ej: Análisis 10 muestras"
+          value={v}
           onChange={(e) => handleObservacionChange(record.key, e.target.value)}
         />
       ),
@@ -265,10 +320,17 @@ export default function ConsumoDrawer({
   return (
     <Drawer
       title={
-        <Space align="center">
-          <span>Registrar Consumo de Material</span>
-          <Tag color="gold" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
-            Custodia
+        <Space>
+          <span>
+            {consumoParaCorregir
+              ? `Corregir Consumo (${consumoParaCorregir.numero})`
+              : 'Registrar Consumo'}
+          </span>
+          <Tag
+            color={consumoParaCorregir ? 'orange' : 'gold'}
+            style={{ fontSize: '11px', textTransform: 'uppercase' }}
+          >
+            {consumoParaCorregir ? 'Corrección' : 'Custodia'}
           </Tag>
         </Space>
       }
@@ -280,12 +342,22 @@ export default function ConsumoDrawer({
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <Button onClick={onClose}>Cancelar</Button>
           <Button type="primary" onClick={handleSubmit} loading={saving}>
-            Confirmar Consumo
+            {consumoParaCorregir ? 'Guardar Consumo Corregido' : 'Confirmar Consumo'}
           </Button>
         </div>
       }
     >
       <Form form={form} layout="vertical">
+        {consumoParaCorregir && (
+          <Alert
+            type="info"
+            showIcon
+            message="Modo de Corrección de Consumo"
+            description={`El consumo previo (${consumoParaCorregir.numero}) ha sido anulado y sus ítems reincorporados a custodia. Modifique las cantidades a consumir según corresponda y confirme para generar el nuevo registro.`}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -303,7 +375,15 @@ export default function ConsumoDrawer({
           </Col>
         </Row>
 
-        <div style={{ marginTop: 8, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          style={{
+            marginTop: 8,
+            marginBottom: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Text strong style={{ fontSize: 14 }}>
             Materiales Consumidos (Se descuentan de su inventario personal)
           </Text>
@@ -313,6 +393,7 @@ export default function ConsumoDrawer({
         </div>
 
         <GlobalTable<LineaConsumo>
+          resourceName="linea-consumo"
           rowKey="key"
           dataSource={lineas}
           columns={columns}

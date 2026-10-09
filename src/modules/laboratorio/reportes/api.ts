@@ -2,14 +2,16 @@ import apiClient from '../../../shared/utils/apiClient';
 import type { ApiResponse } from '../../../shared/types/api.types';
 import type {
   FiltrosReporte,
+  FiltrosCuadreCaja,
   ReporteOrdenesPeriodo,
   ReporteIngresosSede,
   ReporteAnalisisRanking,
   ReporteProductividad,
+  ReporteCuadreCaja,
 } from './types';
 
 /**
- * Construir query string desde filtros
+ * Construir query string desde filtros generales
  */
 const buildQueryString = (filtros: FiltrosReporte): string => {
   const params = new URLSearchParams();
@@ -17,6 +19,8 @@ const buildQueryString = (filtros: FiltrosReporte): string => {
   if (filtros.fecha_fin) params.append('fecha_fin', filtros.fecha_fin);
   if (filtros.sede_id) params.append('sede_id', filtros.sede_id.toString());
   if (filtros.estado) params.append('estado', filtros.estado);
+  if (filtros.metodo_pago) params.append('metodo_pago', filtros.metodo_pago);
+  if (filtros.usuario_registro_id) params.append('usuario_registro_id', filtros.usuario_registro_id.toString());
   return params.toString();
 };
 
@@ -68,6 +72,23 @@ export const getReporteProductividad = async (
   const query = buildQueryString(filtros);
   const response = await apiClient.get<ApiResponse<ReporteProductividad>>(
     `/reportes/productividad?${query}`
+  );
+  return response.data.data;
+};
+
+/**
+ * Reporte de Cuadre de Caja Diaria (Arqueo por Turno / Cajero)
+ */
+export const getReporteCuadreCaja = async (
+  filtros: FiltrosCuadreCaja
+): Promise<ReporteCuadreCaja> => {
+  const params = new URLSearchParams();
+  if (filtros.fecha) params.append('fecha', filtros.fecha);
+  if (filtros.sede_id) params.append('sede_id', filtros.sede_id.toString());
+  if (filtros.usuario_id) params.append('usuario_id', filtros.usuario_id.toString());
+
+  const response = await apiClient.get<ApiResponse<ReporteCuadreCaja>>(
+    `/reportes/cuadre-caja?${params.toString()}`
   );
   return response.data.data;
 };

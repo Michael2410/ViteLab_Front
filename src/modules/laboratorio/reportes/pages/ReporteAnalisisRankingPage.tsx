@@ -1,98 +1,219 @@
-import { useState } from 'react';
-import { Table, Typography, Card, Row, Col, Statistic, message, Progress, Tag, Result, Button } from 'antd';
-import { ArrowLeftOutlined, TrophyOutlined, LockOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Typography, Row, Col, message, Progress, Tag, Result, Button, Space } from 'antd';
+import {
+  ArrowLeftOutlined,
+  TrophyOutlined,
+  LockOutlined,
+  ExperimentOutlined,
+  BarChartOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
-import PageContainer from '../../../../shared/components/PageContainer';
+import dayjs from 'dayjs';
+
+import ModulePageLayout from '../../../../shared/components/ModulePageLayout';
+import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import FiltrosReporte from '../components/FiltrosReporte';
 import ExportButtons from '../components/ExportButtons';
-import { useAuthStore } from '../../../auth/hooks';
+import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { getReporteAnalisisRanking } from '../api';
 import { exportToExcel, exportToPDF } from '../utils/exportHelpers';
 import type { FiltrosReporte as FiltrosType, AnalisisRanking, ReporteAnalisisRanking } from '../types';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function ReporteAnalisisRankingPage() {
   const navigate = useNavigate();
-  const { hasPermission } = useAuthStore();
-  const [filtros, setFiltros] = useState<FiltrosType>({});
+  const { hasPermission, isSuperAdmin, isAdmin } = usePermissions();
+
+  const canAccess =
+    isSuperAdmin ||
+    isAdmin ||
+    hasPermission('reports.analisis.read') ||
+    hasPermission('reports.read');
+
+  // Inicializar con el mes en curso por defecto
+  const [filtros, setFiltros] = useState<FiltrosType>({
+    fecha_inicio: dayjs().startOf('month').format('YYYY-MM-DD'),
+    fecha_fin: dayjs().endOf('month').format('YYYY-MM-DD'),
+  });
+
   const [reporte, setReporte] = useState<ReporteAnalisisRanking | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleBuscar = async () => {
+  const fetchReporte = useCallback(async (paramsToSearch: FiltrosType) => {
     try {
       setLoading(true);
-      const data = await getReporteAnalisisRanking(filtros);
+      const data = await getReporteAnalisisRanking(paramsToSearch);
       setReporte(data);
     } catch (error) {
-      message.error('Error al generar el reporte');
-      console.error(error);
+      console.error('Error al generar ranking de análisis:', error);
+      message.error('Error al generar el ranking de análisis');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Carga inicial automática
+  useEffect(() => {
+    if (canAccess) {
+      fetchReporte(filtros);
+    }
+  }, [canAccess, fetchReporte]);
+
+  const handleBuscar = () => {
+    fetchReporte(filtros);
   };
 
   const handleLimpiar = () => {
-    setFiltros({});
-    setReporte(null);
+    const filtrosVacios: FiltrosType = {};
+    setFiltros(filtrosVacios);
+    fetchReporte(filtrosVacios);
   };
 
-  const getMedalColor = (index: number) => {
-    if (index === 0) return '#FFD700'; // Oro
-    if (index === 1) return '#C0C0C0'; // Plata
-    if (index === 2) return '#CD7F32'; // Bronce
-    return undefined;
-  };
+  const topAnalisis = useMemo(() => {
+    return reporte?.analisis?.[0] || null;
+  }, [reporte]);
 
   const columns: ColumnsType<AnalisisRanking> = [
     {
-      title: '#',
+      title: 'Posición',
       key: 'ranking',
-      width: 60,
+      width: 90,
       align: 'center',
       render: (_, __, index) => {
-        const medalColor = getMedalColor(index);
-        return medalColor ? (
-          <TrophyOutlined style={{ fontSize: 18, color: medalColor }} />
-        ) : (
-          <Text type="secondary">{index + 1}</Text>
+        if (index === 0) {
+          return (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 8px',
+                borderRadius: 12,
+                background: '#fef9c3',
+                color: '#854d0e',
+                fontWeight: 700,
+                fontSize: 12,
+              }}
+            >
+              <TrophyOutlined style={{ color: '#ca8a04', fontSize: 14 }} /> 1°
+            </div>
+          );
+        }
+        if (index === 1) {
+          return (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 8px',
+                borderRadius: 12,
+                background: '#f1f5f9',
+                color: '#475569',
+                fontWeight: 700,
+                fontSize: 12,
+              }}
+            >
+              2°
+            </div>
+          );
+        }
+        if (index === 2) {
+          return (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 8px',
+                borderRadius: 12,
+                background: '#ffedd5',
+                color: '#9a3412',
+                fontWeight: 700,
+                fontSize: 12,
+              }}
+            >
+              3°
+            </div>
+          );
+        }
+        return (
+          <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+            {index + 1}°
+          </span>
         );
       },
     },
     {
-      title: 'Análisis',
+      title: 'Análisis Clínico',
       dataIndex: 'analisis_nombre',
       key: 'analisis_nombre',
-      width: 300,
+      width: 280,
+      render: (nombre) => (
+        <span style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
+          {nombre}
+        </span>
+      ),
     },
     {
-      title: 'Área',
+      title: 'Área de Laboratorio',
       dataIndex: 'area_nombre',
       key: 'area_nombre',
-      width: 150,
-      render: (area) => <Tag>{area}</Tag>,
+      width: 160,
+      render: (area) => (
+        <Tag color="cyan" style={{ borderRadius: 6, fontWeight: 500 }}>
+          {area || 'General'}
+        </Tag>
+      ),
     },
     {
       title: 'Solicitudes',
       dataIndex: 'cantidad_solicitudes',
       key: 'cantidad_solicitudes',
-      width: 100,
+      width: 120,
       align: 'center',
       sorter: (a, b) => b.cantidad_solicitudes - a.cantidad_solicitudes,
+      render: (cant) => (
+        <Tag
+          color="blue"
+          style={{
+            borderRadius: 10,
+            fontWeight: 700,
+            fontSize: 13,
+            padding: '2px 10px',
+          }}
+        >
+          {cant}
+        </Tag>
+      ),
     },
     {
-      title: 'Porcentaje',
+      title: 'Participación en Demanda',
       dataIndex: 'porcentaje',
       key: 'porcentaje',
-      width: 200,
-      render: (porcentaje) => (
-        <Progress
-          percent={Math.round(porcentaje * 10) / 10}
-          size="small"
-          strokeColor="#722ed1"
-        />
-      ),
+      width: 240,
+      render: (porcentaje) => {
+        const pct = Math.round((porcentaje || 0) * 10) / 10;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Progress
+              percent={pct}
+              size="small"
+              strokeColor={{
+                '0%': '#7c3aed',
+                '100%': '#2563eb',
+              }}
+              style={{ flex: 1, margin: 0 }}
+            />
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#475569', minWidth: 42 }}>
+              {pct}%
+            </span>
+          </div>
+        );
+      },
     },
   ];
 
@@ -101,7 +222,7 @@ export default function ReporteAnalisisRankingPage() {
     { title: 'Análisis', dataIndex: 'analisis_nombre' },
     { title: 'Área', dataIndex: 'area_nombre' },
     { title: 'Solicitudes', dataIndex: 'cantidad_solicitudes' },
-    { title: 'Porcentaje', dataIndex: 'porcentaje' },
+    { title: 'Porcentaje (%)', dataIndex: 'porcentaje' },
   ];
 
   const handleExportExcel = () => {
@@ -114,22 +235,34 @@ export default function ReporteAnalisisRankingPage() {
   const handleExportPDF = () => {
     if (!reporte?.analisis.length) return;
     const dataWithRanking = reporte.analisis.map((a, i) => ({ ...a, ranking: i + 1 }));
-    const subtitulo = filtros.fecha_inicio && filtros.fecha_fin
-      ? `Período: ${filtros.fecha_inicio} al ${filtros.fecha_fin}`
-      : 'Todas las fechas';
-    exportToPDF(dataWithRanking, exportColumns, 'Reporte_Analisis_Ranking', 'Análisis Más Solicitados', subtitulo);
+    const subtitulo =
+      filtros.fecha_inicio && filtros.fecha_fin
+        ? `Período: ${filtros.fecha_inicio} al ${filtros.fecha_fin}`
+        : 'Todas las fechas';
+    exportToPDF(
+      dataWithRanking,
+      exportColumns,
+      'Reporte_Analisis_Ranking',
+      'Análisis Más Solicitados',
+      subtitulo
+    );
     message.success('PDF exportado exitosamente');
   };
 
-  if (!hasPermission('orders.read')) {
+  if (!canAccess) {
     return (
       <Result
         status="403"
         icon={<LockOutlined />}
         title="Acceso Denegado"
-        subTitle="No tienes permisos para ver este reporte."
+        subTitle="No cuentas con permisos suficientes para consultar el ranking de análisis."
         extra={
-          <Button type="primary" onClick={() => navigate('/reportes')} icon={<ArrowLeftOutlined />}>
+          <Button
+            type="primary"
+            onClick={() => navigate('/reportes')}
+            icon={<ArrowLeftOutlined />}
+            style={{ borderRadius: 8 }}
+          >
             Volver a Reportes
           </Button>
         }
@@ -138,89 +271,180 @@ export default function ReporteAnalisisRankingPage() {
   }
 
   return (
-    <PageContainer>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ArrowLeftOutlined 
-          style={{ fontSize: 20, cursor: 'pointer' }} 
-          onClick={() => navigate('/reportes')}
-        />
-        <div>
-          <Title level={3} style={{ margin: 0 }}>
-            Análisis Más Solicitados
-          </Title>
-          <Text type="secondary">
-            Ranking de los análisis con mayor demanda en el período
-          </Text>
-        </div>
-      </div>
-
-      <FiltrosReporte
-        filtros={filtros}
-        onFiltrosChange={setFiltros}
-        onBuscar={handleBuscar}
-        onLimpiar={handleLimpiar}
-        loading={loading}
-      />
-
-      {reporte && (
-        <>
-          {/* Resumen */}
-          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-            <Col xs={12} sm={8}>
-              <Card size="small">
-                <Statistic
-                  title="Análisis en Ranking"
-                  value={reporte.analisis.length}
-                  valueStyle={{ color: '#722ed1' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={8}>
-              <Card size="small">
-                <Statistic
-                  title="Total Solicitudes"
-                  value={reporte.total_solicitudes}
-                  valueStyle={{ color: '#1890ff' }}
-                />
-              </Card>
-            </Col>
-            {reporte.analisis[0] && (
-              <Col xs={24} sm={8}>
-                <Card size="small">
-                  <Statistic
-                    title="Más Solicitado"
-                    value={reporte.analisis[0].analisis_nombre}
-                    valueStyle={{ fontSize: 14, color: '#52c41a' }}
-                    prefix={<TrophyOutlined style={{ color: '#FFD700' }} />}
-                  />
-                </Card>
-              </Col>
-            )}
-          </Row>
-
-          {/* Tabla */}
-          <Card
-            title={`Top ${reporte.analisis.length} Análisis`}
-            extra={
-              hasPermission('orders.print') && (
-                <ExportButtons
-                  onExportExcel={handleExportExcel}
-                  onExportPDF={handleExportPDF}
-                  disabled={!reporte.analisis.length}
-                />
-              )
-            }
+    <ModulePageLayout
+      title="Análisis Más Solicitados"
+      subtitle="Ranking de demanda y volumen de pruebas solicitadas por período"
+      actionButton={
+        <Space size={10}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/reportes')}
+            style={{
+              height: 38,
+              borderRadius: 8,
+              fontWeight: 500,
+              color: '#475569',
+            }}
           >
-            <Table
-              columns={columns}
-              dataSource={reporte.analisis}
-              rowKey="analisis_id"
-              size="small"
-              pagination={false}
-            />
-          </Card>
-        </>
-      )}
-    </PageContainer>
+            Volver
+          </Button>
+          <ExportButtons
+            onExportExcel={handleExportExcel}
+            onExportPDF={handleExportPDF}
+            disabled={!reporte?.analisis?.length}
+          />
+        </Space>
+      }
+      stats={
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={8}>
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 12,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 10,
+                  background: 'rgba(234, 179, 8, 0.12)',
+                  color: '#ca8a04',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 22,
+                }}
+              >
+                <TrophyOutlined />
+              </div>
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                  Análisis N° 1 del Período
+                </div>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={topAnalisis?.analisis_nombre || 'Ninguno'}
+                >
+                  {topAnalisis ? topAnalisis.analisis_nombre : 'Sin solicitudes'}
+                </div>
+              </div>
+            </div>
+          </Col>
+
+          <Col xs={12} sm={6} md={8}>
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 12,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 10,
+                  background: 'rgba(37, 99, 235, 0.1)',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 22,
+                }}
+              >
+                <ExperimentOutlined />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                  Total Solicitudes
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                  {reporte?.total_solicitudes ?? 0}
+                </div>
+              </div>
+            </div>
+          </Col>
+
+          <Col xs={12} sm={6} md={8}>
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 12,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 10,
+                  background: 'rgba(124, 58, 237, 0.1)',
+                  color: '#7c3aed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 22,
+                }}
+              >
+                <BarChartOutlined />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>
+                  Pruebas en Ranking
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                  {reporte?.analisis?.length ?? 0}
+                </div>
+              </div>
+            </div>
+          </Col>
+        </Row>
+      }
+      filters={
+        <FiltrosReporte
+          filtros={filtros}
+          onFiltrosChange={setFiltros}
+          onBuscar={handleBuscar}
+          onLimpiar={handleLimpiar}
+          loading={loading}
+          mostrarSede
+        />
+      }
+    >
+      <GlobalTable
+        columns={columns}
+        dataSource={reporte?.analisis || []}
+        rowKey="analisis_id"
+        loading={loading}
+        resourceName="análisis"
+        pagination={false}
+      />
+    </ModulePageLayout>
   );
 }

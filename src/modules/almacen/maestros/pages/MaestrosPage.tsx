@@ -90,7 +90,7 @@ export default function MaestrosPage() {
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
   const [sedes, setSedes] = useState<SedeSimple[]>([]);
-  const [filtroAlmacenId, setFiltroAlmacenId] = useState<number | undefined>(undefined);
+  const [filtroAlmacenIds, setFiltroAlmacenIds] = useState<number[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
   // Modales
@@ -150,14 +150,14 @@ export default function MaestrosPage() {
   const cargarUbicaciones = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await maestrosApi.listarUbicaciones({ almacen_id: filtroAlmacenId });
+      const data = await maestrosApi.listarUbicaciones({ almacen_id: filtroAlmacenIds });
       setUbicaciones(data || []);
     } catch (e: any) {
       message.error(e.response?.data?.message || 'Error cargando ubicaciones');
     } finally {
       setLoading(false);
     }
-  }, [filtroAlmacenId]);
+  }, [filtroAlmacenIds]);
 
   useEffect(() => {
     if (activeTab === 'unidades') cargarUnidades();
@@ -473,8 +473,7 @@ export default function MaestrosPage() {
       key: 'almacen_id',
       width: 180,
       filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
-      filteredValue: filtroAlmacenId ? [filtroAlmacenId] : null,
-      filterMultiple: false,
+      filteredValue: filtroAlmacenIds && filtroAlmacenIds.length > 0 ? filtroAlmacenIds : null,
       filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (almId: number) => {
         const alm = almacenes.find((a) => a.id === almId);
@@ -571,7 +570,7 @@ export default function MaestrosPage() {
       setModalAlmacenOpen(true);
     } else if (activeTab === 'ubicaciones') {
       form.setFieldsValue({
-        almacen_id: filtroAlmacenId || almacenes[0]?.id,
+        almacen_id: (filtroAlmacenIds && filtroAlmacenIds[0]) || almacenes[0]?.id,
         tipo: 'ESTANTE',
         activo: true,
       });
@@ -602,7 +601,7 @@ export default function MaestrosPage() {
   });
 
   const ubicacionesFiltradas = ubicaciones.filter((ub) => {
-    if (filtroAlmacenId && ub.almacen_id !== filtroAlmacenId) return false;
+    if (filtroAlmacenIds && filtroAlmacenIds.length > 0 && !filtroAlmacenIds.includes(ub.almacen_id)) return false;
     if (!searchText.trim()) return true;
     const term = searchText.toLowerCase();
     return (
@@ -611,15 +610,6 @@ export default function MaestrosPage() {
       ub.tipo.toLowerCase().includes(term)
     );
   });
-
-  const currentCount =
-    activeTab === 'unidades'
-      ? unidadesFiltradas.length
-      : activeTab === 'categorias'
-      ? categoriasFiltradas.length
-      : activeTab === 'almacenes'
-      ? almacenesFiltrados.length
-      : ubicacionesFiltradas.length;
 
   return (
     <ModulePageLayout
@@ -721,8 +711,8 @@ export default function MaestrosPage() {
             showTotal: (total) => `Total: ${total} ubicaciones`,
           }}
           onChange={(_pagination, filters) => {
-            const alm = filters.almacen_id;
-            setFiltroAlmacenId(alm && alm.length > 0 ? (alm[0] as number) : undefined);
+            const alm = filters.almacen_id as number[] | undefined;
+            setFiltroAlmacenIds(alm && alm.length > 0 ? alm : undefined);
           }}
         />
       )}

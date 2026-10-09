@@ -42,3 +42,6 @@ export {
   actualizarUsuario,
   eliminarUsuario,
 } from './usuarios/api';
+
+// Plantillas de Documentos (RRHH)
+export * from './plantillas-documentos';

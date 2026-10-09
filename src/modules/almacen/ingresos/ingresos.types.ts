@@ -1,6 +1,7 @@
 export interface IngresoItemDetalle {
   id?: number;
   producto_id: number;
+  orden_compra_detalle_id?: number | null;
   producto_codigo?: string | null;
   producto_nombre?: string;
   unidad_medida_codigo?: string | null;
@@ -10,6 +11,7 @@ export interface IngresoItemDetalle {
   fecha_fabricacion?: string | null;
   ubicacion_id?: number | null;
   ubicacion_codigo?: string | null;
+  ubicacion_nombre?: string | null;
   cantidad: number;
   costo_unitario: number;
 }
@@ -25,6 +27,7 @@ export interface Ingreso {
   sede_id?: number | null;
   sede_nombre?: string | null;
   proveedor_id?: number | null;
+  orden_compra_id?: number | null;
   proveedor_razon_social?: string | null;
   proveedor_ruc?: string | null;
   tipo_documento: string;
@@ -44,9 +47,10 @@ export interface Ingreso {
 }
 
 export interface ListarIngresosParams {
-  almacen_id?: number;
+  almacen_id?: number | number[];
   proveedor_id?: number;
-  estado?: string;
+  orden_compra_id?: number;
+  estado?: string | string[];
   search?: string;
   fecha_desde?: string;
   fecha_hasta?: string;
@@ -57,6 +61,7 @@ export interface ListarIngresosParams {
 export interface CrearIngresoDTO {
   almacen_id: number;
   proveedor_id?: number | null;
+  orden_compra_id?: number | null;
   tipo_documento: string;
   serie_documento?: string | null;
   numero_documento?: string | null;
@@ -66,6 +71,7 @@ export interface CrearIngresoDTO {
   observaciones?: string | null;
   items: Array<{
     producto_id: number;
+    orden_compra_detalle_id?: number | null;
     numero_lote?: string | null;
     marca?: string | null;
     fecha_vencimiento?: string | null;

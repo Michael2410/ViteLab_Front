@@ -12,9 +12,9 @@ import {
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UserOutlined,
   LogoutOutlined,
   ArrowLeftOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { 
   IconCuentaUsuario, 
@@ -84,12 +84,6 @@ export const ConfiguracionLayout: React.FC = () => {
       label: 'Personal & RRHH',
       onClick: () => navigate('/personal'),
     },
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Mi Perfil',
-      onClick: () => navigate('/perfil'),
-    },
     { type: 'divider' },
     {
       key: 'logout',
@@ -127,6 +121,14 @@ export const ConfiguracionLayout: React.FC = () => {
       });
     }
 
+    if (isSuperAdmin || hasPermission('configuracion.plantillas.read') || hasPermission('settings.read')) {
+      items.push({ 
+        key: 'plantillas-documentos', 
+        icon: <FileTextOutlined style={{ fontSize: 20}} />, 
+        label: <span style={{ marginLeft: 6 }}>Plantillas de Documentos</span> 
+      });
+    }
+
     if (isSuperAdmin || hasPermission('settings.read')) {
       items.push({ 
         key: 'sistema', 
@@ -142,6 +144,7 @@ export const ConfiguracionLayout: React.FC = () => {
   const selectedKey = useMemo(() => {
     if (location.pathname.includes('/configuracion/roles')) return 'roles';
     if (location.pathname.includes('/configuracion/sedes')) return 'sedes';
+    if (location.pathname.includes('/configuracion/plantillas-documentos')) return 'plantillas-documentos';
     if (location.pathname.includes('/configuracion/sistema')) return 'sistema';
     if (location.pathname.includes('/configuracion/usuarios')) return 'usuarios';
     return (menuItems?.[0]?.key as string) || 'usuarios';
@@ -150,6 +153,7 @@ export const ConfiguracionLayout: React.FC = () => {
   const sectionTitle = useMemo(() => {
     if (selectedKey === 'roles') return 'Roles & Permisos';
     if (selectedKey === 'sedes') return 'Sedes & Sucursales';
+    if (selectedKey === 'plantillas-documentos') return 'Plantillas de Documentos';
     if (selectedKey === 'sistema') return 'Parámetros del Sistema';
     return 'Cuentas de Usuario';
   }, [selectedKey]);
@@ -158,6 +162,7 @@ export const ConfiguracionLayout: React.FC = () => {
     if (key === 'usuarios') navigate('/configuracion/usuarios');
     if (key === 'roles') navigate('/configuracion/roles');
     if (key === 'sedes') navigate('/configuracion/sedes');
+    if (key === 'plantillas-documentos') navigate('/configuracion/plantillas-documentos');
     if (key === 'sistema') navigate('/configuracion/sistema');
   };
 

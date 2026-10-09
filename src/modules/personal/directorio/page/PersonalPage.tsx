@@ -24,7 +24,6 @@ import {
   ExclamationCircleOutlined,
   CalendarOutlined,
   MoreOutlined,
-  AuditOutlined,
   FolderOpenOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -35,7 +34,6 @@ import {
   useEliminarPersonal,
   useDarDeBajaPersonal,
   useReincorporarPersonal,
-  useCargos,
   useAreasPersonal,
 } from '../../hooks';
 import type { Personal, PersonalFilters, DarDeBajaPersonalInput } from '../../types';
@@ -53,9 +51,9 @@ export default function PersonalPage() {
   const canCreate = hasPermission('personal.directorio.create');
   const canUpdate = hasPermission('personal.directorio.update');
   const canDelete = hasPermission('personal.directorio.delete');
-  const canViewHistorial = hasPermission('personal.historial.read') || hasPermission('personal.directorio.read');
 
   const [filters, setFilters] = useState<PersonalFilters>({});
+  const [selectedActivos, setSelectedActivos] = useState<boolean[] | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedPersonal, setSelectedPersonal] = useState<Personal | null>(null);
 
@@ -70,12 +68,7 @@ export default function PersonalPage() {
 
   // Queries & Mutations
   const { data: personalList = [], isLoading } = usePersonalList(filters);
-  const { data: catalogoCargos = [] } = useCargos();
   const { data: catalogoAreas = [] } = useAreasPersonal();
-
-  const cargoFilterOptions = useMemo(() => {
-    return catalogoCargos.map((c) => ({ label: c.nombre, value: c.nombre }));
-  }, [catalogoCargos]);
 
   const areaFilterOptions = useMemo(() => {
     return catalogoAreas.map((a) => ({ label: a.nombre, value: a.nombre }));
@@ -229,8 +222,7 @@ export default function PersonalPage() {
       title: 'Cargo & Área',
       key: 'cargo',
       filters: areaFilterOptions.map((a) => ({ text: a.label, value: a.value })),
-      filteredValue: filters.area ? [filters.area] : null,
-      filterMultiple: false,
+      filteredValue: filters.area ? (Array.isArray(filters.area) ? filters.area : [filters.area]) : null,
       filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, record) => (
         <div>
@@ -278,8 +270,7 @@ export default function PersonalPage() {
         { text: 'Solo Activos', value: true },
         { text: 'Cesados / Inactivos', value: false },
       ],
-      filteredValue: filters.activo !== undefined ? [filters.activo] : null,
-      filterMultiple: false,
+      filteredValue: selectedActivos && selectedActivos.length > 0 ? selectedActivos : null,
       filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (_, record) => {
         if (record.activo) {
@@ -364,15 +355,6 @@ export default function PersonalPage() {
             icon: <FolderOpenOutlined style={{ color: '#0d9488' }} />,
             label: 'Ver Expediente 360º',
           },
-          ...(canViewHistorial
-            ? [
-                {
-                  key: 'historial',
-                  icon: <AuditOutlined style={{ color: '#0284c7' }} />,
-                  label: 'Historial & Altas/Ceses',
-                },
-              ]
-            : []),
           ...(canUpdate
             ? [
                 {
@@ -669,11 +651,19 @@ export default function PersonalPage() {
         locale={{ emptyText: 'No se encontraron colaboradores' }}
         onChange={(_pagination, tableFilters) => {
           const area = tableFilters.cargo;
-          const activo = tableFilters.activo;
+          const activo = tableFilters.activo as boolean[] | undefined;
+
+          setSelectedActivos(activo && activo.length > 0 ? activo : undefined);
+
+          let activoVal: boolean | undefined = undefined;
+          if (activo && activo.length === 1) {
+            activoVal = activo[0];
+          }
+
           setFilters((prev) => ({
             ...prev,
-            area: area && area.length > 0 ? (area[0] as string) : undefined,
-            activo: activo && activo.length > 0 ? (activo[0] as boolean) : undefined,
+            area: area && area.length > 0 ? (area as string[]) : undefined,
+            activo: activoVal,
           }));
         }}
       />

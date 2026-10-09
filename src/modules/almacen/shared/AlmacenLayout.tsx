@@ -14,9 +14,9 @@ import {
   MenuUnfoldOutlined,
   DatabaseOutlined,
   LogoutOutlined,
-  UserOutlined,
   ArrowLeftOutlined,
   SwapOutlined,
+  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { 
   IconProductos, 
@@ -100,12 +100,6 @@ export const AlmacenLayout: React.FC = () => {
       label: 'Configuración & Seguridad',
       onClick: () => navigate('/configuracion/usuarios'),
     },
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Mi Perfil',
-      onClick: () => navigate('/perfil'),
-    },
     { type: 'divider' },
     {
       key: 'logout',
@@ -135,6 +129,15 @@ export const AlmacenLayout: React.FC = () => {
         key: 'stock',
         icon: <IconStockKardex width={24} height={24} />,
         label: <span style={{ marginLeft: 6 }}>Stock & Kardex</span>,
+      });
+    }
+
+    // Órdenes de Compra
+    if (isSuperAdmin || hasPermission('almacen.ordenes_compra.read')) {
+      items.push({
+        key: 'ordenes-compra',
+        icon: <ShoppingCartOutlined style={{ fontSize: 20 }} />,
+        label: <span style={{ marginLeft: 6 }}>Órdenes de Compra</span>,
       });
     }
 
@@ -218,6 +221,7 @@ export const AlmacenLayout: React.FC = () => {
     const path = location.pathname;
     if (path.includes('/almacen/productos')) return 'productos';
     if (path.includes('/almacen/stock')) return 'stock';
+    if (path.includes('/almacen/ordenes-compra')) return 'ordenes-compra';
     if (path.includes('/almacen/ingresos')) return 'ingresos';
     if (path.includes('/almacen/despachos')) return 'despachos';
     if (path.includes('/almacen/custodia')) return 'custodia';
@@ -235,6 +239,8 @@ export const AlmacenLayout: React.FC = () => {
         return 'Catálogo de Productos';
       case 'stock':
         return 'Stock & Kardex';
+      case 'ordenes-compra':
+        return 'Órdenes de Compra a Proveedores';
       case 'ingresos':
         return 'Ingresos de Almacén';
       case 'despachos':

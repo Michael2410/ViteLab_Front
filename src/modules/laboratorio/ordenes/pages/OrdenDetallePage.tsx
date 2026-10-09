@@ -40,6 +40,8 @@ import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useOrdenDetalle, usePreanalitica } from '../hooks';
 import { useAuthStore } from '../../../auth/hooks';
+import { useConfiguracion } from '../../../configuracion/sistema/hooks';
+import { imprimirTicketOrden } from '../utils/printOrdenHelper';
 import {
   ESTADO_ORDEN_COLORS,
   ESTADO_ORDEN_LABELS,
@@ -56,6 +58,7 @@ export const OrdenDetallePage: React.FC = () => {
   const { hasPermission } = useAuthStore();
 
   const { data: orden, isLoading, error } = useOrdenDetalle(ordenId, hasPermission('orders.read'));
+  const { data: configuracion } = useConfiguracion();
 
   const { data: preanaliticaIA, isLoading: loadingPreanalitica } = usePreanalitica(ordenId, hasPermission('orders.read'));
 
@@ -175,9 +178,9 @@ export const OrdenDetallePage: React.FC = () => {
             {hasPermission('orders.print') && (
               <Button
                 icon={<PrinterOutlined />}
-                onClick={() => navigate(`/ordenes/${orden.id}/imprimir`)}
+                onClick={() => imprimirTicketOrden(orden, configuracion)}
               >
-                Imprimir Orden
+                Imprimir Ticket
               </Button>
             )}
             {hasPermission('results.read') && (

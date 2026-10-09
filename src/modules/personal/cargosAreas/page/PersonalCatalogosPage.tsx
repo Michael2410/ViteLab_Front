@@ -219,14 +219,6 @@ export const PersonalCatalogosPage: React.FC = () => {
     handleRefreshCurrent();
   };
 
-  // Stats calculation
-  const totalItems = currentData.length;
-  const activeCount = currentData.filter((i) => i.activo).length;
-  const totalAssignedCollaborators = currentData.reduce(
-    (acc, curr) => acc + (curr.total_colaboradores || 0),
-    0
-  );
-
   // Columns definition
   const columns: ColumnsType<PersonalCatalogoItem> = [
     {
@@ -264,24 +256,29 @@ export const PersonalCatalogosPage: React.FC = () => {
     },
     {
       title: 'Colaboradores',
-      dataIndex: 'total_colaboradores',
       key: 'total_colaboradores',
       width: 150,
       align: 'center',
-      render: (total: number = 0) => (
-        <Tag
-          color={total > 0 ? 'processing' : 'default'}
-          style={{
-            borderRadius: 14,
-            padding: '2px 10px',
-            fontSize: 12,
-            fontWeight: 500,
-          }}
-        >
-          <TeamOutlined style={{ marginRight: 6 }} />
-          {total} {total === 1 ? 'persona' : 'personas'}
-        </Tag>
-      ),
+      sorter: (a, b) =>
+        Number(a.total_personal ?? a.total_colaboradores ?? 0) -
+        Number(b.total_personal ?? b.total_colaboradores ?? 0),
+      render: (_, record) => {
+        const total = Number(record.total_personal ?? record.total_colaboradores ?? 0);
+        return (
+          <Tag
+            color={total > 0 ? 'processing' : 'default'}
+            style={{
+              borderRadius: 14,
+              padding: '2px 10px',
+              fontSize: 12,
+              fontWeight: 500,
+            }}
+          >
+            <TeamOutlined style={{ marginRight: 6 }} />
+            {total} {total === 1 ? 'persona' : 'personas'}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Estado',
@@ -314,7 +311,8 @@ export const PersonalCatalogosPage: React.FC = () => {
             width: 120,
             align: 'center' as const,
             render: (_: any, record: PersonalCatalogoItem) => {
-              const isInUse = (record.total_colaboradores || 0) > 0;
+              const totalColabs = Number(record.total_personal ?? record.total_colaboradores ?? 0);
+              const isInUse = totalColabs > 0;
               return (
                 <Space size="small">
                   <Tooltip title="Editar detalles">
@@ -329,7 +327,7 @@ export const PersonalCatalogosPage: React.FC = () => {
                     title={`¿Eliminar ${currentTabConfig.singular.toLowerCase()}?`}
                     description={
                       isInUse
-                        ? `Tiene ${record.total_colaboradores} colaborador(es) asignado(s). Se desactivará para proteger el historial laboral.`
+                        ? `Tiene ${totalColabs} colaborador(es) asignado(s). Se desactivará para proteger el historial laboral.`
                         : 'Esta acción no se puede deshacer.'
                     }
                     okText={isInUse ? 'Desactivar' : 'Eliminar'}

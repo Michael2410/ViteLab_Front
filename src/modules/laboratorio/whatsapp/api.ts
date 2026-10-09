@@ -15,8 +15,8 @@ import type {
  * Inicia una nueva sesión de WhatsApp
  * El QR se emite via Socket.io
  */
-export const startSession = async (): Promise<{ message: string; state: string }> => {
-  const response = await apiClient.post<ApiResponse<{ message: string; state: string }>>(
+export const startSession = async (): Promise<{ state: string; qr?: string | null; phoneNumber?: string | null; isConnected?: boolean }> => {
+  const response = await apiClient.post<ApiResponse<{ state: string; qr?: string | null; phoneNumber?: string | null; isConnected?: boolean }>>(
     '/whatsapp/start-session'
   );
   return response.data.data!;

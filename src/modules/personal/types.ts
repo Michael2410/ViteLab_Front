@@ -20,6 +20,7 @@ export interface PersonalCatalogoItem {
   created_at: string;
   updated_at: string;
   total_colaboradores?: number;
+  total_personal?: number;
 }
 
 export type CatalogoTipo = 'cargos' | 'areas' | 'tipos-contrato' | 'motivos-cese';
@@ -134,13 +135,13 @@ export interface UpdateCuentaInput {
 
 export interface PersonalFilters {
   search?: string;
-  cargo?: string;
-  cargo_id?: number;
-  area?: string;
-  area_id?: number;
-  tipo_contrato_id?: number;
+  cargo?: string | string[];
+  cargo_id?: number | number[];
+  area?: string | string[];
+  area_id?: number | number[];
+  tipo_contrato_id?: number | number[];
   activo?: boolean;
-  sede_id?: number;
+  sede_id?: number | number[];
   con_usuario?: boolean;
 }
 
@@ -312,7 +313,7 @@ export interface FiltrosAsistencia {
   fecha_desde?: string;
   fecha_hasta?: string;
   personal_id?: number;
-  estado?: EstadoAsistencia;
+  estado?: EstadoAsistencia | EstadoAsistencia[] | string | string[];
   search?: string;
 }
 
@@ -350,6 +351,11 @@ export interface DocumentoLaboralItem {
   archivo_url?: string | null;
   observaciones?: string | null;
   emitido_por_nombre?: string;
+  contenido_renderizado?: string | null;
+  plantilla_id?: number | null;
+  firmante_nombre?: string | null;
+  firmante_cargo?: string | null;
+  firmante_firma_url?: string | null;
   created_at: string;
 }
 
@@ -359,6 +365,11 @@ export interface GenerarDocumentoInput {
   destinatario?: string;
   incluir_remuneracion?: boolean;
   observaciones?: string;
+  contenido_personalizado?: string;
+  firmante_nombre?: string;
+  firmante_cargo?: string;
+  firmante_firma_url?: string;
+  plantilla_id?: number;
 }
 
 

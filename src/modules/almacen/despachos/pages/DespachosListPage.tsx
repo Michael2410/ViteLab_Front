@@ -35,8 +35,8 @@ export default function DespachosListPage() {
   const [limit, setLimit] = useState(10);
 
   const [search, setSearch] = useState('');
-  const [almacenId, setAlmacenId] = useState<number | undefined>(undefined);
-  const [estadoFilter, setEstadoFilter] = useState<string | undefined>(undefined);
+  const [almacenIds, setAlmacenIds] = useState<number[] | undefined>(undefined);
+  const [estadoFilter, setEstadoFilter] = useState<string[] | undefined>(undefined);
   const [rangoFechas, setRangoFechas] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
@@ -63,7 +63,7 @@ export default function DespachosListPage() {
         page,
         limit,
         search: search.trim() || undefined,
-        almacen_id: almacenId,
+        almacen_id: almacenIds,
         estado: estadoFilter,
         fecha_desde: rangoFechas ? rangoFechas[0].format('YYYY-MM-DD') : undefined,
         fecha_hasta: rangoFechas ? rangoFechas[1].format('YYYY-MM-DD') : undefined,
@@ -75,7 +75,7 @@ export default function DespachosListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, almacenId, estadoFilter, rangoFechas]);
+  }, [page, limit, search, almacenIds, estadoFilter, rangoFechas]);
 
   useEffect(() => {
     cargarDespachos();
@@ -98,11 +98,11 @@ export default function DespachosListPage() {
     setPage(pagination.current || 1);
     setLimit(pagination.pageSize || limit);
 
-    const almVal = tableFilters.almacen_nombre?.[0];
-    setAlmacenId(almVal !== undefined && almVal !== null ? Number(almVal) : undefined);
+    const almVal = tableFilters.almacen_nombre;
+    setAlmacenIds(almVal && almVal.length > 0 ? (almVal as any[]).map(Number) : undefined);
 
-    const estVal = tableFilters.estado?.[0];
-    setEstadoFilter(estVal ? String(estVal) : undefined);
+    const estVal = tableFilters.estado;
+    setEstadoFilter(estVal && estVal.length > 0 ? (estVal as string[]) : undefined);
   };
 
   const columns: ColumnsType<Despacho> = [
@@ -164,8 +164,7 @@ export default function DespachosListPage() {
       key: 'almacen_nombre',
       width: 170,
       filters: almacenes.map((a) => ({ text: a.nombre, value: a.id })),
-      filterMultiple: false,
-      filteredValue: almacenId !== undefined ? [almacenId] : null,
+      filteredValue: almacenIds && almacenIds.length > 0 ? almacenIds : null,
       filterIcon: renderTableFilterIcon,
       render: (v) => <Tag color="blue">{v || 'Principal'}</Tag>,
     },
@@ -200,8 +199,7 @@ export default function DespachosListPage() {
         { text: 'Registrado', value: 'REGISTRADO' },
         { text: 'Anulado', value: 'ANULADO' },
       ],
-      filterMultiple: false,
-      filteredValue: estadoFilter ? [estadoFilter] : null,
+      filteredValue: estadoFilter && estadoFilter.length > 0 ? estadoFilter : null,
       filterIcon: renderTableFilterIcon,
       render: (v) => (
         <Tag color={v === 'REGISTRADO' ? 'green' : 'red'}>

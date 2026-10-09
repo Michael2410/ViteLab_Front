@@ -12,6 +12,7 @@ import {
   InputNumber,
   Tag,
   Typography,
+  Alert,
   message,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -21,7 +22,7 @@ import { GlobalTable } from '../../../../shared/components/GlobalTable';
 import { custodiaApi } from '../custodia.api';
 import { almacenApi } from '../../shared/almacen.api';
 import { useAlmacenSedeStore } from '../../shared/sede.store';
-import type { ItemCustodia } from '../custodia.types';
+import type { ItemCustodia, Devolucion } from '../custodia.types';
 import type { Almacen } from '../../maestros/maestros.types';
 
 const { Text } = Typography;
@@ -44,6 +45,7 @@ interface DevolucionDrawerProps {
   onClose: () => void;
   onSuccess: () => void;
   personalId?: number;
+  devolucionParaCorregir?: Devolucion | null;
 }
 
 export default function DevolucionDrawer({
@@ -51,6 +53,7 @@ export default function DevolucionDrawer({
   onClose,
   onSuccess,
   personalId,
+  devolucionParaCorregir,
 }: DevolucionDrawerProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -66,21 +69,56 @@ export default function DevolucionDrawer({
         .get<Almacen[]>('/maestros/almacenes', { sede_id: sedeId, activo: true })
         .then((data) => {
           setAlmacenes(data || []);
-          if (data && data.length > 0) {
+          if (!devolucionParaCorregir && data && data.length > 0) {
             form.setFieldsValue({ almacen_id: data[0].id });
           }
         })
         .catch(console.error);
 
+      const targetPersonal = devolucionParaCorregir?.personal_id || personalId;
       custodiaApi
-        .listar({ personal_id: personalId, solo_con_stock: true, limit: 100 })
-        .then((res) => setDisponiblesCustodia(res.items || []))
+        .listar({ personal_id: targetPersonal, solo_con_stock: true, limit: 100 })
+        .then((res) => {
+          const items = res.items || [];
+          setDisponiblesCustodia(items);
+
+          if (devolucionParaCorregir && devolucionParaCorregir.items && devolucionParaCorregir.items.length > 0) {
+            const prefilled: LineaDevolucion[] = devolucionParaCorregir.items.map((item, idx) => {
+              const match = items.find(
+                (c) => c.producto_id === item.producto_id && c.lote_id === item.lote_id
+              );
+              return {
+                key: `corregir_dev_${item.id || idx}_${Date.now()}`,
+                custodia_id: match ? match.id : undefined,
+                producto_id: item.producto_id,
+                lote_id: item.lote_id,
+                producto_nombre: item.producto_nombre,
+                numero_lote: item.numero_lote || 'Sin lote',
+                unidad_medida: item.unidad_medida_codigo,
+                stock_disponible: match ? match.cantidad : item.cantidad,
+                cantidad: item.cantidad,
+                observacion: item.observacion || undefined,
+              };
+            });
+            setLineas(prefilled);
+          } else {
+            setLineas([]);
+          }
+        })
         .catch(console.error);
 
-      form.setFieldsValue({ fecha: dayjs() });
-      setLineas([]);
+      if (devolucionParaCorregir) {
+        form.setFieldsValue({
+          almacen_id: devolucionParaCorregir.almacen_id,
+          fecha: devolucionParaCorregir.fecha ? dayjs(devolucionParaCorregir.fecha) : dayjs(),
+          observaciones: devolucionParaCorregir.observaciones || '',
+        });
+      } else {
+        form.setFieldsValue({ fecha: dayjs(), observaciones: '' });
+        setLineas([]);
+      }
     }
-  }, [open, personalId, sedeId, form]);
+  }, [open, personalId, sedeId, devolucionParaCorregir, form]);
 
   const agregarLinea = () => {
     setLineas((prev) => [
@@ -154,7 +192,7 @@ export default function DevolucionDrawer({
 
       for (const l of lineas) {
         if (!l.producto_id || !l.lote_id) {
-          message.warning('Todos los ítems deben provenir de un ítem en custodia');
+          message.warning('Todos los ítems deben provenir de un ítem en custodia válido');
           return;
         }
         if (l.cantidad <= 0) {
@@ -170,9 +208,10 @@ export default function DevolucionDrawer({
       }
 
       setSaving(true);
+      const targetPersonal = devolucionParaCorregir?.personal_id || personalId;
       await custodiaApi.crearDevolucion({
         almacen_id: values.almacen_id,
-        personal_id: personalId,
+        personal_id: targetPersonal,
         fecha: values.fecha?.format('YYYY-MM-DD'),
         observaciones: values.observaciones,
         items: lineas.map((l) => ({
@@ -183,7 +222,11 @@ export default function DevolucionDrawer({
         })),
       });
 
-      message.success('Devolución registrada exitosamente');
+      message.success(
+        devolucionParaCorregir
+          ? 'Devolución corregida y registrada exitosamente'
+          : 'Devolución registrada exitosamente'
+      );
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -207,7 +250,7 @@ export default function DevolucionDrawer({
           optionFilterProp="label"
           options={disponiblesCustodia.map((c) => ({
             value: c.id,
-            label: `${c.producto_nombre} | Lote: ${c.numero_lote || 'S/L'} | Saldo: ${c.cantidad} ${c.unidad_medida_codigo}`,
+            label: `${c.producto_nombre} | Marca: ${c.marca || 'Sin marca'} | Lote: ${c.numero_lote || 'S/L'} | Saldo: ${c.cantidad} ${c.unidad_medida_codigo}`,
           }))}
         />
       ),
@@ -216,7 +259,7 @@ export default function DevolucionDrawer({
       title: 'Saldo Custodia',
       dataIndex: 'stock_disponible',
       key: 'stock_disponible',
-      width: 110,
+      width: 120,
       align: 'right',
       render: (v, r) => (
         <Text strong style={{ color: '#059669' }}>
@@ -228,7 +271,7 @@ export default function DevolucionDrawer({
       title: 'Cantidad a Devolver',
       dataIndex: 'cantidad',
       key: 'cantidad',
-      width: 140,
+      width: 150,
       render: (v, record) => (
         <InputNumber
           min={0.01}
@@ -241,12 +284,12 @@ export default function DevolucionDrawer({
       ),
     },
     {
-      title: 'Motivo / Detalle',
+      title: 'Nota / Motivo',
       key: 'observacion',
-      width: 160,
-      render: (_, record) => (
+      dataIndex: 'observacion',
+      render: (v, record) => (
         <Input
-          placeholder="Sobrante, cambio..."
+          placeholder="Ej: Material sobrante"
           value={record.observacion}
           onChange={(e) => handleObservacionChange(record.key, e.target.value)}
         />
@@ -271,9 +314,16 @@ export default function DevolucionDrawer({
     <Drawer
       title={
         <Space align="center">
-          <span>Devolver Material a Almacén</span>
-          <Tag color="gold" style={{ fontSize: '11px', textTransform: 'uppercase' }}>
-            Custodia
+          <span>
+            {devolucionParaCorregir
+              ? `Corregir Devolución (${devolucionParaCorregir.numero})`
+              : 'Devolver Material a Almacén'}
+          </span>
+          <Tag
+            color={devolucionParaCorregir ? 'orange' : 'gold'}
+            style={{ fontSize: '11px', textTransform: 'uppercase' }}
+          >
+            {devolucionParaCorregir ? 'Corrección' : 'Custodia'}
           </Tag>
         </Space>
       }
@@ -285,12 +335,22 @@ export default function DevolucionDrawer({
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <Button onClick={onClose}>Cancelar</Button>
           <Button type="primary" onClick={handleSubmit} loading={saving}>
-            Confirmar Devolución
+            {devolucionParaCorregir ? 'Guardar Devolución Corregida' : 'Confirmar Devolución'}
           </Button>
         </div>
       }
     >
       <Form form={form} layout="vertical">
+        {devolucionParaCorregir && (
+          <Alert
+            type="info"
+            showIcon
+            message="Modo de Corrección de Devolución"
+            description={`La devolución previa (${devolucionParaCorregir.numero}) ha sido anulada y los materiales reincorporados a custodia. Ajuste las cantidades devueltas y confirme para generar el nuevo registro.`}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -329,6 +389,7 @@ export default function DevolucionDrawer({
         </div>
 
         <GlobalTable<LineaDevolucion>
+          resourceName="linea-devolucion"
           rowKey="key"
           dataSource={lineas}
           columns={columns}

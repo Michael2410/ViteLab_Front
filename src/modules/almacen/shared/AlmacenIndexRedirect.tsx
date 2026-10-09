@@ -10,6 +10,9 @@ export default function AlmacenIndexRedirect() {
   if (hasPermission('almacen.stock.read')) {
     return <Navigate to="/almacen/stock" replace />;
   }
+  if (hasPermission('almacen.ordenes_compra.read')) {
+    return <Navigate to="/almacen/ordenes-compra" replace />;
+  }
   if (hasPermission('almacen.ingresos.read')) {
     return <Navigate to="/almacen/ingresos" replace />;
   }

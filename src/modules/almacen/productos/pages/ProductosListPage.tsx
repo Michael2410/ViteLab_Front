@@ -36,7 +36,7 @@ export default function ProductosListPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
-  const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+  const [categoriaIds, setCategoriaIds] = useState<number[] | undefined>(undefined);
   const [activoFilter, setActivoFilter] = useState<boolean | undefined>(true);
 
   const [categorias, setCategorias] = useState<CategoriaOption[]>([]);
@@ -46,7 +46,6 @@ export default function ProductosListPage() {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const canCreate = isSuperAdmin || hasPermission('almacen.productos.create');
   const canEdit = isSuperAdmin || hasPermission('almacen.productos.update');
-  const canDelete = isSuperAdmin || hasPermission('almacen.productos.delete');
 
   // Cargar categorías para el filtro
   useEffect(() => {
@@ -63,7 +62,7 @@ export default function ProductosListPage() {
         page,
         limit,
         search: search.trim() || undefined,
-        categoria_id: categoriaId,
+        categoria_id: categoriaIds,
         activo: activoFilter,
       });
       setProductos(res.items || []);
@@ -74,7 +73,7 @@ export default function ProductosListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, categoriaId, activoFilter]);
+  }, [page, limit, search, categoriaIds, activoFilter]);
 
   useEffect(() => {
     cargarProductos();
@@ -102,28 +101,16 @@ export default function ProductosListPage() {
     }
   };
 
-  const handleDesactivar = async (id: number) => {
-    try {
-      await productosApi.desactivar(id);
-      message.success('Producto desactivado correctamente');
-      cargarProductos();
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Error al desactivar');
-    }
-  };
-
   const handleTableChange = (pagination: any, tableFilters: any) => {
     setPage(pagination.current || 1);
     setLimit(pagination.pageSize || limit);
 
-    const catVal = tableFilters.categoria_nombre?.[0];
-    setCategoriaId(catVal !== undefined && catVal !== null ? Number(catVal) : undefined);
+    const catVal = tableFilters.categoria_nombre;
+    setCategoriaIds(catVal && catVal.length > 0 ? (catVal as any[]).map(Number) : undefined);
 
-    const actVal = tableFilters.activo?.[0];
-    if (actVal === 'true') {
-      setActivoFilter(true);
-    } else if (actVal === 'false') {
-      setActivoFilter(false);
+    const actVal = tableFilters.activo as string[] | undefined;
+    if (actVal && actVal.length === 1) {
+      setActivoFilter(actVal[0] === 'true');
     } else {
       setActivoFilter(undefined);
     }
@@ -159,8 +146,7 @@ export default function ProductosListPage() {
       key: 'categoria_nombre',
       width: 240,
       filters: categorias.map((c) => ({ text: c.nombre, value: c.id })),
-      filterMultiple: false,
-      filteredValue: categoriaId !== undefined ? [categoriaId] : null,
+      filteredValue: categoriaIds && categoriaIds.length > 0 ? categoriaIds : null,
       filterIcon: renderTableFilterIcon,
       render: (val: string | null) => val || <Text type="secondary">—</Text>,
     },
@@ -226,7 +212,6 @@ export default function ProductosListPage() {
         { text: 'Activo', value: 'true' },
         { text: 'Inactivo', value: 'false' },
       ],
-      filterMultiple: false,
       filteredValue: activoFilter === undefined ? null : [activoFilter ? 'true' : 'false'],
       filterIcon: renderTableFilterIcon,
       render: (activo: boolean, record) => (
@@ -264,7 +249,7 @@ export default function ProductosListPage() {
   return (
     <ModulePageLayout
       title="Catálogo de Productos"
-      subtitle={`Reactivos, materiales, insumos y calibradores (${total} registrados)`}
+      subtitle={`Reactivos, materiales, insumos y calibradores`}
       actionButton={
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Input

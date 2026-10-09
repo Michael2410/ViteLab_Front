@@ -42,10 +42,10 @@ export interface Transferencia {
 export interface ListarTransferenciasParams {
   page?: number;
   limit?: number;
-  almacen_id?: number;
-  almacen_origen_id?: number;
-  almacen_destino_id?: number;
-  estado?: string;
+  almacen_id?: number | number[];
+  almacen_origen_id?: number | number[];
+  almacen_destino_id?: number | number[];
+  estado?: string | string[];
   fecha_desde?: string;
   fecha_hasta?: string;
   search?: string;

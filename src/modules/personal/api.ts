@@ -12,10 +12,22 @@ import type {
   CatalogoTipo,
 } from './types';
 
+function cleanQueryParams(params?: Record<string, any>) {
+  if (!params) return undefined;
+  const clean = { ...params };
+  for (const k of Object.keys(clean)) {
+    const v = clean[k];
+    if (Array.isArray(v)) {
+      clean[k] = v.join(',');
+    }
+  }
+  return clean;
+}
+
 export const personalApi = {
   // Obtener todo el personal con filtros opcionales
   getAll: async (filtros?: PersonalFilters): Promise<Personal[]> => {
-    const { data } = await apiClient.get('/personal', { params: filtros });
+    const { data } = await apiClient.get('/personal', { params: cleanQueryParams(filtros) });
     return data.data;
   },
 
@@ -77,7 +89,15 @@ export const personalCatalogosApi = {
     const { data } = await apiClient.get(`/personal/catalogos/${tipo}`, {
       params: activosOnly ? { activos: true } : undefined,
     });
-    return data.data;
+    const items = data.data || [];
+    return items.map((item: any) => {
+      const count = Number(item.total_personal ?? item.total_colaboradores ?? 0);
+      return {
+        ...item,
+        total_personal: count,
+        total_colaboradores: count,
+      };
+    });
   },
 
   create: async (
@@ -164,8 +184,8 @@ export const personalContratosApi = {
 // API VACACIONES
 // ============================================
 export const personalVacacionesApi = {
-  getSolicitudes: async (filtros?: { personal_id?: number; estado?: import('./types').EstadoVacacion }): Promise<import('./types').SolicitudVacacion[]> => {
-    const { data } = await apiClient.get('/personal/vacaciones', { params: filtros });
+  getSolicitudes: async (filtros?: { personal_id?: number; estado?: import('./types').EstadoVacacion | string | string[] }): Promise<import('./types').SolicitudVacacion[]> => {
+    const { data } = await apiClient.get('/personal/vacaciones', { params: cleanQueryParams(filtros) });
     return data.data;
   },
 
@@ -201,7 +221,7 @@ export const personalVacacionesApi = {
 // ============================================
 export const personalAsistenciaApi = {
   getAll: async (filtros?: import('./types').FiltrosAsistencia): Promise<import('./types').RegistroAsistencia[]> => {
-    const { data } = await apiClient.get('/personal/asistencia', { params: filtros });
+    const { data } = await apiClient.get('/personal/asistencia', { params: cleanQueryParams(filtros) });
     return data.data;
   },
 
@@ -230,8 +250,13 @@ export const personalAsistenciaApi = {
 // API DOCUMENTOS & CONSTANCIAS
 // ============================================
 export const personalDocumentosApi = {
-  getAll: async (filtros?: { personal_id?: number; tipo_documento?: string }): Promise<import('./types').DocumentoLaboralItem[]> => {
-    const { data } = await apiClient.get('/personal/documentos', { params: filtros });
+  getAll: async (filtros?: { personal_id?: number; tipo_documento?: string | string[] }): Promise<import('./types').DocumentoLaboralItem[]> => {
+    const { data } = await apiClient.get('/personal/documentos', { params: cleanQueryParams(filtros) });
+    return data.data;
+  },
+
+  getById: async (id: number): Promise<any> => {
+    const { data } = await apiClient.get(`/personal/documentos/${id}`);
     return data.data;
   },
 

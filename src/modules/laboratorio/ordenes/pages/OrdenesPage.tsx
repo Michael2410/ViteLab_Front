@@ -141,13 +141,6 @@ export const OrdenesPage: React.FC = () => {
     }));
   };
 
-  const handleLimpiarFiltros = () => {
-    setFiltros({
-      page: 1,
-      limit: 10,
-    });
-  };
-
   const handleEliminar = (record: Orden) => {
     modal.confirm({
       title: '¿Está seguro de eliminar esta orden?',
@@ -185,12 +178,20 @@ export const OrdenesPage: React.FC = () => {
   };
 
   const handleTableChange = (pagination: any, tableFilters: any) => {
+    const estados = tableFilters.estado && tableFilters.estado.length > 0
+      ? (tableFilters.estado as EstadoOrden[])
+      : undefined;
+
+    const sedesIds = tableFilters.sede && tableFilters.sede.length > 0
+      ? (tableFilters.sede.map(Number) as number[])
+      : undefined;
+
     setFiltros((prev) => ({
       ...prev,
       page: pagination.current || 1,
       limit: pagination.pageSize || prev.limit,
-      estado: (tableFilters.estado?.[0] as EstadoOrden) || undefined,
-      sede_id: tableFilters.sede?.[0] ? Number(tableFilters.sede[0]) : undefined,
+      estado: estados,
+      sede_id: sedesIds,
     }));
   };
 
@@ -302,8 +303,12 @@ export const OrdenesPage: React.FC = () => {
         text: ESTADO_ORDEN_LABELS[estado],
         value: estado,
       })),
-      filterMultiple: false,
-      filteredValue: filtros.estado ? [filtros.estado] : null,
+      filterMultiple: true,
+      filteredValue: Array.isArray(filtros.estado)
+        ? filtros.estado
+        : filtros.estado
+        ? [filtros.estado]
+        : null,
       filterIcon: renderTableFilterIcon,
       render: (estado: EstadoOrden) => (
         <Tag color={ESTADO_ORDEN_COLORS[estado]}>{ESTADO_ORDEN_LABELS[estado]}</Tag>
@@ -315,8 +320,12 @@ export const OrdenesPage: React.FC = () => {
       key: 'sede',
       width: 150,
       filters: sedes?.map((s) => ({ text: s.nombre, value: s.id })),
-      filterMultiple: false,
-      filteredValue: filtros.sede_id ? [filtros.sede_id] : null,
+      filterMultiple: true,
+      filteredValue: Array.isArray(filtros.sede_id)
+        ? filtros.sede_id
+        : filtros.sede_id
+        ? [filtros.sede_id]
+        : null,
       filterIcon: renderTableFilterIcon,
       render: (_, record: Orden) => record.sede_nombre || '-',
     },
@@ -416,15 +425,7 @@ export const OrdenesPage: React.FC = () => {
       ),
     },
   ];
-
-  const filtrosActivos = Object.keys(filtros).filter(
-    (key) =>
-      key !== 'page' &&
-      key !== 'limit' &&
-      filtros[key as keyof OrdenFilters] !== undefined &&
-      filtros[key as keyof OrdenFilters] !== ''
-  ).length;
-
+  
   return (
     <ModulePageLayout
       title="Órdenes de Atención"

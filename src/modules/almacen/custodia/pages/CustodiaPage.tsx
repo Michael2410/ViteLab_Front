@@ -19,6 +19,7 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
   CloseCircleOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
@@ -31,6 +32,8 @@ import type { ItemCustodia, CustodiaResumen, Consumo, Devolucion } from '../cust
 import type { Personal } from '../../../personal/types';
 import ConsumoDrawer from '../components/ConsumoDrawer';
 import DevolucionDrawer from '../components/DevolucionDrawer';
+import ConsumoDetalleModal from '../components/ConsumoDetalleModal';
+import DevolucionDetalleModal from '../components/DevolucionDetalleModal';
 
 const { Text } = Typography;
 
@@ -84,9 +87,16 @@ export default function CustodiaPage() {
   const [devoluciones, setDevoluciones] = useState<Devolucion[]>([]);
   const [loadingDevoluciones, setLoadingDevoluciones] = useState(false);
 
-  // Drawers
+  // Drawers & Modals
   const [consumoDrawerOpen, setConsumoDrawerOpen] = useState(false);
   const [devolucionDrawerOpen, setDevolucionDrawerOpen] = useState(false);
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
+  const [selectedConsumoId, setSelectedConsumoId] = useState<number | null>(null);
+  const [consumoParaCorregir, setConsumoParaCorregir] = useState<Consumo | null>(null);
+
+  const [detalleDevolucionModalOpen, setDetalleDevolucionModalOpen] = useState(false);
+  const [selectedDevolucionId, setSelectedDevolucionId] = useState<number | null>(null);
+  const [devolucionParaCorregir, setDevolucionParaCorregir] = useState<Devolucion | null>(null);
 
   const { hasPermission, isSuperAdmin } = usePermissions();
   const canViewAllPersonal = isSuperAdmin || hasPermission('almacen.custodia.read_personal');
@@ -166,6 +176,32 @@ export default function CustodiaPage() {
     else if (activeTab === 'devoluciones') cargarDevoluciones();
   };
 
+  const handleCorregirConsumo = async (consumo: Consumo) => {
+    try {
+      await custodiaApi.anularConsumo(consumo.id, 'Corrección de cantidad');
+      message.info(`Consumo ${consumo.numero} anulado para corrección.`);
+      await Promise.all([cargarCustodia(), cargarConsumos()]);
+      setDetalleModalOpen(false);
+      setConsumoParaCorregir(consumo);
+      setConsumoDrawerOpen(true);
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Error al iniciar corrección');
+    }
+  };
+
+  const handleCorregirDevolucion = async (devolucion: Devolucion) => {
+    try {
+      await custodiaApi.anularDevolucion(devolucion.id, 'Corrección de cantidad');
+      message.info(`Devolución ${devolucion.numero} anulada para corrección.`);
+      await Promise.all([cargarCustodia(), cargarDevoluciones()]);
+      setDetalleDevolucionModalOpen(false);
+      setDevolucionParaCorregir(devolucion);
+      setDevolucionDrawerOpen(true);
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Error al iniciar corrección');
+    }
+  };
+
   const columnsCustodia: ColumnsType<ItemCustodia> = [
     {
       title: 'Código',
@@ -203,7 +239,6 @@ export default function CustodiaPage() {
         { text: 'Vencidos', value: 'VENCIDO' },
         { text: 'Normal', value: 'NORMAL' },
       ],
-      filterMultiple: false,
       filterIcon: renderTableFilterIcon,
       onFilter: (value, r) => {
         if (value === 'NORMAL') return r.estado_vencimiento !== 'VENCIDO' && r.estado_vencimiento !== 'POR_VENCER';
@@ -288,10 +323,27 @@ export default function CustodiaPage() {
         { text: 'Registrado', value: 'REGISTRADO' },
         { text: 'Anulado', value: 'ANULADO' },
       ],
-      filterMultiple: false,
       filterIcon: renderTableFilterIcon,
       onFilter: (val, r) => r.estado === val,
       render: (v) => <Tag color={v === 'REGISTRADO' ? 'green' : 'red'}>{v}</Tag>,
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      width: 80,
+      align: 'center',
+      render: (_, r) => (
+        <Button
+          type="text"
+          size="small"
+          icon={<EyeOutlined style={{ color: '#0284c7', fontSize: 16 }} />}
+          onClick={() => {
+            setSelectedConsumoId(r.id);
+            setDetalleModalOpen(true);
+          }}
+          title="Ver detalle de consumo"
+        />
+      ),
     },
   ];
 
@@ -337,10 +389,27 @@ export default function CustodiaPage() {
         { text: 'Registrado', value: 'REGISTRADO' },
         { text: 'Anulado', value: 'ANULADO' },
       ],
-      filterMultiple: false,
       filterIcon: renderTableFilterIcon,
       onFilter: (val, r) => r.estado === val,
       render: (v) => <Tag color={v === 'REGISTRADO' ? 'green' : 'red'}>{v}</Tag>,
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      width: 80,
+      align: 'center',
+      render: (_, r) => (
+        <Button
+          type="text"
+          size="small"
+          icon={<EyeOutlined style={{ color: '#0284c7', fontSize: 16 }} />}
+          onClick={() => {
+            setSelectedDevolucionId(r.id);
+            setDetalleDevolucionModalOpen(true);
+          }}
+          title="Ver detalle de devolución"
+        />
+      ),
     },
   ];
 
@@ -502,17 +571,55 @@ export default function CustodiaPage() {
 
       <ConsumoDrawer
         open={consumoDrawerOpen}
-        onClose={() => setConsumoDrawerOpen(false)}
-        onSuccess={handleRefresh}
+        onClose={() => {
+          setConsumoDrawerOpen(false);
+          setConsumoParaCorregir(null);
+        }}
+        onSuccess={() => {
+          handleRefresh();
+          setConsumoParaCorregir(null);
+        }}
         personalId={selectedPersonalId}
         itemsCustodiaIniciales={itemsCustodia}
+        consumoParaCorregir={consumoParaCorregir}
+      />
+
+      <ConsumoDetalleModal
+        open={detalleModalOpen}
+        consumoId={selectedConsumoId}
+        onClose={() => setDetalleModalOpen(false)}
+        onAnulado={() => {
+          cargarCustodia();
+          cargarConsumos();
+        }}
+        onCorregir={handleCorregirConsumo}
+        canAnular={canCreateConsumo}
       />
 
       <DevolucionDrawer
         open={devolucionDrawerOpen}
-        onClose={() => setDevolucionDrawerOpen(false)}
-        onSuccess={handleRefresh}
+        onClose={() => {
+          setDevolucionDrawerOpen(false);
+          setDevolucionParaCorregir(null);
+        }}
+        onSuccess={() => {
+          handleRefresh();
+          setDevolucionParaCorregir(null);
+        }}
         personalId={selectedPersonalId}
+        devolucionParaCorregir={devolucionParaCorregir}
+      />
+
+      <DevolucionDetalleModal
+        open={detalleDevolucionModalOpen}
+        devolucionId={selectedDevolucionId}
+        onClose={() => setDetalleDevolucionModalOpen(false)}
+        onAnulado={() => {
+          cargarCustodia();
+          cargarDevoluciones();
+        }}
+        onCorregir={handleCorregirDevolucion}
+        canAnular={canCreateConsumo}
       />
     </ModulePageLayout>
   );

@@ -12,6 +12,7 @@ import {
   Col,
   Divider,
   message,
+  Alert,
 } from 'antd';
 import {
   PlusOutlined,
@@ -27,10 +28,12 @@ import { useAlmacenSedeStore } from '../../shared/sede.store';
 import type { Producto } from '../../productos/productos.types';
 import type { Proveedor } from '../../proveedores/proveedores.types';
 import type { Almacen, Ubicacion } from '../../maestros/maestros.types';
+import type { OrdenCompra } from '../../ordenes-compra/ordenes-compra.types';
 
 interface LineaForm {
   key: string;
   producto_id?: number;
+  orden_compra_detalle_id?: number | null;
   producto?: Producto;
   numero_lote?: string;
   marca?: string;
@@ -45,9 +48,10 @@ interface IngresoModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  ordenCompra?: OrdenCompra | null;
 }
 
-export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalProps) {
+export default function IngresoModal({ open, onClose, onSuccess, ordenCompra }: IngresoModalProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const { sedeId } = useAlmacenSedeStore();
@@ -76,22 +80,58 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
         setProveedores(provs.items || []);
         setProductos(prods.items || []);
 
-        if (listaAlms.length > 0) {
-          const defaultAlm = listaAlms.find((a) => a.es_principal) || listaAlms[0];
-          setAlmacenSeleccionado(defaultAlm.id);
+        if (ordenCompra) {
+          const targetAlmId = ordenCompra.almacen_destino_id || (listaAlms.find((a) => a.es_principal) || listaAlms[0])?.id;
+          if (targetAlmId) {
+            setAlmacenSeleccionado(targetAlmId);
+          }
           form.setFieldsValue({
-            almacen_id: defaultAlm.id,
+            almacen_id: targetAlmId,
+            proveedor_id: ordenCompra.proveedor_id,
             fecha_ingreso: dayjs(),
             tipo_documento: 'FACTURA',
-            moneda: 'PEN',
+            moneda: ordenCompra.moneda || 'PEN',
+            observaciones: ordenCompra.numero ? `Ingreso correspondiente a Orden de Compra ${ordenCompra.numero}` : undefined,
           });
+
+          // Precargar productos con saldo pendiente
+          const lineasPrecargadas: LineaForm[] = (ordenCompra.items || [])
+            .map((it, idx) => {
+              const saldo = Math.max(0, Number(it.cantidad_solicitada) - Number(it.cantidad_recibida || 0));
+              const prod = prods.items?.find((p) => p.id === it.producto_id);
+              return {
+                key: `linea-oc-${it.id || idx}`,
+                producto_id: it.producto_id,
+                orden_compra_detalle_id: it.id,
+                producto: prod,
+                cantidad: saldo > 0 ? saldo : Number(it.cantidad_solicitada),
+                costo_unitario: Number(it.precio_unitario || 0),
+              };
+            })
+            .filter((l) => l.cantidad > 0);
+
+          setLineas(lineasPrecargadas.length > 0 ? lineasPrecargadas : [
+            { key: '1', cantidad: 1, costo_unitario: 0 }
+          ]);
+        } else {
+          if (listaAlms.length > 0) {
+            const defaultAlm = listaAlms.find((a) => a.es_principal) || listaAlms[0];
+            setAlmacenSeleccionado(defaultAlm.id);
+            form.setFieldsValue({
+              almacen_id: defaultAlm.id,
+              fecha_ingreso: dayjs(),
+              tipo_documento: 'FACTURA',
+              moneda: 'PEN',
+            });
+          }
+          setLineas([{ key: '1', cantidad: 1, costo_unitario: 0 }]);
         }
       } catch (err) {
         console.error('Error cargando catálogos de ingreso:', err);
       }
     };
     cargar();
-  }, [open, sedeId, form]);
+  }, [open, sedeId, ordenCompra, form]);
 
   // Cargar ubicaciones cuando cambia el almacén seleccionado
   useEffect(() => {
@@ -166,9 +206,10 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
 
       setSaving(true);
 
-      const payload = {
+      const payload: any = {
         almacen_id: values.almacen_id,
         proveedor_id: values.proveedor_id || null,
+        orden_compra_id: ordenCompra?.id || null,
         tipo_documento: values.tipo_documento,
         serie_documento: values.serie_documento || null,
         numero_documento: values.numero_documento || null,
@@ -178,6 +219,7 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
         observaciones: values.observaciones || null,
         items: lineas.map((l) => ({
           producto_id: l.producto_id!,
+          orden_compra_detalle_id: l.orden_compra_detalle_id || null,
           numero_lote: l.numero_lote || null,
           marca: l.marca || null,
           fecha_vencimiento: l.fecha_vencimiento || null,
@@ -230,8 +272,22 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
         <Input
           placeholder={r.producto?.controla_lote ? 'Obligatorio' : 'Opcional'}
           value={r.numero_lote}
-          onChange={(e) => actualizarFila(r.key, { numero_lote: e.target.value })}
+          style={{ textTransform: 'uppercase' }}
+          onChange={(e) => actualizarFila(r.key, { numero_lote: e.target.value.toUpperCase() })}
           status={r.producto?.controla_lote && !r.numero_lote ? 'warning' : ''}
+        />
+      ),
+    },
+    {
+      title: 'Marca',
+      key: 'marca',
+      width: 140,
+      render: (_, r) => (
+        <Input
+          placeholder="Ej. Roche, BD..."
+          value={r.marca}
+          style={{ textTransform: 'uppercase' }}
+          onChange={(e) => actualizarFila(r.key, { marca: e.target.value.toUpperCase() })}
         />
       ),
     },
@@ -336,7 +392,7 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
       }
       open={open}
       onCancel={onClose}
-      width={1050}
+      width={1150}
       destroyOnClose
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -355,6 +411,19 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
         </div>
       }
     >
+      {ordenCompra && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16, borderRadius: 8 }}
+          message={
+            <span>
+              Recepcionando mercadería de la <strong>Orden de Compra {ordenCompra.numero}</strong>. Los productos y saldos pendientes han sido precargados. Puede ajustar las cantidades si la entrega es parcial y completar almacén destino, serie/número, lote, marca, vencimiento y ubicación.
+            </span>
+          }
+        />
+      )}
+
       <Form form={form} layout="vertical">
         <Row gutter={16}>
           <Col span={8}>
@@ -379,6 +448,7 @@ export default function IngresoModal({ open, onClose, onSuccess }: IngresoModalP
                 placeholder="Seleccione proveedor (opcional para inventario inicial)"
                 showSearch
                 allowClear
+                disabled={Boolean(ordenCompra)}
                 optionFilterProp="label"
                 options={proveedores.map((p) => ({
                   value: p.id,

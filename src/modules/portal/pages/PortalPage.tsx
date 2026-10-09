@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Dropdown, Avatar, Tag, type MenuProps } from 'antd';
 import {
   LogoutOutlined,
-  UserOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
 } from '@ant-design/icons';
@@ -11,6 +10,7 @@ import { useAuthStore } from '../../auth/hooks';
 import { usePermissions } from '../../../shared/components/PermissionGuard';
 import { getUserInitials } from '../../../shared/utils/user.utils';
 import viteLogo from '../../../assets/logo/logo.png';
+import { TenantSwitcher } from '../../../shared/components/TenantSwitcher';
 import { IconResultados, IconAlmacen, IconPersonal, IconConfiguracion } from '../../../assets/icons/NavIcons';
 
 export default function PortalPage() {
@@ -94,12 +94,6 @@ export default function PortalPage() {
       key: 'configuracion',
       label: 'Configuración & Seguridad',
       onClick: () => navigate('/configuracion/usuarios'),
-    },
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Mi Perfil',
-      onClick: () => navigate('/perfil'),
     },
     { type: 'divider' },
     {
@@ -199,9 +193,11 @@ export default function PortalPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
+          gap: 14,
           width: '100%',
         }}
       >
+        <TenantSwitcher />
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
           <div
             style={{

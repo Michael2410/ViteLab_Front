@@ -37,7 +37,7 @@ import type { ContratoItem } from '../../types';
 import { ContratoModal } from '../components/ContratoModal';
 import { RenovarContratoModal } from '../components/RenovarContratoModal';
 
-type ContratoTab = 'todos' | 'por_vencer' | 'vigentes' | 'vencidos';
+type ContratoTab = 'todos' | 'por_vencer';
 
 interface TabConfig {
   key: ContratoTab;
@@ -53,18 +53,8 @@ const TABS_CONFIG: TabConfig[] = [
   },
   {
     key: 'por_vencer',
-    label: 'Por Vencer (<30 días)',
+    label: 'Por Vencer (< 30 días)',
     description: 'Semáforo preventivo de contratos con fecha de término en los próximos 30 días para renovación o término.',
-  },
-  {
-    key: 'vigentes',
-    label: 'Contratos Vigentes',
-    description: 'Relaciones laborales activas con régimen indeterminado o plazo vigente.',
-  },
-  {
-    key: 'vencidos',
-    label: 'Contratos Vencidos',
-    description: 'Contratos con fecha de fin caducada pendientes de renovación o regularización formal.',
   },
 ];
 
@@ -103,20 +93,15 @@ export default function ContratosPage() {
   const stats = useMemo(() => {
     const total = todosContratos.length;
     const porVencer = todosContratos.filter((c: ContratoItem) => c.estado === 'POR_VENCER').length;
-    const vigentes = todosContratos.filter((c: ContratoItem) => c.estado === 'VIGENTE').length;
-    const vencidos = todosContratos.filter((c: ContratoItem) => c.estado === 'VENCIDO').length;
-    return { total, porVencer, vigentes, vencidos };
+    return { total, porVencer };
   }, [todosContratos]);
 
   // Filtrado reactivo en memoria para máxima velocidad de respuesta
   const contratosFiltrados = useMemo(() => {
     return todosContratos.filter((c: ContratoItem) => {
-      let matchTab = true;
-      if (filterMode === 'por_vencer') matchTab = c.estado === 'POR_VENCER';
-      else if (filterMode === 'vigentes') matchTab = c.estado === 'VIGENTE';
-      else if (filterMode === 'vencidos') matchTab = c.estado === 'VENCIDO';
-
-      if (!matchTab) return false;
+      if (filterMode === 'por_vencer' && c.estado !== 'POR_VENCER') {
+        return false;
+      }
 
       if (!searchTerm.trim()) return true;
       const term = searchTerm.toLowerCase().trim();
@@ -400,18 +385,9 @@ export default function ContratosPage() {
               setSearchTerm('');
             }}
             items={TABS_CONFIG.map((t) => {
-              let count = stats.total;
-              let badgeColor = '#94a3b8';
-              if (t.key === 'por_vencer') {
-                count = stats.porVencer;
-                badgeColor = count > 0 ? '#ea580c' : '#94a3b8';
-              } else if (t.key === 'vigentes') {
-                count = stats.vigentes;
-                badgeColor = '#059669';
-              } else if (t.key === 'vencidos') {
-                count = stats.vencidos;
-                badgeColor = count > 0 ? '#dc2626' : '#94a3b8';
-              }
+              const isPorVencer = t.key === 'por_vencer';
+              const count = isPorVencer ? stats.porVencer : stats.total;
+              const badgeColor = isPorVencer ? (count > 0 ? '#ea580c' : '#94a3b8') : '#0284c7';
 
               return {
                 key: t.key,

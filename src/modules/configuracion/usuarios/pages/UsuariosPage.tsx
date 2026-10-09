@@ -21,6 +21,7 @@ import {
   PhoneOutlined,
   UserAddOutlined,
   KeyOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -29,6 +30,7 @@ import { usePersonalList } from '../../../personal/hooks';
 import type { Personal } from '../../../personal/types';
 import { usePermissions } from '../../../../shared/components/PermissionGuard';
 import { UsuarioFormModal } from '../components/UsuarioFormModal';
+import { ResetPasswordModal } from '../components/ResetPasswordModal';
 import type { Usuario, CreateUsuarioInput, UpdateUsuarioInput } from '../types';
 import ModulePageLayout, { BrandCreateButton, brandButtonStyle, brandSearchStyle, renderTableFilterIcon } from '../../../../shared/components/ModulePageLayout';
 import GlobalTable from '../../../../shared/components/GlobalTable';
@@ -61,6 +63,8 @@ export const UsuariosPage: React.FC = () => {
   const [searchPersonalText, setSearchPersonalText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  const [usuarioParaReset, setUsuarioParaReset] = useState<Usuario | null>(null);
 
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('auth.users.create');
@@ -179,6 +183,11 @@ export const UsuariosPage: React.FC = () => {
         await adminReset2FAMutation.mutateAsync(usuario.id);
       },
     });
+  };
+
+  const handleResetPassword = (usuario: Usuario) => {
+    setUsuarioParaReset(usuario);
+    setResetPasswordModalOpen(true);
   };
 
   const handleSubmitForm = async (data: CreateUsuarioInput | UpdateUsuarioInput) => {
@@ -378,6 +387,16 @@ export const UsuariosPage: React.FC = () => {
                       size="small"
                       icon={<EditOutlined style={{ color: '#0284c7' }} />}
                       onClick={() => handleEditar(record)}
+                    />
+                  </Tooltip>
+                )}
+                {canUpdate && (
+                  <Tooltip title="Restablecer contraseña">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<LockOutlined style={{ color: '#059669' }} />}
+                      onClick={() => handleResetPassword(record)}
                     />
                   </Tooltip>
                 )}
@@ -636,6 +655,16 @@ export const UsuariosPage: React.FC = () => {
           crearUsuarioMutation.isPending ||
           actualizarUsuarioMutation.isPending
         }
+      />
+
+      {/* Modal para Restablecer Contraseña */}
+      <ResetPasswordModal
+        open={resetPasswordModalOpen}
+        usuario={usuarioParaReset}
+        onCancel={() => {
+          setResetPasswordModalOpen(false);
+          setUsuarioParaReset(null);
+        }}
       />
     </ModulePageLayout>
   );

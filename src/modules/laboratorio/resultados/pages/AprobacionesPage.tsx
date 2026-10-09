@@ -22,7 +22,6 @@ import {
   ExperimentOutlined,
   EyeOutlined,
   EditOutlined,
-  FileTextOutlined,
   WarningOutlined,
   SaveOutlined,
   LockOutlined,
@@ -132,15 +131,6 @@ export const AprobacionesPage: React.FC = () => {
               }}
             >
               Revisar
-            </Button>
-          )}
-          {hasPermission('results.read') && (
-            <Button
-              size="small"
-              icon={<FileTextOutlined />}
-              onClick={() => navigate(`/resultados/orden/${record.id}`)}
-            >
-              Vista Previa
             </Button>
           )}
         </Space>
@@ -440,15 +430,6 @@ export const AprobacionesPage: React.FC = () => {
       actionButton={
         ordenSeleccionada ? (
           <Space>
-            {hasPermission('results.read') && (
-              <Button
-                icon={<FileTextOutlined />}
-                onClick={() => navigate(`/resultados/orden/${ordenSeleccionada}`)}
-                style={{ height: 38, borderRadius: 8 }}
-              >
-                Vista Previa
-              </Button>
-            )}
             <Button
               onClick={() => {
                 setOrdenSeleccionada(null);
@@ -459,18 +440,6 @@ export const AprobacionesPage: React.FC = () => {
               Volver a lista
             </Button>
           </Space>
-        ) : undefined
-      }
-      filters={
-        !ordenSeleccionada ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: 12 }}>
-            <span style={{ fontSize: 13, color: '#475569' }}>
-              Órdenes con resultados completos pendientes de firma y aprobación facultativa
-            </span>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Pendientes de firma: <strong style={{ color: '#0f172a' }}>{ordenesPendientes?.length || 0}</strong>
-            </Text>
-          </div>
         ) : undefined
       }
     >

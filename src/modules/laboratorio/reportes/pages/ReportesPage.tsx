@@ -1,121 +1,253 @@
-import { Card, Row, Col, Typography } from 'antd';
+import React, { useMemo } from 'react';
+import { Row, Col, Typography, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import {
   FileTextOutlined,
   BankOutlined,
   ExperimentOutlined,
   TeamOutlined,
+  ArrowRightOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
-import { useAuthStore } from '../../../auth/hooks';
-import PageContainer from '../../../../shared/components/PageContainer';
+import ModulePageLayout from '../../../../shared/components/ModulePageLayout';
+import { usePermissions } from '../../../../shared/components/PermissionGuard';
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 
 interface ReporteCardProps {
   titulo: string;
   descripcion: string;
+  categoria: string;
+  categoriaColor: string;
   icono: React.ReactNode;
-  color: string;
+  gradient: string;
+  iconBg: string;
+  iconColor: string;
   ruta: string;
+  permiso: string;
 }
 
-const ReporteCard = ({ titulo, descripcion, icono, color, ruta }: ReporteCardProps) => {
+const ReporteCard: React.FC<ReporteCardProps> = ({
+  titulo,
+  descripcion,
+  categoria,
+  categoriaColor,
+  icono,
+  gradient,
+  iconBg,
+  iconColor,
+  ruta,
+}) => {
   const navigate = useNavigate();
 
   return (
-    <Card
-      hoverable
+    <div
       onClick={() => navigate(ruta)}
       style={{
+        background: '#ffffff',
+        borderRadius: 14,
+        border: '1px solid #e2e8f0',
+        padding: '24px',
+        cursor: 'pointer',
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         height: '100%',
-        borderRadius: 12,
-        borderTop: `4px solid ${color}`,
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
       }}
-      styles={{ body: { padding: 24 } }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(0, 0, 0, 0.08)';
+        e.currentTarget.style.borderColor = '#cbd5e1';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.02)';
+        e.currentTarget.style.borderColor = '#e2e8f0';
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+      {/* Decorative top accent line */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: gradient,
+        }}
+      />
+
+      <div>
         <div
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 12,
-            background: `${color}15`,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 28,
-            color: color,
+            justifyContent: 'space-between',
+            marginBottom: 16,
           }}
         >
-          {icono}
+          <div
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 12,
+              background: iconBg,
+              color: iconColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24,
+            }}
+          >
+            {icono}
+          </div>
+          <Tag color={categoriaColor} style={{ borderRadius: 12, fontWeight: 600, fontSize: 11 }}>
+            {categoria}
+          </Tag>
         </div>
-        <div style={{ flex: 1 }}>
-          <Title level={5} style={{ margin: 0, marginBottom: 4 }}>
-            {titulo}
-          </Title>
-          <Paragraph type="secondary" style={{ margin: 0, fontSize: 13 }}>
-            {descripcion}
-          </Paragraph>
-        </div>
+
+        <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#0f172a', fontWeight: 700 }}>
+          {titulo}
+        </Title>
+        <Paragraph type="secondary" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
+          {descripcion}
+        </Paragraph>
       </div>
-    </Card>
+
+      <div
+        style={{
+          marginTop: 20,
+          paddingTop: 14,
+          borderTop: '1px solid #f1f5f9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: '#0284c7',
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        <span>Generar Reporte</span>
+        <ArrowRightOutlined style={{ fontSize: 13 }} />
+      </div>
+    </div>
   );
 };
 
 const reportes: ReporteCardProps[] = [
   {
     titulo: 'Órdenes por Período',
-    descripcion: 'Listado de órdenes registradas por rango de fechas, sede y estado',
+    descripcion: 'Auditoría integral de órdenes registradas, filtros por fechas, sedes y estados operativos.',
+    categoria: 'Operativo',
+    categoriaColor: 'blue',
     icono: <FileTextOutlined />,
-    color: '#1890ff',
+    gradient: 'linear-gradient(90deg, #0284c7 0%, #38bdf8 100%)',
+    iconBg: 'rgba(2, 132, 199, 0.1)',
+    iconColor: '#0284c7',
     ruta: '/reportes/ordenes-periodo',
-  },
-  {
-    titulo: 'Ingresos por Sede',
-    descripcion: 'Cantidad de órdenes y montos totales agrupados por sede',
-    icono: <BankOutlined />,
-    color: '#52c41a',
-    ruta: '/reportes/ingresos-sede',
+    permiso: 'reports.ordenes.read',
   },
   {
     titulo: 'Análisis Más Solicitados',
-    descripcion: 'Ranking de los análisis más pedidos en el período',
+    descripcion: 'Ranking de pruebas de laboratorio con mayor demanda y porcentaje de participación.',
+    categoria: 'Demanda',
+    categoriaColor: 'purple',
     icono: <ExperimentOutlined />,
-    color: '#722ed1',
+    gradient: 'linear-gradient(90deg, #7c3aed 0%, #a855f7 100%)',
+    iconBg: 'rgba(124, 58, 237, 0.1)',
+    iconColor: '#7c3aed',
     ruta: '/reportes/analisis-ranking',
+    permiso: 'reports.analisis.read',
   },
   {
-    titulo: 'Productividad por Usuario',
-    descripcion: 'Órdenes registradas, resultados ingresados y aprobaciones por usuario',
+    titulo: 'Ingresos por Sede',
+    descripcion: 'Consolidado de órdenes generadas y montos económicos recaudados por cada sede.',
+    categoria: 'Financiero',
+    categoriaColor: 'green',
+    icono: <BankOutlined />,
+    gradient: 'linear-gradient(90deg, #059669 0%, #34d399 100%)',
+    iconBg: 'rgba(5, 150, 105, 0.1)',
+    iconColor: '#059669',
+    ruta: '/reportes/ingresos-sede',
+    permiso: 'reports.ingresos.read',
+  },
+  {
+    titulo: 'Productividad de Personal',
+    descripcion: 'Métricas de rendimiento por usuario: órdenes registradas, resultados ingresados y aprobaciones.',
+    categoria: 'Rendimiento',
+    categoriaColor: 'orange',
     icono: <TeamOutlined />,
-    color: '#fa8c16',
+    gradient: 'linear-gradient(90deg, #ea580c 0%, #fb923c 100%)',
+    iconBg: 'rgba(234, 88, 12, 0.1)',
+    iconColor: '#ea580c',
     ruta: '/reportes/productividad',
+    permiso: 'reports.productividad.read',
+  },
+  {
+    titulo: 'Cuadre de Caja Diaria',
+    descripcion: 'Arqueo de ingresos, liquidación por turno o cajero y control de efectivo físico vs pagos digitales.',
+    categoria: 'Caja & Turno',
+    categoriaColor: 'cyan',
+    icono: <DollarOutlined />,
+    gradient: 'linear-gradient(90deg, #0d9488 0%, #14b8a6 100%)',
+    iconBg: 'rgba(13, 148, 136, 0.1)',
+    iconColor: '#0d9488',
+    ruta: '/reportes/cuadre-caja',
+    permiso: 'reports.cuadre_caja.read',
   },
 ];
 
 export default function ReportesPage() {
-  const { hasPermission } = useAuthStore();
+  const { hasPermission, isSuperAdmin, isAdmin } = usePermissions();
+
+  const reportesDisponibles = useMemo(() => {
+    if (isSuperAdmin || isAdmin) return reportes;
+    const filtrados = reportes.filter((reporte) => hasPermission(reporte.permiso));
+    // Fallback de retrocompatibilidad: si solo tiene el permiso general reports.read y no submódulos asignados aún
+    if (filtrados.length === 0 && hasPermission('reports.read')) {
+      return reportes;
+    }
+    return filtrados;
+  }, [hasPermission, isSuperAdmin, isAdmin]);
+
+  const canAccess =
+    isSuperAdmin ||
+    isAdmin ||
+    hasPermission('reports.read') ||
+    reportesDisponibles.length > 0;
 
   return (
-    <PageContainer>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ margin: 0, marginBottom: 8 }}>
-          📊 Reportes del Sistema
-        </Title>
-        <Paragraph type="secondary">
-          Genera reportes detallados del sistema. Selecciona un tipo de reporte para comenzar.
-        </Paragraph>
-      </div>
-
-      <Row gutter={[24, 24]}>
-        {reportes.map((reporte, index) => (
-          hasPermission('orders.read') && (
-            <Col xs={24} sm={12} lg={12} xl={6} key={index}>
+    <ModulePageLayout
+      title="Centro de Reportes & Analítica"
+      subtitle="Genera, visualiza y exporta informes ejecutivos de gestión del laboratorio clínico"
+    >
+      {canAccess && reportesDisponibles.length > 0 ? (
+        <Row gutter={[20, 20]}>
+          {reportesDisponibles.map((reporte, index) => (
+            <Col xs={24} sm={12} lg={8} key={index}>
               <ReporteCard {...reporte} />
             </Col>
-          )
-        ))}
-      </Row>
-    </PageContainer>
+          ))}
+        </Row>
+      ) : (
+        <div
+          style={{
+            padding: 40,
+            textAlign: 'center',
+            background: '#ffffff',
+            borderRadius: 12,
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <Text type="secondary">
+            No cuentas con permisos para consultar los reportes del laboratorio.
+          </Text>
+        </div>
+      )}
+    </ModulePageLayout>
   );
 }

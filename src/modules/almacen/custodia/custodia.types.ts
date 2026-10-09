@@ -50,6 +50,7 @@ export interface ConsumoItem {
   producto_nombre: string;
   unidad_medida_codigo: string;
   numero_lote: string | null;
+  marca?: string | null;
   fecha_vencimiento: string | null;
   almacen_nombre?: string;
 }
@@ -58,13 +59,18 @@ export interface Consumo {
   id: number;
   numero: string;
   sede_id: number;
+  sede_nombre?: string;
   personal_id: number;
+  personal_documento?: string | null;
   area_id: number | null;
+  area_nombre?: string | null;
   fecha: string;
   observaciones: string | null;
   estado: string;
   motivo_anulacion: string | null;
   usuario_registro_nombre?: string | null;
+  usuario_anulacion_id?: number | null;
+  fecha_anulacion?: string | null;
   personal_nombres?: string;
   personal_apellidos?: string;
   items?: ConsumoItem[];
@@ -96,6 +102,8 @@ export interface DevolucionItem {
   producto_nombre: string;
   unidad_medida_codigo: string;
   numero_lote: string | null;
+  marca?: string | null;
+  fecha_vencimiento?: string | null;
 }
 
 export interface Devolucion {
@@ -103,12 +111,16 @@ export interface Devolucion {
   numero: string;
   almacen_id: number;
   almacen_nombre?: string;
+  sede_id?: number;
   personal_id: number;
+  personal_documento?: string | null;
   fecha: string;
   observaciones: string | null;
   estado: string;
   motivo_anulacion: string | null;
   usuario_registro_nombre?: string | null;
+  usuario_anulacion_id?: number | null;
+  fecha_anulacion?: string | null;
   personal_nombres?: string;
   personal_apellidos?: string;
   items?: DevolucionItem[];

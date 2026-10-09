@@ -10,6 +10,7 @@ export * from './custodia';
 export * from './pedidos';
 export * from './transferencias';
 export * from './ajustes';
+export * from './ordenes-compra';
 export * from './shared/sede.store';
 export * from './shared/types';
 export * from './shared/almacen.api';

@@ -83,8 +83,15 @@ export const obtenerOrdenPorId = async (id: number): Promise<OrdenDetalle> => {
 export const obtenerOrdenes = async (
   filters?: OrdenFilters
 ): Promise<PaginatedResponse<Orden>> => {
+  const params: any = { ...filters };
+  if (Array.isArray(params.estado)) {
+    params.estado = params.estado.join(',');
+  }
+  if (Array.isArray(params.sede_id)) {
+    params.sede_id = params.sede_id.join(',');
+  }
   const response = await apiClient.get<ApiResponse<PaginatedResponse<Orden>>>('/ordenes', {
-    params: filters,
+    params,
   });
   return response.data.data;
 };

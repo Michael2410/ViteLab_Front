@@ -32,6 +32,7 @@ interface LineaAjuste {
   lote_id?: number;
   producto_nombre?: string;
   numero_lote?: string;
+  marca?: string | null;
   unidad_medida?: string;
   stock_disponible: number;
   sentido: 'ENTRADA' | 'SALIDA';
@@ -127,6 +128,7 @@ export default function AjusteDrawer({ open, onClose, onSuccess }: AjusteDrawerP
             lote_id: lote.lote_id,
             producto_nombre: lote.producto_nombre,
             numero_lote: lote.numero_lote || 'Sin lote',
+            marca: lote.marca || null,
             unidad_medida: lote.unidad_medida_codigo || '',
             stock_disponible: lote.cantidad,
             cantidad: 1,
@@ -222,7 +224,7 @@ export default function AjusteDrawer({ open, onClose, onSuccess }: AjusteDrawerP
           optionFilterProp="label"
           options={stockLotes.map((s) => ({
             value: s.lote_id,
-            label: `${s.producto_nombre} | Lote: ${s.numero_lote || 'S/L'} | Stock: ${s.cantidad} ${s.unidad_medida_codigo || ''}`,
+            label: `${s.producto_nombre} | Marca: ${s.marca || 'Sin marca'} | Lote: ${s.numero_lote || 'S/L'} | Stock: ${s.cantidad} ${s.unidad_medida_codigo || ''}`,
           }))}
         />
       ),

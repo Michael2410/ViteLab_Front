@@ -12,6 +12,7 @@ export interface ItemAjusteDetalle {
   unidad_medida_codigo: string;
   unidad_medida_nombre: string;
   numero_lote: string | null;
+  marca?: string | null;
   fecha_vencimiento: string | null;
 }
 
@@ -40,9 +41,9 @@ export interface Ajuste {
 export interface ListarAjustesParams {
   page?: number;
   limit?: number;
-  almacen_id?: number;
-  tipo?: string;
-  estado?: string;
+  almacen_id?: number | number[];
+  tipo?: string | string[];
+  estado?: string | string[];
   fecha_desde?: string;
   fecha_hasta?: string;
   search?: string;

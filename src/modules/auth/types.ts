@@ -9,6 +9,15 @@ export interface SedeAsignada {
   codigo: string;
 }
 
+export interface TenantSummary {
+  id: string;
+  slug: string;
+  name: string;
+  role?: string;
+  isCurrent?: boolean;
+  isOwner?: boolean;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -25,25 +34,51 @@ export interface User {
   two_factor_enabled?: boolean;
   created_at: string;
   updated_at: string;
+  activeTenant?: TenantSummary;
 }
 
 export interface Login2FARequired {
   requires2FA: true;
+  requiresTenantSelection?: false;
   setupNeeded: boolean;
   tempToken: string;
   qrCodeDataUrl?: string;
   manualKey?: string;
 }
 
+export interface LoginTenantRequired {
+  requiresTenantSelection: true;
+  requires2FA?: false;
+  requiresPasswordChange?: false;
+  tempToken: string;
+  tenants: TenantSummary[];
+}
+
+export interface LoginPasswordChangeRequired {
+  requiresPasswordChange: true;
+  requires2FA?: false;
+  requiresTenantSelection?: false;
+  tempToken: string;
+  email: string;
+  nombres?: string;
+}
+
 export interface LoginSuccess {
   requires2FA?: false;
+  requiresTenantSelection?: false;
+  requiresPasswordChange?: false;
   accessToken: string;
   refreshToken: string;
   user: User;
+  activeTenant?: TenantSummary;
   backupCodes?: string[];
 }
 
-export type LoginResponse = LoginSuccess | Login2FARequired;
+export type LoginResponse =
+  | LoginSuccess
+  | Login2FARequired
+  | LoginTenantRequired
+  | LoginPasswordChangeRequired;
 
 export interface Verify2FARequest {
   tempToken: string;
@@ -53,6 +88,15 @@ export interface Verify2FARequest {
 export interface Confirm2FASetupRequest {
   tempToken: string;
   code: string;
+}
+
+export interface SelectTenantRequest {
+  tempToken: string;
+  tenantId: string;
+}
+
+export interface SwitchTenantRequest {
+  tenantId: string;
 }
 
 export interface RefreshTokenRequest {

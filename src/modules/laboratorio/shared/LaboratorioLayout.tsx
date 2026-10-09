@@ -15,7 +15,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
-  UserOutlined,
   HomeOutlined,
   WhatsAppOutlined,
   ArrowLeftOutlined,
@@ -38,6 +37,7 @@ import { usePermissions } from '../../../shared/components/PermissionGuard';
 import { WhatsAppQRModal, useWhatsAppStatus } from '../whatsapp';
 import viteLogo from '../../../assets/logo/logo.png';
 import { AppSwitcher } from '../../../shared/components/AppSwitcher';
+import { TenantSwitcher } from '../../../shared/components/TenantSwitcher';
 import { getUserInitials } from '../../../shared/utils/user.utils';
 
 const { Header, Sider, Content } = Layout;
@@ -50,7 +50,7 @@ export default function LaboratorioLayout() {
   const location = useLocation();
   const isDashboard = location.pathname === '/dashboard' || location.pathname === '/';
   const { user, clearAuth } = useAuthStore();
-  const { hasPermission, hasAnyPermission, isSuperAdmin } = usePermissions();
+  const { hasPermission, hasAnyPermission, isSuperAdmin, isAdmin } = usePermissions();
   const { data: whatsappStatus } = useWhatsAppStatus();
 
   // Hook to detect screen size
@@ -129,7 +129,18 @@ export default function LaboratorioLayout() {
     }
 
     // Reportes
-    if (isSuperAdmin || hasPermission('reports.read')) {
+    if (
+      isSuperAdmin ||
+      isAdmin ||
+      hasPermission('reports.read') ||
+      hasAnyPermission([
+        'reports.ordenes.read',
+        'reports.ingresos.read',
+        'reports.analisis.read',
+        'reports.productividad.read',
+        'reports.cuadre_caja.read',
+      ])
+    ) {
       items.push({ 
         key: 'reportes', 
         icon: <IconReportes width={22} height={22} />, 
@@ -138,7 +149,7 @@ export default function LaboratorioLayout() {
     }
 
     return items;
-  }, [user, hasPermission, hasAnyPermission, isSuperAdmin]);
+  }, [user, hasPermission, hasAnyPermission, isSuperAdmin, isAdmin]);
 
   const routeMap: Record<string, string> = {
     'dashboard': '/dashboard',
@@ -257,12 +268,6 @@ export default function LaboratorioLayout() {
       key: 'configuracion',
       label: 'Configuración & Seguridad',
       onClick: () => navigate('/configuracion/usuarios'),
-    },
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Mi Perfil',
-      onClick: () => navigate('/perfil'),
     },
     { type: 'divider' },
     {
@@ -525,6 +530,7 @@ export default function LaboratorioLayout() {
               </Tooltip>
             </div>
 
+            <TenantSwitcher />
             <AppSwitcher />
 
             {/* Separador vertical sutil */}

@@ -13,7 +13,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
-  UserOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { 
@@ -85,12 +84,6 @@ export const PersonalLayout: React.FC = () => {
       key: 'configuracion',
       label: 'Configuración & Seguridad',
       onClick: () => navigate('/configuracion/usuarios'),
-    },
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Mi Perfil',
-      onClick: () => navigate('/perfil'),
     },
     { type: 'divider' },
     {

@@ -75,7 +75,7 @@ export default function VacacionesPage() {
   const canApprove = hasPermission('personal.vacaciones.approve');
 
   const [tab, setTab] = useState<VacacionTab>('saldos');
-  const [estadoFilter, setEstadoFilter] = useState<string>('TODAS');
+  const [estadosFilter, setEstadosFilter] = useState<string[] | undefined>(undefined);
   const [search, setSearch] = useState('');
 
   const currentTabConfig = useMemo(
@@ -171,14 +171,14 @@ export default function VacacionesPage() {
   // Filtrado de solicitudes
   const solicitudesFiltradas = useMemo(() => {
     return solicitudes.filter((s) => {
-      const matchEstado = estadoFilter === 'TODAS' || s.estado === estadoFilter;
+      const matchEstado = !estadosFilter || estadosFilter.length === 0 || estadosFilter.includes(s.estado);
       const matchSearch =
         !search ||
         (s.colaborador_nombre && s.colaborador_nombre.toLowerCase().includes(search.toLowerCase())) ||
         (s.motivo && s.motivo.toLowerCase().includes(search.toLowerCase()));
       return matchEstado && matchSearch;
     });
-  }, [solicitudes, estadoFilter, search]);
+  }, [solicitudes, estadosFilter, search]);
 
   // Filtrado de saldos
   const saldosFiltrados = useMemo(() => {
@@ -590,8 +590,7 @@ export default function VacacionesPage() {
         { text: 'Rechazada', value: 'RECHAZADA' },
         { text: 'Gozada / En curso', value: 'TOMADA' },
       ],
-      filteredValue: estadoFilter !== 'TODAS' ? [estadoFilter] : null,
-      filterMultiple: false,
+      filteredValue: estadosFilter && estadosFilter.length > 0 ? estadosFilter : null,
       filterIcon: (filtered) => renderTableFilterIcon(filtered),
       render: (e) => getEstadoBadge(e),
     },
@@ -800,7 +799,7 @@ export default function VacacionesPage() {
           locale={{ emptyText: 'No hay solicitudes vacacionales registradas' }}
           onChange={(_pagination, tableFilters) => {
             const est = tableFilters.estado;
-            setEstadoFilter(est && est.length > 0 ? (est[0] as string) : 'TODAS');
+            setEstadosFilter(est && est.length > 0 ? (est as string[]) : undefined);
           }}
         />
       )}

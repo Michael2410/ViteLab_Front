@@ -6,6 +6,9 @@ import type {
   LoginSuccess,
   Verify2FARequest,
   Confirm2FASetupRequest,
+  SelectTenantRequest,
+  SwitchTenantRequest,
+  TenantSummary,
   RefreshTokenResponse,
   User,
 } from './types';
@@ -13,6 +16,32 @@ import type {
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
     const { data } = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
+    return data;
+  },
+
+  selectTenant: async (body: SelectTenantRequest): Promise<ApiResponse<LoginSuccess>> => {
+    const { data } = await apiClient.post<ApiResponse<LoginSuccess>>('/auth/select-tenant', body);
+    return data;
+  },
+
+  switchTenant: async (body: SwitchTenantRequest): Promise<ApiResponse<LoginSuccess>> => {
+    const { data } = await apiClient.post<ApiResponse<LoginSuccess>>('/auth/switch-tenant', body);
+    return data;
+  },
+
+  getMyTenants: async (): Promise<ApiResponse<(TenantSummary & { isCurrent: boolean })[]>> => {
+    const { data } = await apiClient.get<ApiResponse<(TenantSummary & { isCurrent: boolean })[]>>('/auth/my-tenants');
+    return data;
+  },
+
+  changeInitialPassword: async (body: {
+    tempToken: string;
+    newPassword: string;
+  }): Promise<ApiResponse<LoginResponse>> => {
+    const { data } = await apiClient.post<ApiResponse<LoginResponse>>(
+      '/auth/change-initial-password',
+      body
+    );
     return data;
   },
 
